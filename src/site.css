@@ -206,38 +206,6 @@ body {
 .stackward-art span:nth-child(2) { width: 68px; }
 .stackward-art span:nth-child(3) { width: 90px; }
 
-.neondodge-art {
-  background: radial-gradient(circle at 50% 25%, rgba(125,255,212,0.1), transparent 60%), #0f1a17;
-}
-
-.dodge-orb {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 16px var(--accent);
-}
-
-.dodge-shard {
-  position: absolute;
-  width: 14px;
-  height: 14px;
-  background: #ff6bd6;
-  box-shadow: 0 0 10px #ff6bd6;
-  transform: rotate(45deg);
-}
-
-.dodge-shard.s1 { top: 20px; left: 30%; animation: dodgeFall 2.4s linear infinite; }
-.dodge-shard.s2 { top: 20px; left: 55%; animation: dodgeFall 2.4s linear infinite 0.8s; }
-.dodge-shard.s3 { top: 20px; left: 75%; animation: dodgeFall 2.4s linear infinite 1.6s; }
-
-@keyframes dodgeFall {
-  0% { transform: translateY(0) rotate(45deg); opacity: 0; }
-  10% { opacity: 1; }
-  90% { opacity: 1; }
-  100% { transform: translateY(90px) rotate(45deg); opacity: 0; }
-}
-
 .panes-art {
   background: radial-gradient(circle at 50% 25%, rgba(125,216,255,0.1), transparent 60%), #10141f;
 }
