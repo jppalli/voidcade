@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+/* Base styles */
+html {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  transition: background-color 0.5s ease, color 0.5s ease;
+}
+
+/* Smooth transitions for dark mode */
+html.dark {
+  color-scheme: dark;
+}
+
+/* Remove mobile tap flash on all buttons */
+button {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(120, 113, 108, 0.3);
+  border-radius: 3px;
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background: rgba(168, 162, 158, 0.2);
+}
+
+/* Selection color */
+::selection {
+  background: rgba(245, 158, 11, 0.3);
+}
+
+html.dark ::selection {
+  background: rgba(129, 140, 248, 0.3);
+}

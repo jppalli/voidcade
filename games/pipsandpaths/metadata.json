@@ -1,0 +1,5 @@
+{
+  "name": "Pips & Paths",
+  "description": "A daily dice path puzzle. Jump the number of pips on your current die to reach the next one. Visit every die once.",
+  "requestFramePermissions": []
+}

@@ -193,7 +193,7 @@ export function burstConfetti(container) {
   const W     = canvas.width;
   const H     = canvas.height;
   const COUNT = 60;
-  const colors = ["#f7c842","#5c8df6","#82d95f","#f77a7a","#b79cf7","#f59a4a","#63d2d2"];
+  const colors = ["#e8b93c","#4b7af0","#4fc26a","#e8635f","#9c7ce8","#e8863a","#3cbcbc"];
 
   const particles = Array.from({ length: COUNT }, () => ({
     x:   W * 0.5 + (Math.random() - 0.5) * W * 0.6,

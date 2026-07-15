@@ -183,12 +183,21 @@ html, body {
 
 .hidden { display: none !important; }
 
-/* ---------------- Sound toggle ---------------- */
-#muteBtn {
+/* ---------------- Top-left controls: back + mute ----------------
+   Shared shape/position/behavior with Panes' equivalent buttons - same
+   40px rounded square, same backdrop blur, same icon set - just tinted
+   with this game's own neon accent instead of Panes' blue. */
+#topControls {
   position: absolute;
   top: 24px;
   left: 20px;
   z-index: 15;
+  display: flex;
+  gap: 10px;
+}
+
+#backBtn,
+#muteBtn {
   width: 40px;
   height: 40px;
   display: flex;
@@ -199,41 +208,23 @@ html, body {
   border-radius: 12px;
   cursor: pointer;
   backdrop-filter: blur(4px);
+  color: #fff;
+  text-decoration: none;
 }
 
+#backBtn svg,
+#muteBtn svg {
+  width: 20px;
+  height: 20px;
+}
+
+#backBtn:active,
 #muteBtn:active { transform: scale(0.92); }
 
-.soundbars {
-  display: flex;
-  align-items: flex-end;
-  gap: 3px;
-  height: 18px;
-}
-
-.soundbars i {
-  width: 3px;
-  border-radius: 2px;
-  background: #7dffd4;
-  box-shadow: 0 0 6px #7dffd4;
-  animation: eq 0.9s ease-in-out infinite;
-}
-
-.soundbars i:nth-child(1) { height: 8px;  animation-delay: 0s; }
-.soundbars i:nth-child(2) { height: 16px; animation-delay: 0.2s; }
-.soundbars i:nth-child(3) { height: 11px; animation-delay: 0.4s; }
-
-@keyframes eq {
-  0%, 100% { transform: scaleY(0.4); }
-  50% { transform: scaleY(1); }
-}
-
-/* Muted: freeze the bars flat and dim them */
-#muteBtn.muted .soundbars i {
-  animation: none;
-  height: 4px;
-  background: #7d7d95;
-  box-shadow: none;
-}
+#muteBtn .icon-sound-on { color: #7dffd4; }
+#muteBtn .icon-sound-off { display: none; color: #7d7d95; }
+#muteBtn.muted .icon-sound-on { display: none; }
+#muteBtn.muted .icon-sound-off { display: block; }
 
 /* ---------------- Screens ---------------- */
 .screen {

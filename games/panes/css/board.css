@@ -46,11 +46,7 @@
 }
 
 .cell.locked {
-  color: rgba(0,0,0,0.7);
-}
-
-:root.dark .cell.locked {
-  color: rgba(255,255,255,0.82);
+  color: rgba(255,255,255,0.86);
 }
 
 .cell .clue {
@@ -84,23 +80,13 @@
   outline-offset: -1px;
   box-shadow: inset 0 0 0 1px var(--accent-glow);
   /* Let cell content (clue numbers) show through */
-  mix-blend-mode: multiply;
-}
-
-:root.dark .drag-overlay.drag-valid {
   mix-blend-mode: screen;
 }
 
 .drag-overlay.drag-invalid {
-  background: rgba(224, 80, 60, 0.08);
-  outline: 1.5px solid rgba(224, 80, 60, 0.45);
+  background: rgba(255, 107, 107, 0.14);
+  outline: 1.5px solid rgba(255, 107, 107, 0.5);
   outline-offset: -1px;
-  mix-blend-mode: multiply;
-}
-
-:root.dark .drag-overlay.drag-invalid {
-  background: rgba(240, 108, 88, 0.12);
-  outline: 1.5px solid rgba(240, 108, 88, 0.4);
   mix-blend-mode: screen;
 }
 

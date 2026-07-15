@@ -50,8 +50,8 @@ html, body {
   transition: color var(--dur-base) var(--ease-smooth);
 }
 
-.brand-mark rect[fill="currentColor"] {
-  color: var(--accent);
+.brand-mark-fill {
+  fill: var(--accent);
   filter: drop-shadow(0 0 5px var(--accent-glow));
 }
 

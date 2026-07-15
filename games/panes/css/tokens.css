@@ -1,26 +1,33 @@
 /* ─── Design Tokens ─────────────────────────────────────────────────── */
+/* Unified with the Voidcade site + Stackward: same near-black backdrop,
+   same soft-glow accent treatment, same bold sans type. Panes keeps its
+   own signature blue accent (matching its "Puzzle · Daily" tag on the
+   homepage card) so each game still reads as its own thing under one
+   consistent dark shell. There's a single theme here on purpose — neither
+   the site nor Stackward offer a light mode, so Panes' old light/dark
+   toggle was dropped for consistency. */
 :root {
   /* Colours */
-  --bg:              #f7f5f2;
-  --surface:         #ffffff;
-  --surface-raised:  #faf9f7;
-  --ink:             #1a1a1a;
-  --ink-soft:        #6b6b6b;
-  --ink-faint:       #b0aca6;
-  --border:          #2b2b2b;
-  --border-soft:     #d8d5d0;
-  --grid-line:       #e0ddd8;
-  --accent:          #4b6bfb;
-  --accent-soft:     #eef1ff;
-  --accent-glow:     rgba(75, 107, 251, 0.25);
-  --danger:          #e0503c;
-  --danger-soft:     rgba(224, 80, 60, 0.12);
-  --success:         #35a35a;
+  --bg:              #0a0a12;
+  --surface:         #13131f;
+  --surface-raised:  #191927;
+  --ink:             #ffffff;
+  --ink-soft:        #a3a3ba;
+  --ink-faint:       #6d6d85;
+  --border:          rgba(255,255,255,0.16);
+  --border-soft:     rgba(255,255,255,0.10);
+  --grid-line:       rgba(255,255,255,0.07);
+  --accent:          #7dd8ff;
+  --accent-soft:     rgba(125,216,255,0.12);
+  --accent-glow:     rgba(125,216,255,0.32);
+  --danger:          #ff6b6b;
+  --danger-soft:     rgba(255,107,107,0.14);
+  --success:         #7dffd4;
 
   /* Chips / controls */
-  --chip-bg:         #ececea;
-  --chip-active-bg:  #1a1a1a;
-  --chip-active-ink: #ffffff;
+  --chip-bg:         rgba(255,255,255,0.06)  ;
+  --chip-active-bg:  #7dd8ff;
+  --chip-active-ink: #0a0a12;
 
   /* Shape */
   --radius-xl: 24px;
@@ -33,13 +40,13 @@
   --border-width: 2px;
 
   /* Shadow */
-  --shadow-xs:   0 1px 3px rgba(0,0,0,0.06);
-  --shadow-soft: 0 6px 20px rgba(0,0,0,0.08);
-  --shadow-lift: 0 12px 32px rgba(0,0,0,0.12);
+  --shadow-xs:   0 2px 8px rgba(0,0,0,0.3);
+  --shadow-soft: 0 8px 26px rgba(0,0,0,0.45);
+  --shadow-lift: 0 16px 40px rgba(0,0,0,0.55);
 
   /* Typography */
-  --font-ui:  -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --font-num: "Georgia", "Times New Roman", serif;
+  --font-ui:  'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+  --font-num: var(--font-ui);
 
   /* Motion */
   --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -48,28 +55,5 @@
   --dur-base:      200ms;
   --dur-slow:      360ms;
 
-  color-scheme: light;
-}
-
-:root.dark {
-  --bg:              #17181c;
-  --surface:         #21232a;
-  --surface-raised:  #27292f;
-  --ink:             #eef0f4;
-  --ink-soft:        #9a9ea8;
-  --ink-faint:       #55596a;
-  --border:          #3a3d47;
-  --border-soft:     #33363f;
-  --grid-line:       #2d3038;
-  --accent:          #7b93ff;
-  --accent-soft:     #2a2f45;
-  --accent-glow:     rgba(123, 147, 255, 0.28);
-  --danger:          #f06c58;
-  --danger-soft:     rgba(240, 108, 88, 0.15);
-  --chip-bg:         #2a2c34;
-  --chip-active-bg:  #eef0f4;
-  --chip-active-ink: #17181c;
-  --shadow-soft:     0 6px 24px rgba(0,0,0,0.4);
-  --shadow-lift:     0 14px 36px rgba(0,0,0,0.5);
   color-scheme: dark;
 }

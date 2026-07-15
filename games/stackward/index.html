@@ -10,10 +10,29 @@
   <div id="app">
     <div id="canvasHost"></div>
 
-    <!-- Sound toggle (always visible, top-left) -->
-    <button id="muteBtn" aria-label="Mute">
-      <span class="soundbars"><i></i><i></i><i></i></span>
-    </button>
+    <!-- Top-left controls, always visible: back to Voidcade + mute.
+         Same icon set/behavior as Panes' equivalent buttons, just tinted
+         with this game's own accent color, so the affordance is instantly
+         recognizable across games. -->
+    <div id="topControls">
+      <a id="backBtn" href="../../" aria-label="Back to Voidcade" title="Back to Voidcade">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </a>
+      <button id="muteBtn" aria-label="Mute">
+        <svg class="icon-sound-on" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M4 9.5V14.5H7.5L12 18.5V5.5L7.5 9.5H4Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+          <path d="M16 9.2C16.9 10 17.5 11 17.5 12C17.5 13 16.9 14 16 14.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          <path d="M18.3 6.8C19.9 8.2 21 10 21 12C21 14 19.9 15.8 18.3 17.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        <svg class="icon-sound-off" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M4 9.5V14.5H7.5L12 18.5V5.5L7.5 9.5H4Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+          <path d="M16.5 9.5L21 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          <path d="M21 9.5L16.5 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
 
     <!-- HUD during gameplay -->
     <div id="hud">

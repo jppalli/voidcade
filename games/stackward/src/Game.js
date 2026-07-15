@@ -30,6 +30,9 @@ const PERFECT_FRACTION = 0.94;
 // in dropBlock() (`top.y - BLOCK_HEIGHT`) and always sits flush.
 const HOVER_GAP = BLOCK_HEIGHT + 2;
 const ANCHOR_Y_FRAC = 0.42;
+// How far past the screen edge a block spawns/vanishes, so it visibly
+// slides in from off-screen rather than popping in at the boundary.
+const OFFSCREEN_SPAWN_GAP = 60;
 const REROLL_BASE_COST = 15;
 const REROLL_COST_GROWTH = 1.6;
 // Cap on simultaneously-active powerups so the late game can't snowball into
@@ -239,6 +242,7 @@ export class Game {
     }
     this.blocks = [];
     if (this.moving) {
+      gsap.killTweensOf(this.moving);
       this.blocksLayer.removeChild(this.moving);
       this.moving.destroy({ children: true });
       this.moving = null;
@@ -248,6 +252,17 @@ export class Game {
       d.destroy({ children: true });
     }
     this.debris.pieces = [];
+  }
+
+  /** Every code path that removes the current moving block funnels through
+   *  here for consistency. */
+  _destroyMoving() {
+    const moving = this.moving;
+    if (!moving) return;
+    gsap.killTweensOf(moving);
+    this.blocksLayer.removeChild(moving);
+    moving.destroy({ children: true });
+    this.moving = null;
   }
 
   spawnMoving(topBlock) {
@@ -263,8 +278,17 @@ export class Game {
     if (this.mods.comboSlowmo && this.combo >= 5) speedMult *= 0.7;
     const speed = BASE_SPEED * speedMult;
     const dir = Math.random() < 0.5 ? -1 : 1;
-    const margin = 20;
-    const startX = dir === 1 ? margin : (this.W - margin - topBlock.blockW);
+    // Spawn just off-screen on the side it's coming FROM, so it visibly
+    // slides into view at the SAME constant per-frame speed as the rest of
+    // its travel - no separate fast-in tween, so the entrance never feels
+    // like a different, faster jolt than the swing itself. The gap is kept
+    // small (not "fully off-screen") specifically so the approach is brief
+    // and readable rather than a long, hard-to-predict slide, and so early
+    // floors (where speed is intentionally slow) don't leave the block
+    // invisible for a noticeable moment after Play.
+    const startX = dir === 1
+      ? -topBlock.blockW - OFFSCREEN_SPAWN_GAP
+      : this.W + OFFSCREEN_SPAWN_GAP;
     const hue = (topBlock.hue + 26) % 360;
 
     const moving = new Block({ x: startX, y: topBlock.y - HOVER_GAP, w: topBlock.blockW, hue });
@@ -358,9 +382,7 @@ export class Game {
       } else {
         this.debris.spawn(newX, top.y - BLOCK_HEIGHT, newW, BLOCK_HEIGHT, moving.hue, 0);
         this.triggerShake(12);
-        this.blocksLayer.removeChild(moving);
-        moving.destroy({ children: true });
-        this.moving = null;
+        this._destroyMoving();
         this.endRun();
         return;
       }
@@ -370,9 +392,7 @@ export class Game {
     this.blocksLayer.addChild(newBlock);
     this.blocks.push(newBlock);
 
-    this.blocksLayer.removeChild(moving);
-    moving.destroy({ children: true });
-    this.moving = null;
+    this._destroyMoving();
 
     // little squash/stretch landing juice, punchier on a perfect drop
     const squashX = isPerfect ? 1.18 : 1.1;
@@ -430,9 +450,7 @@ export class Game {
       this.blocksLayer.addChild(newBlock);
       this.blocks.push(newBlock);
 
-      this.blocksLayer.removeChild(this.moving);
-      this.moving.destroy({ children: true });
-      this.moving = null;
+      this._destroyMoving();
 
       this.combo = 0;
       this.floors++;
@@ -451,9 +469,7 @@ export class Game {
     const moving = this.moving;
     this.debris.spawn(moving.x, moving.y - BLOCK_HEIGHT, moving.blockW, BLOCK_HEIGHT, moving.hue, this._movingDir);
     this.triggerShake(10);
-    this.blocksLayer.removeChild(moving);
-    moving.destroy({ children: true });
-    this.moving = null;
+    this._destroyMoving();
     this.endRun();
   }
 
@@ -797,10 +813,15 @@ export class Game {
       // DRIFT zones add a constant sideways push (this.zoneWind) on top of the
       // swing, so the player has to compensate for the current.
       this.moving.x += this._movingDir * this._movingSpeed + this.zoneWind;
-      const minX = 10;
-      const maxX = this.W - 10 - this.moving.blockW;
-      if (this.moving.x < minX) { this.moving.x = minX; this._movingDir = 1; }
-      if (this.moving.x > maxX) { this.moving.x = maxX; this._movingDir = -1; }
+      // No bounce: the block crosses the screen once. If it fully exits the
+      // far edge without being dropped, that's a miss - same outcome as
+      // dropping into a gap, just triggered by running out of screen instead
+      // of tapping too early/late.
+      const exitedRight = this._movingDir === 1 && this.moving.x > this.W + OFFSCREEN_SPAWN_GAP;
+      const exitedLeft = this._movingDir === -1 && this.moving.x + this.moving.blockW < -OFFSCREEN_SPAWN_GAP;
+      if (exitedRight || exitedLeft) {
+        this.handleMiss();
+      }
     }
 
     this._updateGuide();

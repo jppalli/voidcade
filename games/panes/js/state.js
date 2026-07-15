@@ -3,19 +3,22 @@
  * Nothing here touches the DOM. Import and mutate directly.
  */
 
+// Deepened slightly from the original pastel set so locked regions read as
+// rich neon-arcade jewel tones against the site's dark background, while
+// staying distinct enough from each other at a glance.
 export const REGION_PALETTE = [
-  "#82d95f", // green
-  "#5c8df6", // blue
-  "#f5c842", // gold
-  "#e08fb0", // rose
-  "#63d2d2", // teal
-  "#f59a4a", // orange
-  "#b79cf7", // lavender
-  "#f77a7a", // coral
-  "#8fd4c0", // mint
-  "#d4b94e", // sand
-  "#a8c8f8", // sky
-  "#f7b8e8", // pink
+  "#4fc26a", // green
+  "#4b7af0", // blue
+  "#e8b93c", // gold
+  "#d6749e", // rose
+  "#3cbcbc", // teal
+  "#e8863a", // orange
+  "#9c7ce8", // lavender
+  "#e8635f", // coral
+  "#5fc2a4", // mint
+  "#c2a23c", // sand
+  "#6fa8e8", // sky
+  "#e07fc7", // pink
 ];
 
 /** @type {GameState} */

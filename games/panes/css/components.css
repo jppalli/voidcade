@@ -31,10 +31,14 @@
   flex-shrink: 0;
 }
 
-/* Sun/moon swap: show sun in light mode, moon in dark mode */
-.icon-btn .icon-moon { display: none; }
-:root.dark .icon-btn .icon-sun  { display: none; }
-:root.dark .icon-btn .icon-moon { display: block; }
+.back-link {
+  text-decoration: none;
+}
+
+/* Sound on/off swap, same pattern the old theme toggle used. */
+.icon-sound-off { display: none; }
+#btn-mute.muted .icon-sound-on  { display: none; }
+#btn-mute.muted .icon-sound-off { display: block; }
 
 .chip {
   border: 1.5px solid transparent;

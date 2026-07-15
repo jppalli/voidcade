@@ -5,6 +5,8 @@ async function bootstrap() {
 
   const cards = document.querySelectorAll('.game-card[data-game]');
   document.getElementById('gameCount').textContent = `${cards.length} available`;
+  const statGames = document.getElementById('statGames');
+  if (statGames) statGames.textContent = String(cards.length);
 
   // Site-level banner ads: a leaderboard slot above/below the game grid,
   // plus a native-styled in-feed card inside the grid itself. Swap

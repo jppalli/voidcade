@@ -5,11 +5,11 @@
 
 import { state } from "./state.js";
 import { initGame, startPuzzle, loadDailyPuzzle, giveHint, clearBoard } from "./game.js";
+import { AudioManager } from "./audio.js";
 import {
   updateStats, startTimer, stopTimer, showWin, hideWin,
   showDayComplete, hideDayComplete, bindDayCompleteClose,
   showLoading, hideLoading, showHelp, hideHelp,
-  applyStoredTheme, toggleTheme,
   renderDayNav, bindDayLabel,
   renderLevelPills, bindLevelPills,
   bindStatsModal,
@@ -27,10 +27,33 @@ const boardEl      = document.getElementById("board");
 const btnHint      = document.getElementById("btn-hint");
 const btnClear     = document.getElementById("btn-clear");
 const btnHelp      = document.getElementById("btn-help");
-const btnTheme     = document.getElementById("btn-theme");
+const btnMute      = document.getElementById("btn-mute");
 const helpClose    = document.getElementById("help-close");
 const helpOverlay  = document.getElementById("help-overlay");
 const winNext      = document.getElementById("win-next");
+
+// ─── Audio ────────────────────────────────────────────────────────────
+// Same bootstrap pattern as Stackward: the AudioContext can only start
+// after a user gesture, so unlock + kick off the ambient loop on the first
+// interaction anywhere on the page.
+const audio = new AudioManager();
+const kickAudio = () => {
+  audio.unlock();
+  audio.startMusic();
+  window.removeEventListener('pointerdown', kickAudio);
+  window.removeEventListener('keydown', kickAudio);
+};
+window.addEventListener('pointerdown', kickAudio);
+window.addEventListener('keydown', kickAudio);
+
+function reflectMuteButton(muted) {
+  btnMute.classList.toggle('muted', muted);
+  btnMute.setAttribute('aria-label', muted ? 'Unmute' : 'Mute');
+}
+reflectMuteButton(audio.muted);
+btnMute.addEventListener('click', () => {
+  reflectMuteButton(audio.toggleMute());
+});
 
 // ─── Local UI state ─────────────────────────────────────────────────────
 
@@ -60,6 +83,7 @@ function handleDailyWin(result) {
   const dayDone = isDayComplete(progress, state.dailyDateKey);
 
   if (dayDone) {
+    audio.dayComplete();
     showDayComplete(state.dailyDateKey);
     return;
   }
@@ -147,16 +171,13 @@ helpOverlay.addEventListener("click", e => { if (e.target === helpOverlay) hideH
 
 bindStatsModal();
 
-btnTheme.addEventListener("click", toggleTheme);
-
 document.addEventListener("keydown", e => {
   if (e.key === "Escape") { hideHelp(); }
 });
 
 // ─── Boot ─────────────────────────────────────────────────────────────
 
-applyStoredTheme();
-initGame(boardEl, { onStatsChange, onWin, onMiss });
+initGame(boardEl, { onStatsChange, onWin, onMiss, audio });
 
 const startLevel = firstIncompleteLevel(loadProgress(), viewingDateKey).key;
 loadDaily(viewingDateKey, startLevel);

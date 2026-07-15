@@ -1,5 +1,5 @@
 /**
- * ui.js — non-board UI: timer, modals, theme, win banner, daily controls.
+ * ui.js — non-board UI: timer, modals, win banner, daily controls.
  * Owns DOM references for everything outside the board frame.
  */
 
@@ -141,21 +141,6 @@ export function hideLoading() { elLoading.hidden = true;  }
 
 export function showHelp() { elHelp.hidden = false; }
 export function hideHelp() { elHelp.hidden = true;  }
-
-// ─── Theme ───────────────────────────────────────────────────────────
-
-const THEME_KEY = "panes-theme";
-
-export function applyStoredTheme() {
-  if (localStorage.getItem(THEME_KEY) === "dark") {
-    document.documentElement.classList.add("dark");
-  }
-}
-
-export function toggleTheme() {
-  const isDark = document.documentElement.classList.toggle("dark");
-  localStorage.setItem(THEME_KEY, isDark ? "dark" : "light");
-}
 
 // ─── Day label (opens the calendar) ──────────────────────────────────
 

@@ -28,12 +28,14 @@ let _boardEl        = null;
 let _onStatsChange  = null;   // () => void — re-render stats bar
 let _onWin          = null;   // (result) => void, result = { misses, timeMs }
 let _onMiss         = null;   // () => void
+let _audio          = null;   // AudioManager instance, or null if none provided
 
 export function initGame(boardEl, callbacks) {
   _boardEl       = boardEl;
   _onStatsChange = callbacks.onStatsChange;
   _onWin         = callbacks.onWin;
   _onMiss        = callbacks.onMiss;
+  _audio         = callbacks.audio || null;
 }
 
 /**
@@ -71,13 +73,14 @@ export function startPuzzle(puzzle, { revealSolution = false } = {}) {
   _onStatsChange?.();
 }
 
-export function commitRegion(rect, clueIndex) {
+export function commitRegion(rect, clueIndex, { silent = false } = {}) {
   if (state.readOnly) return;
   const region = { ...rect, clueIndex, color: nextRegionColor() };
   state.regions.push(region);
   applyRegionStyling(region);
   repaintRegionBorders();
   animateRegionLock(region);
+  if (!silent) _audio?.place();
   _onStatsChange?.();
   checkWin();
 }
@@ -89,12 +92,14 @@ export function removeRegionAt(r, c) {
   removeRegionStyling(region);
   state.regions = state.regions.filter(reg => reg !== region);
   repaintRegionBorders();
+  _audio?.remove();
   _onStatsChange?.();
 }
 
 function handleMiss(rect) {
   state.misses += 1;
   animateShakeRect(rect);
+  _audio?.miss();
   _onStatsChange?.();
   _onMiss?.();
 }
@@ -106,6 +111,7 @@ function checkWin() {
   if (state.regions.length === state.clues.length && covered === totalCells) {
     state.solved = true;
     const timeMs = state.startedAt ? Date.now() - state.startedAt : 0;
+    _audio?.win();
     _onWin?.({ misses: state.misses, timeMs });
     burstConfetti(_boardEl.parentElement);
   }
@@ -121,7 +127,8 @@ export function giveHint() {
   if (idx === -1) return;
   const sol = state.solutionRects.find(r => r.clue === state.clues[idx]);
   if (!sol) return;
-  commitRegion({ top: sol.top, left: sol.left, bottom: sol.bottom, right: sol.right }, idx);
+  _audio?.hint();
+  commitRegion({ top: sol.top, left: sol.left, bottom: sol.bottom, right: sol.right }, idx, { silent: true });
 }
 
 export function clearBoard() {
@@ -133,6 +140,7 @@ export function clearBoard() {
   // to improve your score) can trigger the win flow again.
   state.solved  = false;
   repaintRegionBorders();
+  _audio?.clear();
   _onStatsChange?.();
 }
 
