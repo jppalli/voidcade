@@ -95,6 +95,16 @@ body {
 
 .site-nav a:hover { color: #fff; }
 
+/* On narrow screens, hide the text nav links — everything is one scroll away.
+   Keep only the "Play now" CTA since it's the only actionable item. */
+@media (max-width: 600px) {
+  .site-nav a:not(.nav-cta) { display: none; }
+  .site-nav { gap: 0; }
+  .brand-name { font-size: 16px; letter-spacing: 0.3px; }
+  .brand-mark { width: 22px; height: 22px; }
+  .nav-cta { padding: 7px 14px; font-size: 12px; }
+}
+
 .nav-cta {
   color: #08080f !important;
   background: var(--accent);
@@ -252,11 +262,14 @@ body {
   width: clamp(220px, 28vw, 300px);
   z-index: 2;
   transform: rotate(-2deg);
+  animation: cardEnterCenter 0.55s cubic-bezier(0.34,1.56,0.64,1) 0.1s both,
+             cardFloatCenter 4.5s ease-in-out 0.65s infinite;
 }
 
 .stage-card-featured:hover {
   transform: rotate(-2deg) translateY(-6px) scale(1.03);
   box-shadow: 11px 11px 0 rgba(0,0,0,0.5);
+  animation: none;
 }
 
 .stage-card-peek {
@@ -266,11 +279,29 @@ body {
   z-index: 1;
   opacity: 0.9;
   filter: saturate(0.85);
+  animation: cardEnterLeft 0.6s cubic-bezier(0.34,1.56,0.64,1) both,
+             cardFloatLeft 5s ease-in-out 0.6s infinite;
 }
 
 .stage-card-peek:hover {
   transform: rotate(6deg) translateY(12px) scale(1.03);
   opacity: 1;
+  animation: none; /* freeze on hover so it doesn't fight the CSS animation */
+}
+
+/* Right peek: mirrors the left — negative tilt, left overlap instead of right */
+.stage-card-peek-right {
+  margin-right: 0;
+  margin-left: -40px;
+  transform: rotate(-6deg) translateY(18px);
+  animation: cardEnterRight 0.6s cubic-bezier(0.34,1.56,0.64,1) both,
+             cardFloatRight 5s ease-in-out 0.6s infinite;
+}
+
+.stage-card-peek-right:hover {
+  transform: rotate(-6deg) translateY(12px) scale(1.03);
+  opacity: 1;
+  animation: none;
 }
 
 .stage-card-badge {
@@ -317,8 +348,40 @@ body {
   transform: translateX(3px);
 }
 
+/* --- Entrance animations: cards fly in from their starting positions --- */
+@keyframes cardEnterLeft {
+  from { opacity: 0; transform: rotate(6deg) translateY(40px) translateX(-30px) scale(0.85); }
+  to   { opacity: 0.9; transform: rotate(6deg) translateY(18px) translateX(0) scale(1); }
+}
+
+@keyframes cardEnterRight {
+  from { opacity: 0; transform: rotate(-6deg) translateY(40px) translateX(30px) scale(0.85); }
+  to   { opacity: 0.9; transform: rotate(-6deg) translateY(18px) translateX(0) scale(1); }
+}
+
+@keyframes cardEnterCenter {
+  from { opacity: 0; transform: rotate(-2deg) translateY(50px) scale(0.88); }
+  to   { opacity: 1; transform: rotate(-2deg) translateY(0) scale(1); }
+}
+
+/* --- Idle float: gentle up/down drift so the cards feel alive --- */
+@keyframes cardFloatLeft {
+  0%, 100% { transform: rotate(6deg) translateY(18px); }
+  50%       { transform: rotate(6deg) translateY(10px); }
+}
+
+@keyframes cardFloatRight {
+  0%, 100% { transform: rotate(-6deg) translateY(18px); }
+  50%       { transform: rotate(-6deg) translateY(10px); }
+}
+
+@keyframes cardFloatCenter {
+  0%, 100% { transform: rotate(-2deg) translateY(0px); }
+  50%       { transform: rotate(-2deg) translateY(-6px); }
+}
+
 @media (max-width: 560px) {
-  .hero-stage { transform: scale(0.85); }
+  .hero-stage { transform: scale(0.75); transform-origin: center bottom; }
 }
 
 /* ---------------- Ad slots ---------------- */
@@ -464,8 +527,47 @@ body {
 .panes-cell.c2 { grid-column: 2; grid-row: 1; }
 .panes-cell.c3 { grid-column: 2; grid-row: 2; }
 
-.pips-art {
-  background: radial-gradient(circle at 50% 25%, rgba(255,184,77,0.12), transparent 60%), #191410;
+.voidburst-art {
+  background: radial-gradient(circle at 50% 25%, rgba(77,221,255,0.1), transparent 60%), #0d1219;
+  gap: 12px;
+  flex-direction: row;
+}
+
+.vb-bubble {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  position: relative;
+  animation: vbFloat 2.2s ease-in-out infinite;
+}
+
+.vb-bubble::after {
+  content: '';
+  position: absolute;
+  top: 18%;
+  left: 18%;
+  width: 30%;
+  height: 30%;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.4);
+}
+
+.vb-r { background: #ff4d4d; box-shadow: 0 0 14px #ff4d4d; }
+.vb-g { background: #4dff88; box-shadow: 0 0 14px #4dff88; animation-delay: 0.3s; }
+.vb-b { background: #4dddff; box-shadow: 0 0 14px #4dddff; animation-delay: 0.6s; }
+
+@keyframes vbFloat {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-7px); }
+}
+
+.game-tag-teal {
+  color: #4dddff;
+  background: rgba(77,221,255,0.08);
+  border-color: rgba(77,221,255,0.2);
+}
+
+.pips-art {  background: radial-gradient(circle at 50% 25%, rgba(255,184,77,0.12), transparent 60%), #191410;
 }
 
 .die-face {

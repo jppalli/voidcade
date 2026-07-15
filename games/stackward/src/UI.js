@@ -127,26 +127,87 @@ export class UI {
     this.el.score.textContent = score;
   }
 
-  updateCoinsHud(total) {
+  updateCoinsHud(total, coinGain = 0, sourceBlock = null) {
     const prev = this._prevCoinsTotal || 0;
     this.el.coinsHudVal.textContent = total;
     if (total > prev) {
       const icon = this.el.coinsHud && this.el.coinsHud.querySelector('.coinIcon');
       if (icon) {
         icon.classList.remove('coin-pop');
-        // restart the animation even if it's already mid-flight
         void icon.offsetWidth;
         icon.classList.add('coin-pop');
       }
       gsap.fromTo(this.el.coinsHudVal, { scale: 1.3, color: '#ffd93d' }, { scale: 1, color: '#ffffff', duration: 0.3, ease: 'power1.out' });
+
+      // Fly coin tokens from the tower to the HUD counter.
+      // Only fire when the caller provides the source block so we know where
+      // to start the arc; skip on quiet 1-coin drops to avoid spam.
+      if (sourceBlock && coinGain >= 2) {
+        this._spawnCoinFly(sourceBlock, coinGain);
+      }
     }
     this._prevCoinsTotal = total;
+  }
+
+  /** Spawn `count` (capped at 5) small DOM coin tokens that arc from the
+   *  top of the newly placed block up to the coins HUD counter. */
+  _spawnCoinFly(block, count) {
+    const canvas = document.getElementById('canvasHost');
+    if (!canvas) return;
+    const canvasRect = canvas.getBoundingClientRect();
+    const hudRect = this.el.coinsHud.getBoundingClientRect();
+
+    const game = this.game;
+    if (!game) return;
+    const scale = game.world.scale.x;
+    const worldOffsetY = game.world.y;
+    const worldOffsetX = game.world.x;
+
+    const blockCenterX = canvasRect.left + (block.x + block.blockW / 2) * scale + worldOffsetX;
+    const blockTopY    = canvasRect.top  + (block.y - 40) * scale + worldOffsetY;
+
+    const destX = hudRect.left + hudRect.width / 2;
+    const destY = hudRect.top  + hudRect.height / 2;
+
+    const n = Math.min(count, 5);
+    for (let i = 0; i < n; i++) {
+      const el = document.createElement('span');
+      el.innerHTML = renderIcon('coin', '#ffd93d', 14);
+      el.style.cssText = `
+        position:fixed; pointer-events:none; z-index:9999;
+        left:${blockCenterX - 7}px; top:${blockTopY - 7}px;
+        transform:translate(0,0) scale(1); opacity:1;
+      `;
+      document.body.appendChild(el);
+
+      const delay = i * 55;
+      const scatter = (Math.random() - 0.5) * 30;
+      const coinIndex = i; // capture for closure
+
+      gsap.to(el, {
+        left: destX - 7 + scatter * 0.3,
+        top:  destY - 7,
+        scale: 0.6,
+        opacity: 0,
+        duration: 0.55,
+        delay: delay / 1000,
+        ease: 'power2.in',
+        onComplete: () => {
+          el.remove();
+          // Play a landing ping for each coin as it arrives, slightly higher
+          // pitched per coin so multiple arrivals sound like ascending chimes.
+          if (this.audio) this.audio.coinLand(coinIndex);
+        },
+      });
+    }
   }
 
   updateShields(count) {
     if (count > 0) {
       this.el.shieldsHud.classList.remove('hidden');
-      this.el.shieldsHud.textContent = `SHIELD x${count}`;
+      // Icon + count badge, same visual pattern as the active powerup rings
+      this.el.shieldsHud.innerHTML =
+        `${renderIcon('shield', '#7dffd4', 18)}<span class="shield-count">${count}</span>`;
     } else {
       this.el.shieldsHud.classList.add('hidden');
     }

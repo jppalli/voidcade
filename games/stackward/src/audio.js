@@ -163,9 +163,16 @@ export class AudioManager {
   }
 
   coin() {
-    // bright arcade coin ping
+    // bright arcade coin ping — used when earning a large batch (≥3)
     this._voice({ type: 'square', freq: 880, dur: 0.05, peak: 0.14 });
     setTimeout(() => this._voice({ type: 'square', freq: 1320, dur: 0.09, peak: 0.14 }), 55);
+  }
+
+  /** Single coin landing ping. index makes each successive coin in a batch
+   *  slightly higher pitched so multiple arrivals sound like ascending chimes. */
+  coinLand(index = 0) {
+    const freq = 1100 + index * 80;
+    this._voice({ type: 'square', freq, dur: 0.06, peak: 0.12, filterFreq: 5000 });
   }
 
   shield() {

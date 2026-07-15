@@ -3,17 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Stackward - Endless Tower Climb</title>
+<title>Voidburst — Bubble Shooter</title>
 <link rel="stylesheet" href="./src/style.css">
 </head>
 <body>
   <div id="app">
     <div id="canvasHost"></div>
 
-    <!-- Top-left controls, always visible: back to Voidcade + mute.
-         Same icon set/behavior as Panes' equivalent buttons, just tinted
-         with this game's own accent color, so the affordance is instantly
-         recognizable across games. -->
+    <!-- Back + mute — same pattern as Stackward / Panes -->
     <div id="topControls">
       <a id="backBtn" href="../../" aria-label="Back to Voidcade" title="Back to Voidcade">
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -34,19 +31,76 @@
       </button>
     </div>
 
-    <!-- HUD during gameplay -->
+    <!-- HUD -->
     <div id="hud">
       <div id="score">0</div>
-      <div id="combo" class="hidden">Combo x<span id="comboVal">0</span></div>
+      <div id="combo" class="hidden">x<span id="comboVal">0</span></div>
       <div id="coinsHud"><span class="coinIcon" data-coin-icon></span><span id="coinsHudVal">0</span></div>
-      <div id="shieldsHud" class="hidden"></div>
       <div id="activePowerupsHud" class="hidden"></div>
     </div>
 
-    <!-- Powerup choice overlay (every 10 floors) -->
+    <!-- Active powerup strip (right side) -->
+
+    <!-- Next bubble preview -->
+    <div id="nextBubble"><span id="nextBubblePreview"></span></div>
+
+    <!-- Main menu -->
+    <div id="menu" class="screen menu-screen">
+      <div class="logo-bubbles" aria-hidden="true">
+        <span class="lb lb-r"></span>
+        <span class="lb lb-g"></span>
+        <span class="lb lb-b"></span>
+      </div>
+      <h1>VOID<span class="accent">BURST</span></h1>
+
+      <button id="playBtn" class="primary-btn">PLAY</button>
+      <button id="shopBtn" class="perks-btn">UPGRADES</button>
+      <button id="settingsBtn" class="text-btn">SETTINGS</button>
+
+      <div class="menu-footer">
+        <span class="footer-stat"><span class="coinIcon" data-coin-icon></span><span id="coinsMenuVal">0</span></span>
+        <span class="footer-sep">·</span>
+        <span class="footer-stat">Best <b id="bestScoreVal">0</b></span>
+      </div>
+    </div>
+
+    <!-- Settings -->
+    <div id="settingsModal" class="modal hidden">
+      <div class="modal-panel">
+        <h2>Settings</h2>
+        <div class="setting-row">
+          <span>Music</span>
+          <button id="toggleMusic" class="toggle" role="switch" aria-checked="true"><span class="knob"></span></button>
+        </div>
+        <div class="setting-row">
+          <span>Sound Effects</span>
+          <button id="toggleSfx" class="toggle" role="switch" aria-checked="true"><span class="knob"></span></button>
+        </div>
+        <button id="closeSettingsBtn" class="secondary-btn">DONE</button>
+      </div>
+    </div>
+
+    <!-- Upgrade shop -->
+    <div id="shopModal" class="modal hidden">
+      <div class="modal-panel shop-panel">
+        <div class="shop-header">
+          <div class="shop-title">
+            <h2>Upgrades</h2>
+            <p class="shop-subtitle">Permanent boosts, active every run.</p>
+          </div>
+          <div class="shop-balance">
+            <span class="coinIcon" data-coin-icon></span><span id="shopCoinsVal">0</span>
+          </div>
+        </div>
+        <div id="upgradeList"></div>
+        <button id="closeShopBtn" class="secondary-btn">DONE</button>
+      </div>
+    </div>
+
+    <!-- Roguelite powerup choice (every 10 clears) -->
     <div id="powerupModal" class="modal hidden">
       <div class="modal-panel powerup-panel">
-        <span class="powerup-kicker">FLOOR <span id="powerupFloor">10</span></span>
+        <span class="powerup-kicker">WAVE <span id="powerupWave">1</span> CLEARED</span>
         <h2>Choose a Powerup</h2>
         <div id="powerupList"></div>
         <button id="rerollBtn" class="text-btn reroll-btn">
@@ -55,69 +109,10 @@
       </div>
     </div>
 
-    <!-- Main menu -->
-    <div id="menu" class="screen menu-screen">
-      <div class="logo-blocks">
-        <span></span><span></span><span></span>
-      </div>
-      <h1>STACK<span class="accent">WARD</span></h1>
-
-      <button id="playBtn" class="primary-btn">PLAY</button>
-
-      <button id="shopBtn" class="perks-btn">UPGRADES</button>
-
-      <button id="settingsBtn" class="text-btn">SETTINGS</button>
-
-      <div class="menu-footer">
-        <span class="footer-stat"><span class="coinIcon" data-coin-icon></span><span id="coinsMenuVal">0</span></span>
-        <span class="footer-sep">·</span>
-        <span class="footer-stat">Best floor <b id="bestScoreVal">0</b></span>
-      </div>
-    </div>
-
-    <!-- Settings overlay -->
-    <div id="settingsModal" class="modal hidden">
-      <div class="modal-panel">
-        <h2>Settings</h2>
-        <div class="setting-row">
-          <span>Music</span>
-          <button id="toggleMusic" class="toggle" role="switch" aria-checked="true">
-            <span class="knob"></span>
-          </button>
-        </div>
-        <div class="setting-row">
-          <span>Sound Effects</span>
-          <button id="toggleSfx" class="toggle" role="switch" aria-checked="true">
-            <span class="knob"></span>
-          </button>
-        </div>
-        <button id="closeSettingsBtn" class="secondary-btn">DONE</button>
-      </div>
-    </div>
-
-    <!-- Upgrade shop overlay -->
-    <div id="shopModal" class="modal hidden">
-      <div class="modal-panel shop-panel">
-        <div class="shop-header">
-          <div class="shop-title">
-            <h2>Upgrades</h2>
-            <p class="shop-subtitle">Permanent boosts. Buy with coins, keep forever.</p>
-          </div>
-          <div class="shop-balance">
-            <span class="coinIcon" data-coin-icon></span><span id="shopCoinsVal">0</span>
-          </div>
-        </div>
-
-        <div id="upgradeList"></div>
-
-        <button id="closeShopBtn" class="secondary-btn">DONE</button>
-      </div>
-    </div>
-
-    <!-- Game over screen -->
+    <!-- Game over -->
     <div id="gameover" class="screen hidden">
       <div id="finalScoreWrap">
-        <span class="label">Floor</span>
+        <span class="label">Score</span>
         <div id="finalScore">0</div>
       </div>
       <div id="rewardRow">
@@ -128,10 +123,10 @@
       <button id="menuBtn" class="secondary-btn">MENU</button>
     </div>
 
-    <!-- Tap to start hint -->
-    <div id="tapHint" class="hidden">TAP / CLICK / SPACE TO DROP</div>
+    <!-- Aim hint -->
+    <div id="tapHint" class="hidden">TAP ABOVE CANNON TO AIM AND SHOOT</div>
   </div>
 
-<script type="module" src="./src/main.js"></script>
+  <script type="module" src="./src/main.js"></script>
 </body>
 </html>

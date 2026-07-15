@@ -415,22 +415,21 @@ export class Game {
     }
 
     this.floors++;
-    // Perfect drops are worth extra points (and more within a streak), so
-    // precision shows up in the headline score, not just the coin economy.
-    let points = 1;
-    if (isPerfect) points += 1 + Math.floor(this.combo / 5);
-    this.score += points;
+    // Score is now simply floors — one per block placed, no perfect bonus.
+    // Perfect drops are rewarded with extra coins instead (see coinGain below).
+    this.score = this.floors;
 
     const comboBonus = Math.floor(this.combo / 3);
+    // Perfect drops earn extra coins (base bonus + combo scaling).
+    // Fortune upgrade multiplies everything. This is where precision pays off
+    // in the coin economy rather than inflating the floor counter.
     let coinGain = (1 + comboBonus + this.mods.coinFlatBonus) * this.mods.coinMult;
-    if (isPerfect) coinGain += this.mods.perfectCoinBonus;
+    if (isPerfect) coinGain += this.mods.perfectCoinBonus + 1 + Math.floor(this.combo / 5);
     coinGain = Math.round(coinGain);
     this.coinsThisRun += coinGain;
-    // Coin ping on the more rewarding payouts so it accents rather than spams.
-    if (this.audio && coinGain >= 3) this.audio.coin();
 
     this.ui.updateScore(this.score);
-    this.ui.updateCoinsHud(save.coins + this.coinsThisRun);
+    this.ui.updateCoinsHud(save.coins + this.coinsThisRun, coinGain, newBlock);
     this.ui.updateCombo(this.combo);
     this.updateScrollTarget();
     this._checkZone();
@@ -454,7 +453,7 @@ export class Game {
 
       this.combo = 0;
       this.floors++;
-      this.score += 1;
+      this.score = this.floors;
       this.ui.updateScore(this.score);
       this.ui.updateCombo(0);
       this.updateScrollTarget();

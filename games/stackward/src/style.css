@@ -109,11 +109,16 @@ html, body {
   top: 66px;
   right: 20px;
   display: flex;
+  align-items: center;
   gap: 4px;
-  font-size: 16px;
+}
+
+.shield-count {
+  font-size: 13px;
+  font-weight: 800;
   color: #7dffd4;
-  font-weight: 700;
   text-shadow: 0 0 8px rgba(125,255,212,0.6);
+  line-height: 1;
 }
 
 /* ---------------- Active powerups HUD strip ---------------- */

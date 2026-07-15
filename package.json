@@ -13,6 +13,7 @@
     "build": "npm run build --workspaces --if-present && vite build && node scripts/copy-static-games.js",
     "preview": "vite preview",
     "dev:stackward": "npm run dev --workspace=stackward",
+    "dev:voidburst": "npm run dev --workspace=voidburst",
     "dev:pipsandpaths": "npm run dev --workspace=pipsandpaths",
     "dev:panes": "npx --yes http-server games/panes -p 5175 -c-1"
   },
