@@ -7,11 +7,15 @@ export const UPGRADES = [
     id: 'bigger',
     name: 'Big Bang',
     icon: 'target',
-    blurb: 'Bubbles pop adjacent same-color bubbles in a wider radius.',
+    // Nerfed from a full extra shell/level (was extremely strong on any
+    // 3+ cluster) to a single half-strength shell that only kicks in on
+    // clusters of 5+, so it rewards big matches without trivializing every
+    // small one.
+    blurb: 'Clusters of 5+ pop one extra ring of same-color neighbors.',
     levels: [
-      { cost: 80,  value: 1 },
-      { cost: 200, value: 2 },
-      { cost: 450, value: 3 },
+      { cost: 260,  value: 1 },
+      { cost: 650,  value: 1 },
+      { cost: 1400, value: 2 },
     ],
   },
   {
@@ -20,9 +24,9 @@ export const UPGRADES = [
     icon: 'gem',
     blurb: 'Earn more coins per pop, every run.',
     levels: [
-      { cost: 100, value: 1.2 },
-      { cost: 260, value: 1.45 },
-      { cost: 550, value: 1.75 },
+      { cost: 300,  value: 1.15 },
+      { cost: 750,  value: 1.3 },
+      { cost: 1600, value: 1.5 },
     ],
   },
   {
@@ -31,9 +35,9 @@ export const UPGRADES = [
     icon: 'refresh',
     blurb: 'Fire cooldown after each shot is shorter.',
     levels: [
-      { cost: 90,  value: 0.08 },
-      { cost: 220, value: 0.14 },
-      { cost: 480, value: 0.22 },
+      { cost: 260, value: 0.05 },
+      { cost: 620, value: 0.09 },
+      { cost: 1300, value: 0.14 },
     ],
   },
   {
@@ -42,9 +46,9 @@ export const UPGRADES = [
     icon: 'cluster',
     blurb: 'Start every run with an extra ball queued up.',
     levels: [
-      { cost: 120, value: 1 },
-      { cost: 300, value: 2 },
-      { cost: 700, value: 3 },
+      { cost: 320,  value: 1 },
+      { cost: 800,  value: 2 },
+      { cost: 1700, value: 3 },
     ],
   },
   {
@@ -53,9 +57,9 @@ export const UPGRADES = [
     icon: 'target',
     blurb: 'Aim line shows more bounce reflections so you can plan shots.',
     levels: [
-      { cost: 80,  value: 1 },
-      { cost: 200, value: 2 },
-      { cost: 420, value: 3 },
+      { cost: 220, value: 1 },
+      { cost: 550, value: 2 },
+      { cost: 1200, value: 3 },
     ],
   },
 ];

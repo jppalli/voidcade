@@ -77,8 +77,10 @@ export class Grid {
       if (!this.cells[row]) this.cells[row] = new Array(this.cols).fill(null);
       for (let c = 0; c < this.cols; c++) {
         if (this.cells[row][c]) continue;
-        // ~15% chance of stone after first 3 rows
-        const isStone = row > 2 && Math.random() < 0.10;
+        // Stone bubbles (can't be popped, only cleared as floating debris)
+        // start appearing a bit earlier and slightly more often, adding
+        // real friction instead of every board being pure same-color mush.
+        const isStone = row > 1 && Math.random() < 0.13;
         const cidx = isStone ? -1 : Math.floor(Math.random() * this.colorCount);
         const bubble = new Bubble(cidx);
         this.cells[row][c] = bubble;

@@ -22,8 +22,10 @@ const MIN_ANGLE_DEG       = 15; // min angle from horizontal
 const DANGER_ROW_FRAC     = 0.8; // fraction of screen height = game over
 // Roguelite charge: popping bubbles fills a meter. When full, you pick a
 // powerup — decoupled from wave clears so it comes up far more often and
-// scales with how aggressively you're clearing.
-const CHARGE_MAX          = 16;  // bubbles popped to fill the meter
+// scales with how aggressively you're clearing. Only the directly-matched
+// pop counts (not the floating-bubble chain bonus), so a single lucky big
+// cascade can't fill it in one shot.
+const CHARGE_MAX          = 28;  // matched bubbles popped to fill the meter
 
 export class Game {
   constructor(hostEl, ui, audio) {
@@ -173,7 +175,10 @@ export class Game {
     this._popTickers = [];
     this._shotQueue = [];
     this.score = 0; this.wave = 0; this.combo = 0; this.coinsThisRun = 0;
-    this.colorCount = 3;
+    // 5 colors from the start, not 3 — with only 3 colors and 6 hex
+    // neighbors per bubble, huge same-color clusters form almost by
+    // accident, making every board trivially easy to clear.
+    this.colorCount = 5;
     this.activePowerups = []; this.powerupCooldowns = {}; this._rerollCount = 0;
     this.mods = defaultMods();
     this._fireCooldown = 0;
@@ -185,13 +190,16 @@ export class Game {
     const extraShots = Math.floor(upgradeValue(save, 'extra') || 0);
     this._applyUpgradesToMods();
 
-    // Compute grid layout + playfield walls. The grid is centered; the walls
-    // hug it half a cell out on each side so a bubble column sits flush
-    // against each wall and shots ricochet off them cleanly.
+    // Compute grid layout + playfield walls. Odd rows are offset right by
+    // half a cell (hex stagger), so the grid's actual rightmost extent is
+    // one full HEX_W/2 further right than the even-row columns alone would
+    // suggest. The walls must clear that offset plus the bubble radius on
+    // both sides, or the odd-row edge bubbles render outside the wall line.
     const marginX = Math.floor((this.W - GRID_COLS * HEX_W) / 2);
     const marginY = HEX_H;
-    this.wallLeft  = marginX - HEX_W / 2;
-    this.wallRight = marginX + (GRID_COLS - 1) * HEX_W + HEX_W / 2;
+    const wallGap = 2; // small visual clearance beyond the bubble edge
+    this.wallLeft  = marginX - BUBBLE_R - wallGap;
+    this.wallRight = marginX + (GRID_COLS - 1) * HEX_W + HEX_W / 2 + BUBBLE_R + wallGap;
     this.grid = new Grid(this.gridLayer, GRID_COLS, INITIAL_ROWS, marginX, marginY, this.colorCount);
 
     this._charge = 0;
@@ -408,8 +416,9 @@ export class Game {
       }
     }
 
-    // popRadiusBonus: extra upgrade-based pop radius
-    if (this.mods.popRadiusBonus > 0 && connected.length >= 3) {
+    // popRadiusBonus (Big Bang upgrade): only kicks in on clusters of 5+,
+    // so it rewards big matches instead of trivializing every 3-pop.
+    if (this.mods.popRadiusBonus > 0 && connected.length >= 5) {
       const extra = new Set(connected.map(c => `${c.row},${c.col}`));
       for (let shell = 0; shell < this.mods.popRadiusBonus; shell++) {
         const frontier = [...connected];
@@ -450,8 +459,11 @@ export class Game {
     }
 
     const totalPopped = removed.length + floating.length;
-    const comboBonus = Math.floor(this.combo / 3);
-    let coinGain = Math.round((totalPopped + comboBonus) * this.mods.coinMult);
+    const comboBonus = Math.floor(this.combo / 4);
+    // Coins scale off the direct match only, at half rate for the bonus
+    // floating-bubble chain — a lucky 20-bubble cascade shouldn't fund the
+    // whole upgrade shop in one pop.
+    let coinGain = Math.round((removed.length + floating.length * 0.5 + comboBonus) * this.mods.coinMult);
     this.coinsThisRun += coinGain;
     this.score += totalPopped * 10 + comboBonus * 5;
 
@@ -462,8 +474,10 @@ export class Game {
 
     this.triggerShake(Math.min(8, totalPopped * 0.6));
 
-    // Fill the roguelite charge meter with every popped bubble.
-    this._charge += totalPopped;
+    // Fill the roguelite charge meter with only the directly matched pop —
+    // floating-bubble cascades don't count, so a single big lucky chain
+    // can't instantly max the meter.
+    this._charge += removed.length;
     const chargeReady = this._charge >= CHARGE_MAX;
 
     // Wave clear still refills the board and ramps difficulty, but no longer
@@ -512,8 +526,8 @@ export class Game {
     if (this.audio) this.audio.waveClear();
     this.ui.showToast(`WAVE ${this.wave}!`, 'zone');
 
-    // Increase color count every 3 waves, capped at 6
-    if (this.wave % 3 === 0) this.colorCount = Math.min(6, this.colorCount + 1);
+    // Ramp color count as waves climb, capped at all 6 available colors.
+    if (this.wave % 4 === 0) this.colorCount = Math.min(6, this.colorCount + 1);
 
     // Descend grid — new row added at top, existing rows push down
     if (!this.mods.freezeWaves) {
