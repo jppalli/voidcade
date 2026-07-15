@@ -22,11 +22,14 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        # Resolve Vite's platform-specific optional native package on Linux.
+        # npm ci would only install the Windows optional package captured by
+        # the lockfile generated on the development machine.
+        run: npm install --include=optional --no-audit --no-fund
 
       - name: Build site + games
         run: npm run build
