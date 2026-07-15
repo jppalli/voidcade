@@ -5,6 +5,9 @@ import { defineConfig } from 'vite';
 // "build" script), landing in dist/games/<name>/.
 export default defineConfig({
   root: '.',
+  // Relative asset paths so the site works from any subpath, e.g. GitHub
+  // Pages project sites served at https://<user>.github.io/<repo>/.
+  base: './',
   server: {
     port: 5000,
     open: false,
