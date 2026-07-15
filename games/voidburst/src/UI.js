@@ -41,6 +41,8 @@ export class UI {
       retryBtn: document.getElementById('retryBtn'),
       menuBtn: document.getElementById('menuBtn'),
       tapHint: document.getElementById('tapHint'),
+      chargeBar: document.getElementById('chargeBar'),
+      chargeBarFill: document.getElementById('chargeBarFill'),
       muteBtn: document.getElementById('muteBtn'),
       settingsBtn: document.getElementById('settingsBtn'),
       settingsModal: document.getElementById('settingsModal'),
@@ -118,6 +120,12 @@ export class UI {
     } else {
       this.el.combo.classList.add('hidden');
     }
+  }
+
+  updateCharge(fraction) {
+    if (!this.el.chargeBarFill) return;
+    this.el.chargeBarFill.style.width = `${Math.round(Math.max(0, Math.min(1, fraction)) * 100)}%`;
+    if (this.el.chargeBar) this.el.chargeBar.classList.toggle('full', fraction >= 1);
   }
 
   updateNextPreview(colorIdx) {

@@ -16,7 +16,7 @@ export class AudioManager {
     this.musicEnabled = prefs.musicEnabled;
     this.sfxEnabled = prefs.sfxEnabled;
     this._musicOn = false; this._nextNoteTime = 0;
-    this._step = 0; this._timer = null; this._bpm = 118;
+    this._step = 0; this._timer = null; this._bpm = 104;
   }
 
   unlock() {
@@ -95,6 +95,11 @@ export class AudioManager {
     this._voice({ type: 'triangle', freq: 280, glideTo: 200, dur: 0.1, peak: 0.18, filterFreq: 1800 });
   }
 
+  /** Ball ricochets off a wall — short bright tick */
+  wallHit() {
+    this._voice({ type: 'triangle', freq: 900, glideTo: 700, dur: 0.05, peak: 0.12, filterFreq: 4000 });
+  }
+
   /** Small pop — 1 to 2 bubbles cleared */
   popSmall() {
     this._voice({ type: 'sine', freq: 660, glideTo: 900, dur: 0.1, peak: 0.22 });
@@ -163,19 +168,33 @@ export class AudioManager {
   }
 
   _scheduleStep(step, time) {
-    // Minor-key synthwave: Am-F-C-G (same vibe as Stackward but slightly
-    // slower tempo gives the bubble shooter a more thoughtful feel)
-    const roots = [220.0, 174.61, 261.63, 196.0];
+    // Distinct from Stackward's driving minor synthwave: a brighter, dreamier
+    // major progression (C - G - Am - F, the classic I-V-vi-IV), a soft
+    // TRIANGLE arpeggio instead of a hard square lead, a rounded SINE
+    // sub-bass instead of a buzzy sawtooth, and a gentle off-beat pluck.
+    // The overall feel is floaty and relaxed to match popping bubbles.
+    const roots = [261.63, 196.0, 220.0, 174.61]; // C4, G3, A3, F3
     const root = roots[Math.floor(step / 8) % 4];
-    if (step % 8 === 0 || step % 8 === 4) {
-      this._musicVoice({ type: 'sawtooth', freq: root / 2, dur: 0.4, peak: 0.22, filterFreq: 600, time });
+
+    // Rounded sine sub-bass on the downbeat + the "and" of beat 2.
+    if (step % 8 === 0 || step % 8 === 6) {
+      this._musicVoice({ type: 'sine', freq: root / 2, dur: 0.5, peak: 0.26, filterFreq: 500, time });
     }
-    const arp = [1, 1.2, 1.5, 2, 1.5, 1.2];
+
+    // Soft triangle arpeggio: root, third, fifth, octave — a wide, airy run.
+    const arp = [1, 1.25, 1.5, 2, 2.5, 2];
     if (step % 2 === 0) {
-      this._musicVoice({ type: 'square', freq: root * arp[(step / 2) % arp.length], dur: 0.14, peak: 0.10, filterFreq: 3000, time });
+      this._musicVoice({ type: 'triangle', freq: root * arp[(step / 2) % arp.length], dur: 0.2, peak: 0.09, filterFreq: 3600, time });
     }
+
+    // Off-beat pluck an octave up for a shimmering, bubbly texture.
+    if (step % 4 === 3) {
+      this._musicVoice({ type: 'sine', freq: root * 3, dur: 0.12, peak: 0.05, filterFreq: 4200, time });
+    }
+
+    // Slow pad swell each chord for warmth underneath.
     if (step % 8 === 0) {
-      this._musicVoice({ type: 'triangle', freq: root * 2, dur: 0.9, peak: 0.04, filterFreq: 1800, time });
+      this._musicVoice({ type: 'triangle', freq: root, dur: 1.6, peak: 0.045, filterFreq: 1400, time });
     }
   }
 

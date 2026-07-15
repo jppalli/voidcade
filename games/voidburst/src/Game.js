@@ -20,6 +20,10 @@ const BALL_SPEED          = 620; // px/sec
 const CANNON_OFFSET       = 90; // px above bottom edge
 const MIN_ANGLE_DEG       = 15; // min angle from horizontal
 const DANGER_ROW_FRAC     = 0.8; // fraction of screen height = game over
+// Roguelite charge: popping bubbles fills a meter. When full, you pick a
+// powerup — decoupled from wave clears so it comes up far more often and
+// scales with how aggressively you're clearing.
+const CHARGE_MAX          = 16;  // bubbles popped to fill the meter
 
 export class Game {
   constructor(hostEl, ui, audio) {
@@ -58,6 +62,11 @@ export class Game {
     // grid
     this.grid = null;
     this.gridLayer = null;
+    // playfield walls (computed per run in startRun)
+    this.wallLeft = 0;
+    this.wallRight = 0;
+    // roguelite charge meter
+    this._charge = 0;
   }
 
   get W() { return this.app.screen.width; }
@@ -65,6 +74,9 @@ export class Game {
   get cannonX() { return this.W / 2; }
   get cannonY() { return this.H - CANNON_OFFSET; }
   get dangerY()  { return this.H * DANGER_ROW_FRAC; }
+  // Ball-center bounce limits: keep the whole bubble inside the walls.
+  get ballMinX() { return this.wallLeft + BUBBLE_R; }
+  get ballMaxX() { return this.wallRight - BUBBLE_R; }
 
   async init() {
     const app = new Application();
@@ -77,6 +89,10 @@ export class Game {
 
     this.world = new Container();
     app.stage.addChild(this.world);
+
+    // Walls layer (drawn behind bubbles)
+    this.wallsGfx = new Graphics();
+    this.world.addChild(this.wallsGfx);
 
     // Grid layer (bubbles)
     this.gridLayer = new Container();
@@ -123,9 +139,8 @@ export class Game {
     if (this.state !== 'aiming') return;
     this._aimAngle = this._pointerAngle(e);
     this._drawCannon();
-    const bounces = 1 + (upgradeValue(save, 'steady') || 0) + (this.mods.bounceCount - 1);
-    const margin = HEX_W / 2;
-    this.aimLine.draw(this.cannonX, this.cannonY, this._aimAngle, bounces, margin, this.W - margin, HEX_H / 2, this.dangerY);
+    const bounces = 2 + (upgradeValue(save, 'steady') || 0) + (this.mods.bounceCount - 1);
+    this.aimLine.draw(this.cannonX, this.cannonY, this._aimAngle, bounces, this.ballMinX, this.ballMaxX, HEX_H / 2, this.dangerY);
   }
 
   _onPointerDown(e) {
@@ -170,10 +185,18 @@ export class Game {
     const extraShots = Math.floor(upgradeValue(save, 'extra') || 0);
     this._applyUpgradesToMods();
 
-    // Compute grid layout
+    // Compute grid layout + playfield walls. The grid is centered; the walls
+    // hug it half a cell out on each side so a bubble column sits flush
+    // against each wall and shots ricochet off them cleanly.
     const marginX = Math.floor((this.W - GRID_COLS * HEX_W) / 2);
     const marginY = HEX_H;
+    this.wallLeft  = marginX - HEX_W / 2;
+    this.wallRight = marginX + (GRID_COLS - 1) * HEX_W + HEX_W / 2;
     this.grid = new Grid(this.gridLayer, GRID_COLS, INITIAL_ROWS, marginX, marginY, this.colorCount);
+
+    this._charge = 0;
+    this.ui.updateCharge(0);
+    this._drawWalls();
 
     this._nextColorIdx = Math.floor(Math.random() * this.colorCount);
     this._updateNextPreview();
@@ -253,7 +276,7 @@ export class Game {
 
   _moveBalls(dt) {
     const dist = BALL_SPEED * dt;
-    const margin = HEX_W / 2;
+    const minX = this.ballMinX, maxX = this.ballMaxX;
 
     for (let i = this._balls.length - 1; i >= 0; i--) {
       const ball = this._balls[i];
@@ -262,15 +285,16 @@ export class Game {
       bubble.x += ball.dx * dist;
       bubble.y += ball.dy * dist;
 
-      // Wall bounce
-      if (bubble.x <= margin && ball.dx < 0) {
-        bubble.x = margin; ball.dx = -ball.dx;
-        if (ball.bounces > 0) ball.bounces--;
-        else { bubble.x = margin; }
+      // Wall bounce — ricochet off the playfield walls, flashing the wall.
+      if (bubble.x <= minX && ball.dx < 0) {
+        bubble.x = minX; ball.dx = -ball.dx;
+        this._flashWall('left');
+        if (this.audio) this.audio.wallHit();
       }
-      if (bubble.x >= this.W - margin && ball.dx > 0) {
-        bubble.x = this.W - margin; ball.dx = -ball.dx;
-        if (ball.bounces > 0) ball.bounces--;
+      if (bubble.x >= maxX && ball.dx > 0) {
+        bubble.x = maxX; ball.dx = -ball.dx;
+        this._flashWall('right');
+        if (this.audio) this.audio.wallHit();
       }
 
       // Hit top wall
@@ -438,9 +462,31 @@ export class Game {
 
     this.triggerShake(Math.min(8, totalPopped * 0.6));
 
-    // Check wave clear
+    // Fill the roguelite charge meter with every popped bubble.
+    this._charge += totalPopped;
+    const chargeReady = this._charge >= CHARGE_MAX;
+
+    // Wave clear still refills the board and ramps difficulty, but no longer
+    // gates powerups — those come from the charge meter now.
     if (this.grid.isEmpty()) this._waveClear();
-    else this._checkDanger();
+
+    if (chargeReady && this.state !== 'gameover') {
+      this._charge -= CHARGE_MAX;
+      this.ui.updateCharge(Math.min(1, this._charge / CHARGE_MAX));
+      this._offerPowerup();
+    } else {
+      this.ui.updateCharge(Math.min(1, this._charge / CHARGE_MAX));
+      if (this.state !== 'gameover') this._checkDanger();
+    }
+  }
+
+  /** Pause and present a 3-powerup roguelite choice (charge meter full). */
+  _offerPowerup() {
+    this.state = 'powerup';
+    this._rerollCount = 0;
+    if (this.audio) this.audio.powerupOpen();
+    const choices = rollPowerups(3, this._powerupExcludeIds());
+    this.ui.showPowerupChoice(choices, (chosen) => this.applyPowerup(chosen));
   }
 
   _animatePop(bubbles, isFalling = false) {
@@ -475,16 +521,10 @@ export class Game {
       this._resetGridPositions();
     }
 
-    // Check powerup milestone
-    if (this.wave % WAVE_INTERVAL === 0) {
-      this.state = 'powerup';
-      this._rerollCount = 0;
-      if (this.audio) this.audio.powerupOpen();
-      const choices = rollPowerups(3, this._powerupExcludeIds());
-      this.ui.showPowerupChoice(choices, (chosen) => this.applyPowerup(chosen));
-    } else {
-      this.state = 'aiming';
-    }
+    // Powerups are driven by the charge meter now, not wave count — so a
+    // wave clear just returns to aiming (the charge check in _tryPop may
+    // still open a powerup this same landing if the meter filled).
+    if (this.state !== 'powerup') this.state = 'aiming';
   }
 
   _resetGridPositions() {
@@ -591,6 +631,31 @@ export class Game {
   }
 
   // ── Visuals ─────────────────────────────────────────────────────────
+
+  _drawWalls() {
+    const g = this.wallsGfx;
+    g.clear();
+    const top = HEX_H / 2;
+    const bottom = this.dangerY;
+    // Neon vertical walls with a soft inner glow band.
+    for (const x of [this.wallLeft, this.wallRight]) {
+      g.moveTo(x, top).lineTo(x, bottom).stroke({ color: 0x7dffd4, width: 3, alpha: 0.55 });
+      g.moveTo(x, top).lineTo(x, bottom).stroke({ color: 0x7dffd4, width: 8, alpha: 0.10 });
+    }
+    // Top wall / ceiling the bubbles hang from.
+    g.moveTo(this.wallLeft, top).lineTo(this.wallRight, top).stroke({ color: 0x7dffd4, width: 3, alpha: 0.55 });
+    g.moveTo(this.wallLeft, top).lineTo(this.wallRight, top).stroke({ color: 0x7dffd4, width: 8, alpha: 0.10 });
+  }
+
+  /** Brief bright flash on the wall the ball just bounced off. */
+  _flashWall(side) {
+    const x = side === 'left' ? this.wallLeft : this.wallRight;
+    const flash = new Graphics();
+    flash.moveTo(x, HEX_H / 2).lineTo(x, this.dangerY).stroke({ color: 0xffffff, width: 4, alpha: 0.9 });
+    this.world.addChild(flash);
+    gsap.to(flash, { alpha: 0, duration: 0.3, ease: 'power2.out',
+      onComplete: () => { if (flash.parent) flash.parent.removeChild(flash); flash.destroy(); } });
+  }
 
   _drawCannon() {
     const g = this.cannonGfx;
