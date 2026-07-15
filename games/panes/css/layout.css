@@ -1,0 +1,248 @@
+/* ─── Base reset ────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: contain;
+  overflow: hidden;
+  transition: background-color var(--dur-slow) var(--ease-smooth),
+              color             var(--dur-slow) var(--ease-smooth);
+}
+
+/* ─── App shell ─────────────────────────────────────────────────────── */
+.app {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+}
+
+/* ─── Topbar ────────────────────────────────────────────────────────── */
+.topbar {
+  width: 100%;
+  max-width: 640px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px 4px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.brand-mark {
+  width: 24px;
+  height: 24px;
+  color: var(--ink);
+  flex-shrink: 0;
+  transition: color var(--dur-base) var(--ease-smooth);
+}
+
+.brand-mark rect[fill="currentColor"] {
+  color: var(--accent);
+  filter: drop-shadow(0 0 5px var(--accent-glow));
+}
+
+.brand h1 {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
+
+.topbar-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* ─── Game wrapper ──────────────────────────────────────────────────── */
+.game-wrap {
+  width: 100%;
+  max-width: 640px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2px 20px 12px;
+  flex: 1 1 auto;
+  min-height: 0; /* allow children to shrink instead of overflowing */
+  overflow: hidden;
+}
+
+/* ─── Daily panel ────────────────────────────────────────────────────── */
+.daily-panel {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 12px;
+}
+
+/* Button that shows the current day and opens the calendar picker */
+.day-label-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1.5px solid var(--border-soft);
+  background: var(--surface);
+  color: var(--ink);
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease-out-back),
+              border-color var(--dur-base) var(--ease-smooth),
+              box-shadow var(--dur-base) var(--ease-smooth);
+}
+
+.day-label-btn svg { width: 15px; height: 15px; color: var(--ink-soft); flex-shrink: 0; }
+.day-label-btn:hover  { transform: translateY(-2px); box-shadow: var(--shadow-xs); }
+.day-label-btn:active { transform: scale(0.96); }
+
+/* Generic small round icon-button used for calendar month nav */
+.day-nav-btn {
+  width: 26px;
+  height: 26px;
+  border: none;
+  background: transparent;
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-smooth), color var(--dur-fast) var(--ease-smooth);
+}
+
+.day-nav-btn svg { width: 16px; height: 16px; }
+
+.day-nav-btn:hover:not(:disabled) {
+  background: var(--chip-bg);
+  color: var(--ink);
+}
+
+.day-nav-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.level-pills {
+  display: flex;
+  gap: 8px;
+}
+
+.level-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1.5px solid var(--border-soft);
+  background: var(--surface);
+  color: var(--ink-soft);
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease-out-back),
+              background var(--dur-base) var(--ease-smooth),
+              border-color var(--dur-base) var(--ease-smooth),
+              color var(--dur-base) var(--ease-smooth);
+}
+
+.level-pill:hover { transform: translateY(-2px); }
+.level-pill:active { transform: scale(0.96); }
+
+.level-pill-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--chip-bg);
+  color: var(--ink-soft);
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+  transition: background var(--dur-base) var(--ease-smooth), color var(--dur-base) var(--ease-smooth);
+}
+
+.level-pill-check {
+  width: 13px;
+  height: 13px;
+  display: none;
+  flex-shrink: 0;
+  color: var(--success);
+}
+
+.level-pill.active {
+  border-color: var(--accent);
+  color: var(--ink);
+  background: var(--accent-soft);
+}
+
+.level-pill.active .level-pill-num {
+  background: var(--accent);
+  color: #fff;
+}
+
+.level-pill.completed .level-pill-num { display: none; }
+.level-pill.completed .level-pill-check { display: block; }
+.level-pill.completed:not(.active) { color: var(--ink); border-color: var(--border-soft); }
+
+/* ─── Board frame ───────────────────────────────────────────────────────
+   This is a sized container: it gets exactly the leftover vertical space
+   (flex: 1 1 auto within a column flex parent) and the board inside it
+   sizes itself with container query units (cqw/cqh), which resolve against
+   THIS element's real box — not a guessed viewport percentage. That's what
+   makes the board fit precisely regardless of how much chrome surrounds it. */
+.board-frame {
+  container-type: size;
+  position: relative;
+  width: 100%;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
+
+/* ─── Controls ──────────────────────────────────────────────────────── */
+.controls {
+  width: 100%;
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.control-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+/* ─── Responsive ────────────────────────────────────────────────────── */
+@media (max-width: 420px) {
+  .brand h1 { font-size: 18px; }
+}
+
+@media (max-height: 560px) {
+  .difficulty-row { margin-bottom: 8px; }
+  .game-wrap      { padding-top: 4px; }
+}

@@ -1,0 +1,18 @@
+{
+  "name": "neondodge",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Neon Dodge - tiny 3-lane reflex dodger. Built with plain Canvas2D + vanilla JS (no game framework) to keep the monorepo's per-game tech choices independent.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@arcade/ads": "*"
+  },
+  "devDependencies": {
+    "vite": "^8.1.4"
+  }
+}

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voidcade — Free browser games</title>
+<meta name="description" content="A small, growing collection of free browser games. No installs, no accounts, just play.">
+<link rel="stylesheet" href="/src/site.css">
+</head>
+<body>
+  <div id="site">
+    <header class="site-header">
+      <div class="brand">
+        <span class="brand-mark"></span>
+        <span class="brand-name">VOID<span class="accent">CADE</span></span>
+      </div>
+      <nav class="site-nav">
+        <a href="#games">Games</a>
+        <a href="#about">About</a>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <h1>Free games.<br><span class="accent">Zero</span> friction.</h1>
+      <p class="hero-sub">No installs, no accounts, no nonsense. Pick a game and play — right in your browser.</p>
+      <a href="#games" class="hero-cta">Browse games ↓</a>
+    </section>
+
+    <div id="adSlotTop" class="ad-slot ad-slot-leaderboard"></div>
+
+    <main id="games" class="game-section">
+      <div class="section-head">
+        <h2>Games</h2>
+        <span class="section-count" id="gameCount"></span>
+      </div>
+
+      <div class="game-grid" id="gameGrid">
+        <a class="game-card" href="/games/stackward/" data-game="stackward">
+          <div class="game-card-art stackward-art">
+            <span></span><span></span><span></span>
+          </div>
+          <div class="game-card-body">
+            <h3>Stackward</h3>
+            <p>Neon-arcade endless tower stacker. Perfect your drops, chase the climb.</p>
+            <span class="game-tag">Arcade · Endless</span>
+          </div>
+        </a>
+
+        <a class="game-card" href="/games/neondodge/" data-game="neondodge">
+          <div class="game-card-art neondodge-art">
+            <span class="dodge-orb"></span>
+            <span class="dodge-shard s1"></span>
+            <span class="dodge-shard s2"></span>
+            <span class="dodge-shard s3"></span>
+          </div>
+          <div class="game-card-body">
+            <h3>Neon Dodge</h3>
+            <p>Three lanes, falling shards, quick reflexes. How long can you survive?</p>
+            <span class="game-tag">Reflex · Endless</span>
+          </div>
+        </a>
+
+        <a class="game-card" href="/games/panes/" data-game="panes">
+          <div class="game-card-art panes-art">
+            <div class="panes-grid">
+              <span class="panes-cell c1">4</span>
+              <span class="panes-cell c2">2</span>
+              <span class="panes-cell c3">6</span>
+            </div>
+          </div>
+          <div class="game-card-body">
+            <h3>Panes</h3>
+            <p>Daily rectangle-division puzzle. Split the grid so every region matches its number.</p>
+            <span class="game-tag">Puzzle · Daily</span>
+          </div>
+        </a>
+
+        <!-- Native in-feed ad slot, styled to sit naturally in the grid -->
+        <div class="game-card ad-card" id="adSlotInFeed"></div>
+
+        <!-- Add more games here as they're built, following the same pattern:
+             <a class="game-card" href="/games/<name>/" data-game="<name>"> ... </a> -->
+      </div>
+    </main>
+
+    <section id="about" class="about-section">
+      <h2>About Voidcade</h2>
+      <p>Voidcade is a small collection of original browser games, built to be fast, free, and playable anywhere with no installs or sign-ups. New games get added over time — check back for more.</p>
+    </section>
+
+    <div id="adSlotBottom" class="ad-slot ad-slot-leaderboard"></div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> Voidcade. Made with care.</p>
+    </footer>
+  </div>
+
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>

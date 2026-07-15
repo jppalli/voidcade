@@ -1,0 +1,25 @@
+{
+  "name": "arcade-site",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Multi-game arcade site. Each game lives in games/<name> as its own independent app; this root ties them together with a landing page and shared build/dev scripts.",
+  "workspaces": [
+    "packages/*",
+    "games/*"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "npm run build --workspaces --if-present && vite build && node scripts/copy-static-games.js",
+    "preview": "vite preview",
+    "dev:stackward": "npm run dev --workspace=stackward",
+    "dev:neondodge": "npm run dev --workspace=neondodge",
+    "dev:panes": "npx --yes http-server games/panes -p 5175 -c-1"
+  },
+  "dependencies": {
+    "@arcade/ads": "*"
+  },
+  "devDependencies": {
+    "vite": "^8.1.4"
+  }
+}

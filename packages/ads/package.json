@@ -1,0 +1,8 @@
+{
+  "name": "@arcade/ads",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared ad-monetization layer for the arcade site: banner, interstitial, and rewarded-video ad slots behind a single provider interface. Ships with a mock provider for local dev/testing; swap in a real provider (AdSense/AdMob/etc.) without changing game code.",
+  "main": "src/index.js"
+}

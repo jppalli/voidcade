@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+  <meta name="description" content="Panes — a daily rectangle-division puzzle. Split the grid into panes, one number at a time.">
+  <title>Panes — a daily puzzle</title>
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+  <div class="app">
+
+    <header class="topbar">
+      <div class="brand">
+        <svg class="brand-mark" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <!-- Four equal panes, one solved (filled) -->
+          <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" stroke-width="2"/>
+          <path d="M12 3.5V20.5" stroke="currentColor" stroke-width="2"/>
+          <path d="M3.5 12H20.5" stroke="currentColor" stroke-width="2"/>
+          <path d="M13 4H19C19.5523 4 20 4.44772 20 5V11H13V4Z" fill="currentColor"/>
+        </svg>
+        <h1>Panes</h1>
+      </div>
+      <div class="topbar-actions">
+        <button id="btn-stats" class="icon-btn" aria-label="Streak &amp; stats" title="Streak &amp; stats">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M5 20V13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M12 20V8"  stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M19 20V4"  stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <button id="btn-help" class="icon-btn" aria-label="How to play" title="How to play">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/>
+            <path d="M9.5 9.3c0-1.5 1.2-2.6 2.6-2.6 1.5 0 2.6 1 2.6 2.4 0 1.1-.6 1.7-1.5 2.3-.8.5-1.2 1-1.2 1.9"
+                  stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            <circle cx="12" cy="16.7" r="0.9" fill="currentColor"/>
+          </svg>
+        </button>
+        <button id="btn-theme" class="icon-btn" aria-label="Toggle dark mode" title="Toggle dark mode">
+          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.6"/>
+            <g stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+              <path d="M12 3v2.2"/><path d="M12 18.8V21"/>
+              <path d="M4.2 4.2l1.6 1.6"/><path d="M18.2 18.2l1.6 1.6"/>
+              <path d="M3 12h2.2"/><path d="M18.8 12H21"/>
+              <path d="M4.2 19.8l1.6-1.6"/><path d="M18.2 5.8l1.6-1.6"/>
+            </g>
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M20 14.3A8.4 8.4 0 1 1 9.7 4a6.6 6.6 0 0 0 10.3 10.3Z"
+                  stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <main class="game-wrap">
+
+      <!-- Daily panel: date label (opens calendar) + level pills -->
+      <div id="daily-panel" class="daily-panel">
+        <button id="btn-day-label" class="day-label-btn" aria-haspopup="dialog">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <rect x="3.5" y="5" width="17" height="15" rx="2" stroke="currentColor" stroke-width="1.7"/>
+            <path d="M3.5 9.5H20.5" stroke="currentColor" stroke-width="1.7"/>
+            <path d="M8 3V6.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+            <path d="M16 3V6.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+          </svg>
+          <span id="day-label">Today</span>
+        </button>
+        <div id="level-pills" class="level-pills" role="group" aria-label="Daily level">
+          <button class="level-pill" data-level="easy">
+            <span class="level-pill-num">1</span><span class="level-pill-name">Easy</span>
+            <svg class="level-pill-check" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button class="level-pill" data-level="medium">
+            <span class="level-pill-num">2</span><span class="level-pill-name">Medium</span>
+            <svg class="level-pill-check" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button class="level-pill" data-level="hard">
+            <span class="level-pill-num">3</span><span class="level-pill-name">Hard</span>
+            <svg class="level-pill-check" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="board-frame">
+        <div id="board" class="board" role="grid" aria-label="Puzzle grid"></div>
+
+        <div id="loading-overlay" class="loading-overlay" hidden>
+          <div class="spinner" aria-label="Generating puzzle…"></div>
+        </div>
+
+        <div id="win-banner" class="win-banner" hidden>
+          <div class="win-card">
+            <svg class="win-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="12" cy="12" r="9.5" stroke="currentColor" stroke-width="1.6"/>
+              <path d="M7.5 12.3l2.7 2.7 6.3-6.6" stroke="currentColor" stroke-width="1.8"
+                    stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <h2 id="win-title">Solved</h2>
+            <p id="win-summary"></p>
+            <button id="win-next" class="primary-btn">New puzzle</button>
+          </div>
+        </div>
+
+        <div id="day-complete-banner" class="win-banner" hidden>
+          <div class="win-card day-complete-card">
+            <svg class="win-icon trophy-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M7 4H17V9C17 11.7614 14.7614 14 12 14C9.23858 14 7 11.7614 7 9V4Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+              <path d="M7 5.5H4.5C4.5 8 5.5 9.5 7.5 9.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              <path d="M17 5.5H19.5C19.5 8 18.5 9.5 16.5 9.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              <path d="M12 14V17.5" stroke="currentColor" stroke-width="1.6"/>
+              <path d="M8.5 20H15.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              <path d="M9.5 17.5H14.5L15 20H9L9.5 17.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+            </svg>
+            <h2>Day complete</h2>
+            <p id="day-complete-streak"></p>
+            <div id="day-complete-levels" class="day-complete-levels"></div>
+            <button id="day-complete-close" class="primary-btn">View board</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="control-group">
+          <button id="btn-hint"  class="secondary-btn">Hint</button>
+          <button id="btn-clear" class="secondary-btn">Clear</button>
+        </div>
+      </div>
+
+    </main>
+
+  </div>
+
+  <!-- Calendar modal -->
+  <div id="calendar-overlay" class="modal-overlay" hidden>
+    <div class="modal-card calendar-card" role="dialog" aria-modal="true" aria-labelledby="calendar-title">
+      <div class="calendar-header">
+        <button id="btn-cal-prev" class="day-nav-btn" aria-label="Previous month">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <h2 id="calendar-title">July 2026</h2>
+        <button id="btn-cal-next" class="day-nav-btn" aria-label="Next month">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+      <div class="calendar-dow">
+        <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+      </div>
+      <div id="calendar-grid" class="calendar-grid"></div>
+      <button id="calendar-close" class="secondary-btn calendar-close-btn">Close</button>
+    </div>
+  </div>
+
+  <!-- Stats modal -->
+  <div id="stats-overlay" class="modal-overlay" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="stats-title">
+      <h2 id="stats-title">Your stats</h2>
+      <div class="stats-grid">
+        <div class="stats-cell">
+          <span class="stats-number" id="stats-current-streak">0</span>
+          <span class="stats-caption">Current streak</span>
+        </div>
+        <div class="stats-cell">
+          <span class="stats-number" id="stats-best-streak">0</span>
+          <span class="stats-caption">Best streak</span>
+        </div>
+        <div class="stats-cell">
+          <span class="stats-number" id="stats-total-days">0</span>
+          <span class="stats-caption">Days completed</span>
+        </div>
+      </div>
+      <button id="stats-close" class="primary-btn">Close</button>
+    </div>
+  </div>
+
+  <!-- Help modal -->
+  <div id="help-overlay" class="modal-overlay" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="help-title">
+      <h2 id="help-title">How to play</h2>
+      <ul>
+        <li>Divide the whole grid into rectangles.</li>
+        <li>Each rectangle must contain <strong>exactly one number</strong>.</li>
+        <li>That number equals the <strong>area</strong> (cell count) of the rectangle.</li>
+        <li>Click and drag to draw a rectangle, release to lock it in.</li>
+        <li>Tap a locked region to remove it if you change your mind.</li>
+        <li>Fill the entire board to win.</li>
+        <li>Each day has 3 levels — Easy, Medium, Hard. Clear all 3 to complete the day and keep your streak.</li>
+        <li>Missed a day? Browse back with the arrows and play any past puzzle.</li>
+      </ul>
+      <button id="help-close" class="primary-btn">Got it</button>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
