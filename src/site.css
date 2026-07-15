@@ -567,6 +567,35 @@ body {
   border-color: rgba(77,221,255,0.2);
 }
 
+/* Small pyramid of 3 bubbles in the game's own palette (red/orange/blue),
+   stacked rather than floating in a row, so the card reads distinctly
+   from Voidburst's art even though both are bubble shooters. */
+.bubbleshooter-art {
+  background: radial-gradient(circle at 50% 25%, rgba(61,139,255,0.1), transparent 60%), #0f1424;
+}
+
+.bs-bubble {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+}
+
+.bs-bubble::after {
+  content: '';
+  position: absolute;
+  top: 18%;
+  left: 18%;
+  width: 30%;
+  height: 30%;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.45);
+}
+
+.bs-1 { background: #ff4d6b; box-shadow: 0 0 12px #ff4d6b; top: 38%; left: 50%; transform: translate(-50%, -50%); }
+.bs-2 { background: #ffa502; box-shadow: 0 0 12px #ffa502; top: 62%; left: 38%; transform: translate(-50%, -50%); }
+.bs-3 { background: #3d8bff; box-shadow: 0 0 12px #3d8bff; top: 62%; left: 62%; transform: translate(-50%, -50%); }
+
 .pips-art {  background: radial-gradient(circle at 50% 25%, rgba(255,184,77,0.12), transparent 60%), #191410;
 }
 

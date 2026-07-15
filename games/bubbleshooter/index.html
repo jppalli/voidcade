@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Bubble Shooter</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='42' fill='%233d8bff'/><ellipse cx='36' cy='34' rx='14' ry='9' fill='white' opacity='0.7' transform='rotate(-30 36 34)'/></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="app">
+    <header id="hud">
+      <a id="back" href="../../" title="Back to Voidcade" aria-label="Back to Voidcade">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 5l-7 7 7 7"/>
+        </svg>
+      </a>
+      <div class="stat">
+        <span class="label">Score</span>
+        <span class="value" id="score">0</span>
+      </div>
+      <div class="stat level">
+        <span class="label">Level</span>
+        <span class="value" id="level">1</span>
+      </div>
+      <div class="stat">
+        <span class="label">Best</span>
+        <span class="value" id="best">0</span>
+      </div>
+      <button id="mute" title="Sound on/off (M)" aria-label="Toggle sound">
+        <svg class="icon-on" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M11 5 6 9H2v6h4l5 4V5z" fill="currentColor" stroke="none"/>
+          <path d="M15.5 8.5a5 5 0 0 1 0 7"/>
+          <path d="M18.5 5.5a9.5 9.5 0 0 1 0 13"/>
+        </svg>
+        <svg class="icon-off" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M11 5 6 9H2v6h4l5 4V5z" fill="currentColor" stroke="none"/>
+          <line x1="16" y1="9" x2="22" y2="15"/>
+          <line x1="22" y1="9" x2="16" y2="15"/>
+        </svg>
+      </button>
+    </header>
+
+    <div id="stage">
+      <canvas id="game"></canvas>
+      <div id="overlay" class="hidden">
+        <div class="panel">
+          <h1 id="overlay-title">Bubble Shooter</h1>
+          <p id="overlay-sub">Pop groups of three or more.</p>
+          <button id="overlay-btn" class="btn">Play</button>
+        </div>
+      </div>
+    </div>
+
+    <footer id="help">
+      Move to aim&ensp;·&ensp;Click to shoot&ensp;·&ensp;<kbd>Space</kbd> swap&ensp;·&ensp;<kbd>P</kbd> pause
+    </footer>
+  </div>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
