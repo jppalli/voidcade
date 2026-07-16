@@ -20,6 +20,10 @@ const BALL_SPEED          = 620; // px/sec
 const CANNON_OFFSET       = 90; // px above bottom edge
 const MIN_ANGLE_DEG       = 15; // min angle from horizontal
 const DANGER_ROW_FRAC     = 0.8; // fraction of screen height = game over
+// Reserved vertical space at the top of the screen for the score, combo,
+// and charge meter — the play field (grid, walls, ceiling) starts below
+// this line so bubbles never render underneath/behind the HUD text.
+const TOP_HUD_HEIGHT      = 128;
 // Roguelite charge: popping bubbles fills a meter. When full, you pick a
 // powerup — decoupled from wave clears so it comes up far more often and
 // scales with how aggressively you're clearing. Only the directly-matched
@@ -79,6 +83,9 @@ export class Game {
   // Ball-center bounce limits: keep the whole bubble inside the walls.
   get ballMinX() { return this.wallLeft + BUBBLE_R; }
   get ballMaxX() { return this.wallRight - BUBBLE_R; }
+  // Ceiling sits just above row 0 of the grid, itself below the reserved
+  // top HUD zone — never behind the score/charge meter.
+  get ceilingY() { return TOP_HUD_HEIGHT; }
 
   async init() {
     const app = new Application();
@@ -142,7 +149,7 @@ export class Game {
     this._aimAngle = this._pointerAngle(e);
     this._drawCannon();
     const bounces = 2 + (upgradeValue(save, 'steady') || 0) + (this.mods.bounceCount - 1);
-    this.aimLine.draw(this.cannonX, this.cannonY, this._aimAngle, bounces, this.ballMinX, this.ballMaxX, HEX_H / 2, this.dangerY);
+    this.aimLine.draw(this.cannonX, this.cannonY, this._aimAngle, bounces, this.ballMinX, this.ballMaxX, this.ceilingY, this.dangerY);
   }
 
   _onPointerDown(e) {
@@ -196,7 +203,9 @@ export class Game {
     // suggest. The walls must clear that offset plus the bubble radius on
     // both sides, or the odd-row edge bubbles render outside the wall line.
     const marginX = Math.floor((this.W - GRID_COLS * HEX_W) / 2);
-    const marginY = HEX_H;
+    // Grid starts below the reserved HUD zone, not right under the header,
+    // so the score/combo/charge meter never sit on top of bubbles.
+    const marginY = TOP_HUD_HEIGHT + HEX_H / 2;
     const wallGap = 2; // small visual clearance beyond the bubble edge
     this.wallLeft  = marginX - BUBBLE_R - wallGap;
     this.wallRight = marginX + (GRID_COLS - 1) * HEX_W + HEX_W / 2 + BUBBLE_R + wallGap;
@@ -305,9 +314,9 @@ export class Game {
         if (this.audio) this.audio.wallHit();
       }
 
-      // Hit top wall
-      if (bubble.y <= HEX_H) {
-        bubble.y = HEX_H;
+      // Hit top wall (ceiling sits just above row 0 of the grid)
+      if (bubble.y <= this.ceilingY) {
+        bubble.y = this.ceilingY;
         this._landBall(i);
         continue;
       }
@@ -554,7 +563,13 @@ export class Game {
   }
 
   _checkDanger() {
-    if (this.grid.hasBubbleBelowRow(Math.floor(this.H * DANGER_ROW_FRAC / HEX_H))) {
+    // Convert the danger line's pixel Y into a grid row index via the
+    // grid's own coordinate math (accounts for marginY) rather than
+    // dividing by HEX_H alone, which ignored the top offset entirely and
+    // would trigger game-over far too early once marginY grew to make
+    // room for the HUD.
+    const { row: dangerRow } = this.grid.pixelToCell(this.cannonX, this.dangerY);
+    if (this.grid.hasBubbleBelowRow(dangerRow)) {
       this.endRun();
     }
   }
@@ -649,7 +664,7 @@ export class Game {
   _drawWalls() {
     const g = this.wallsGfx;
     g.clear();
-    const top = HEX_H / 2;
+    const top = this.ceilingY;
     const bottom = this.dangerY;
     // Neon vertical walls with a soft inner glow band.
     for (const x of [this.wallLeft, this.wallRight]) {
@@ -665,7 +680,7 @@ export class Game {
   _flashWall(side) {
     const x = side === 'left' ? this.wallLeft : this.wallRight;
     const flash = new Graphics();
-    flash.moveTo(x, HEX_H / 2).lineTo(x, this.dangerY).stroke({ color: 0xffffff, width: 4, alpha: 0.9 });
+    flash.moveTo(x, this.ceilingY).lineTo(x, this.dangerY).stroke({ color: 0xffffff, width: 4, alpha: 0.9 });
     this.world.addChild(flash);
     gsap.to(flash, { alpha: 0, duration: 0.3, ease: 'power2.out',
       onComplete: () => { if (flash.parent) flash.parent.removeChild(flash); flash.destroy(); } });
