@@ -309,7 +309,16 @@ canvas {
   z-index: 10;
 }
 
+/* Generic hide utility for elements that don't need the overlay's custom
+   fade transition (powerup modal, active-powerup strip). #overlay keeps
+   its own opacity-based .hidden rule below, which overrides this one via
+   source order for that specific element. */
+.hidden {
+  display: none !important;
+}
+
 #overlay.hidden {
+  display: flex !important;
   opacity: 0;
   pointer-events: none;
 }
