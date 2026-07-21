@@ -106,6 +106,13 @@ export class Sound {
     this.tone({ freq: 880, type: 'sine', dur: 0.05, vol: 0.2 });
   }
 
+  /** Charge meter just maxed out — a bright rising chime, distinct from
+   *  the fuller levelUp() fanfare that plays once the modal actually opens. */
+  chargeReady() {
+    this.tone({ freq: 660, freqEnd: 990, type: 'sine', dur: 0.22, vol: 0.3 });
+    this.tone({ freq: 880, freqEnd: 1320, type: 'triangle', dur: 0.28, when: 0.08, vol: 0.22 });
+  }
+
   levelUp() {
     const notes = [523.25, 659.25, 783.99, 1046.5];
     notes.forEach((freq, i) => {

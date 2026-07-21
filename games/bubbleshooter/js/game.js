@@ -8,7 +8,8 @@ import { Grid } from './grid.js';
 import { Particles } from './particles.js';
 import {
   defaultMods, rollPowerups, getPowerupDef,
-  CHARGE_MAX, POWERUP_DURATION, MAX_ACTIVE,
+  CHARGE_MAX, CHARGE_PER_LEVEL, PER_SHOT_CHARGE_CAP, CHARGE_READY_DELAY,
+  POWERUP_DURATION, MAX_ACTIVE,
 } from './powerups.js';
 
 const TAU = Math.PI * 2;
@@ -114,6 +115,7 @@ export class Game {
     this.activePowerups = []; // [{ id, remaining }]
     this.charge = 0;
     this._pendingPowerupChoice = null;
+    this._chargeReadyTimer = 0; // counts down after the meter fills, before the modal opens
 
     this.popAnims = [];
     this.fallers = [];
@@ -231,16 +233,35 @@ export class Game {
 
   /* ---------------- Roguelite charge / powerups ---------------- */
 
+  /** Meter requirement rises gently with level, so powerups don't arrive
+   *  at a constant clip once boards (and cascades) get bigger. */
+  chargeRequired() {
+    return CHARGE_MAX + (this.level - 1) * CHARGE_PER_LEVEL;
+  }
+
   addCharge(n) {
-    if (this.charge >= CHARGE_MAX) return; // already banked, waiting on modal
-    this.charge = Math.min(CHARGE_MAX, this.charge + n);
-    this.ui.updateCharge(this.charge / CHARGE_MAX);
-    if (this.charge >= CHARGE_MAX) this.offerPowerup();
+    if (this.charge >= this.chargeRequired()) return; // already banked, waiting on modal/delay
+    // Cap how much a single shot can contribute — a huge cascade still
+    // feels great (score, combo text, screen shake all scale with it
+    // uncapped), but it can't alone jump the meter from empty to full.
+    // Filling the bar should read as "a handful of good shots in a row".
+    const gain = Math.min(n, PER_SHOT_CHARGE_CAP);
+    this.charge = Math.min(this.chargeRequired(), this.charge + gain);
+    this.ui.updateCharge(this.charge / this.chargeRequired());
+    if (this.charge >= this.chargeRequired() && this._chargeReadyTimer <= 0) {
+      // Don't cut straight to the modal — let the pop/cascade that just
+      // filled the meter finish playing out first, and flag the meter as
+      // "ready" so the HUD can visibly celebrate for a beat.
+      this._chargeReadyTimer = CHARGE_READY_DELAY;
+      this.ui.setChargeReady(true);
+      this.sound.chargeReady?.();
+    }
   }
 
   offerPowerup() {
     this._prePowerupState = this.state;
     this.state = 'powerup';
+    this.ui.setChargeReady(false);
     this._pendingPowerupChoice = rollPowerups(3, this.activePowerups.map((p) => p.id));
     this.sound.levelUp();
     this.ui.showPowerupChoice(this._pendingPowerupChoice, (chosen) => this.choosePowerup(chosen));
@@ -263,16 +284,12 @@ export class Game {
     }
     this.recomputeMods();
     this.charge = 0;
+    this._chargeReadyTimer = 0;
     this.ui.updateCharge(0);
     this.ui.updateActivePowerups(this.getActivePowerupView());
     this.ui.hideOverlay();
     this.sound.click();
     this.state = this._prePowerupState || 'playing';
-
-    if (this._pendingLevelClear) {
-      this._pendingLevelClear = false;
-      this.triggerLevelClear();
-    }
   }
 
   recomputeMods() {
@@ -379,6 +396,7 @@ export class Game {
     if (this.state !== 'playing' || this.projectiles.length) return;
     const a = this.aimAngle;
     const count = this.mods.shotCount;
+    const speed = PROJECTILE_SPEED * this.mods.speedMult; // Slo-Mo Aim
     // Wide Shot fires a small spread instead of a single straight shot;
     // with count 1 this collapses to exactly the original behavior.
     for (let i = 0; i < count; i++) {
@@ -387,9 +405,10 @@ export class Game {
       this.projectiles.push({
         x: SHOOTER_X + Math.sin(sa) * (R + 6),
         y: SHOOTER_Y - Math.cos(sa) * (R + 6),
-        vx: Math.sin(sa) * PROJECTILE_SPEED,
-        vy: -Math.cos(sa) * PROJECTILE_SPEED,
+        vx: Math.sin(sa) * speed,
+        vy: -Math.cos(sa) * speed,
         color: this.current,
+        rainbow: this.mods.rainbow,
       });
     }
     this.current = this.next;
@@ -436,13 +455,14 @@ export class Game {
   /** Advance every in-flight ball (usually 1, up to 3 with Wide Shot). */
   updateProjectile(dt) {
     if (!this.projectiles.length) return;
-    const dist = PROJECTILE_SPEED * dt;
-    const steps = Math.max(1, Math.ceil(dist / (R * 0.4)));
-    const stepT = dt / steps;
 
     // Iterate backwards since landing/removal splices out of the array.
     for (let idx = this.projectiles.length - 1; idx >= 0; idx--) {
       const p = this.projectiles[idx];
+      const speed = Math.hypot(p.vx, p.vy) || PROJECTILE_SPEED;
+      const dist = speed * dt;
+      const steps = Math.max(1, Math.ceil(dist / (R * 0.4)));
+      const stepT = dt / steps;
       let landed = false;
       for (let i = 0; i < steps; i++) {
         // Velocity is re-read every substep so a mid-frame wall bounce
@@ -471,7 +491,25 @@ export class Game {
     this.projectiles.splice(idx, 1);
     const cell = this.findSnapCell(p.x, p.y);
     if (!cell) return; // board is somehow unreachable — drop the shot
-    this.grid.set(cell.col, cell.row, { color: p.color, wobble: null });
+
+    // Rainbow Ball: morph to whichever occupied neighbor color is most
+    // common around the landing spot, so it always joins the biggest
+    // group available rather than keeping its original fired color.
+    let landColor = p.color;
+    if (p.rainbow) {
+      const tally = new Map();
+      for (const [nc, nr] of this.grid.neighbors(cell.col, cell.row)) {
+        const nCell = this.grid.get(nc, nr);
+        if (nCell) tally.set(nCell.color, (tally.get(nCell.color) || 0) + 1);
+      }
+      let bestColor = null, bestCount = 0;
+      for (const [color, count] of tally) {
+        if (count > bestCount) { bestCount = count; bestColor = color; }
+      }
+      if (bestColor !== null) landColor = bestColor;
+    }
+
+    this.grid.set(cell.col, cell.row, { color: landColor, wobble: null });
     this.sound.attach();
     this.rippleFrom(cell.col, cell.row, p);
     this.resolveLanding(cell.col, cell.row);
@@ -591,14 +629,11 @@ export class Game {
     }
 
     if (this.grid.isEmpty()) {
-      // If this same shot also maxed the charge meter, the powerup modal
-      // takes priority — triggerLevelClear() runs once it's dismissed
-      // instead of overwriting state='powerup' right after it's set.
-      if (this.state === 'powerup') {
-        this._pendingLevelClear = true;
-      } else {
-        this.triggerLevelClear();
-      }
+      // The powerup modal (if the charge meter also maxed on this same
+      // shot) opens on a short delay via _chargeReadyTimer in update(), so
+      // it naturally arrives after this — whatever state is active when it
+      // fires gets captured as _prePowerupState and restored afterward.
+      this.triggerLevelClear();
       return;
     }
 
@@ -657,6 +692,17 @@ export class Game {
     }
 
     if (this.state === 'menu' || this.state === 'paused' || this.state === 'powerup') return;
+
+    // Once the meter is full, count down a short grace period before the
+    // choice modal actually opens — lets the cascade/particles that just
+    // filled it finish playing out instead of a hard cut.
+    if (this._chargeReadyTimer > 0) {
+      this._chargeReadyTimer -= dt;
+      if (this._chargeReadyTimer <= 0) {
+        this._chargeReadyTimer = 0;
+        this.offerPowerup();
+      }
+    }
 
     // Active powerups tick down in real time during live play only — not
     // while the choice modal is up, so reading the cards doesn't burn the

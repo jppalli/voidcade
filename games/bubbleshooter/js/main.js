@@ -75,6 +75,13 @@ const ui = {
     if (chargeBar) chargeBar.classList.toggle('full', fraction >= 1);
   },
 
+  /** Brief "ready" celebration on the meter during the delay between it
+   *  filling and the choice modal actually opening — gives the cascade
+   *  that filled it a beat to finish before cutting to the modal. */
+  setChargeReady(ready) {
+    if (chargeBar) chargeBar.classList.toggle('ready', ready);
+  },
+
   /** 3-card powerup choice modal. */
   showPowerupChoice(choices, onChoose) {
     onChoosePowerup = onChoose;

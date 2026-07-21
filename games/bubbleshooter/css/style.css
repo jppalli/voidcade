@@ -156,6 +156,19 @@ body {
   50%       { box-shadow: 0 0 14px rgba(246, 181, 69, 0.75); }
 }
 
+/* Brief celebratory state during the pause between the meter filling and
+   the choice modal opening — faster, brighter pulse + a small scale pop
+   so the transition reads as "you earned this" rather than an abrupt cut. */
+#chargeBar.ready {
+  animation: charge-ready-pulse 0.35s ease-in-out infinite;
+  transform: scale(1.04);
+}
+
+@keyframes charge-ready-pulse {
+  0%, 100% { box-shadow: 0 0 10px rgba(246, 181, 69, 0.55); }
+  50%       { box-shadow: 0 0 22px rgba(246, 181, 69, 1); }
+}
+
 /* ---------- Active powerup timers ---------- */
 
 #activePowerups {

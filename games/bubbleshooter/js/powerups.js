@@ -7,8 +7,20 @@
  * don't mean anything here since shots already bounce off walls forever.
  */
 
-export const CHARGE_MAX        = 24;  // matched bubbles popped to fill the meter
-export const POWERUP_DURATION  = 22;  // seconds each picked powerup stays active
+// Base charge required to fill the meter. Rises slightly per level (see
+// Game.chargeRequired()) so powerups keep pace with the game rather than
+// arriving constantly once boards get bigger and cascades get larger.
+export const CHARGE_MAX         = 50;
+export const CHARGE_PER_LEVEL   = 6;
+// A single shot's contribution is capped so one lucky mega-cascade can't
+// jump the meter from empty to full in one pop — filling the bar should
+// take a handful of good shots, not one.
+export const PER_SHOT_CHARGE_CAP = 9;
+// Short pause between the meter maxing out and the choice modal opening,
+// so the pop/cascade animation that filled it gets a beat to finish
+// on-screen instead of being interrupted by a hard cut to the modal.
+export const CHARGE_READY_DELAY = 0.9;
+export const POWERUP_DURATION  = 24;  // seconds each picked powerup stays active
 export const MAX_ACTIVE        = 3;   // simultaneous active powerups cap
 
 export function defaultMods() {
@@ -16,9 +28,11 @@ export function defaultMods() {
     shotCount: 1,           // bubbles fired per shot (Wide Shot)
     popRadiusBonus: 0,      // extra neighbor ring cleared on 5+ clusters (Big Bang)
     freezeCeiling: false,   // ceiling stops advancing (Freeze)
-    matchMinOverride: null, // override MATCH_MIN, e.g. 2 (Loose Match)
+    matchMinOverride: null, // override MATCH_MIN, e.g. 2 (Chain Reaction)
     colorWipe: false,       // landing near a match clears the whole color (Color Bomb)
     scoreMult: 1,           // multiplies every point award (Double Points)
+    rainbow: false,         // ball auto-joins whichever neighbor color has the most bubbles (Rainbow Ball)
+    speedMult: 1,           // projectile speed multiplier (Slo-Mo Aim)
   };
 }
 
@@ -45,9 +59,9 @@ const POWERUP_DEFS = [
     apply: (m) => { m.freezeCeiling = true; },
   },
   {
-    id: 'loose',
-    name: 'Loose Match',
-    icon: 'loose',
+    id: 'chain',
+    name: 'Chain Reaction',
+    icon: 'chain',
     desc: 'Groups of just 2 bubbles pop.',
     apply: (m) => { m.matchMinOverride = 2; },
   },
@@ -64,6 +78,20 @@ const POWERUP_DEFS = [
     icon: 'jackpot',
     desc: 'Score from every pop is doubled.',
     apply: (m) => { m.scoreMult *= 2; },
+  },
+  {
+    id: 'rainbow',
+    name: 'Rainbow Ball',
+    icon: 'rainbow',
+    desc: 'Every shot morphs to match whatever it touches best.',
+    apply: (m) => { m.rainbow = true; },
+  },
+  {
+    id: 'slowmo',
+    name: 'Slo-Mo Aim',
+    icon: 'slowmo',
+    desc: 'Shots fly slower, giving you time to line up bank shots.',
+    apply: (m) => { m.speedMult = 0.62; },
   },
 ];
 
