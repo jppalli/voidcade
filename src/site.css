@@ -527,49 +527,13 @@ body {
 .panes-cell.c2 { grid-column: 2; grid-row: 1; }
 .panes-cell.c3 { grid-column: 2; grid-row: 2; }
 
-.voidburst-art {
-  background: radial-gradient(circle at 50% 25%, rgba(77,221,255,0.1), transparent 60%), #0d1219;
-  gap: 12px;
-  flex-direction: row;
-}
-
-.vb-bubble {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  position: relative;
-  animation: vbFloat 2.2s ease-in-out infinite;
-}
-
-.vb-bubble::after {
-  content: '';
-  position: absolute;
-  top: 18%;
-  left: 18%;
-  width: 30%;
-  height: 30%;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.4);
-}
-
-.vb-r { background: #ff4d4d; box-shadow: 0 0 14px #ff4d4d; }
-.vb-g { background: #4dff88; box-shadow: 0 0 14px #4dff88; animation-delay: 0.3s; }
-.vb-b { background: #4dddff; box-shadow: 0 0 14px #4dddff; animation-delay: 0.6s; }
-
-@keyframes vbFloat {
-  0%, 100% { transform: translateY(0); }
-  50%       { transform: translateY(-7px); }
-}
-
 .game-tag-teal {
   color: #4dddff;
   background: rgba(77,221,255,0.08);
   border-color: rgba(77,221,255,0.2);
 }
 
-/* Small pyramid of 3 bubbles in the game's own palette (red/orange/blue),
-   stacked rather than floating in a row, so the card reads distinctly
-   from Voidburst's art even though both are bubble shooters. */
+/* Small pyramid of 3 bubbles in the game's own palette (red/orange/blue). */
 .bubbleshooter-art {
   background: radial-gradient(circle at 50% 25%, rgba(61,139,255,0.1), transparent 60%), #0f1424;
 }

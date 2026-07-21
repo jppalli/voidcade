@@ -44,13 +44,31 @@
       </button>
     </header>
 
+    <!-- Roguelite charge meter: fills as bubbles pop, full = powerup pick -->
+    <div id="chargeBar" title="Powerup charge">
+      <div id="chargeBarFill"></div>
+    </div>
+
     <div id="stage">
       <canvas id="game"></canvas>
+
+      <!-- Active powerup timers, floating over the top-right of the board -->
+      <div id="activePowerups" class="hidden"></div>
+
       <div id="overlay" class="hidden">
         <div class="panel">
           <h1 id="overlay-title">Bubble Shooter</h1>
           <p id="overlay-sub">Pop groups of three or more.</p>
           <button id="overlay-btn" class="btn">Play</button>
+        </div>
+      </div>
+
+      <!-- Roguelite powerup choice modal -->
+      <div id="powerupModal" class="hidden">
+        <div class="panel powerup-panel">
+          <span class="powerup-kicker">CHARGE FULL</span>
+          <h1>Choose a Powerup</h1>
+          <div id="powerupList"></div>
         </div>
       </div>
     </div>

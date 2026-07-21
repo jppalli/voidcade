@@ -6,6 +6,10 @@ import {
 } from './config.js';
 import { Grid } from './grid.js';
 import { Particles } from './particles.js';
+import {
+  defaultMods, rollPowerups, getPowerupDef,
+  CHARGE_MAX, POWERUP_DURATION, MAX_ACTIVE,
+} from './powerups.js';
 
 const TAU = Math.PI * 2;
 const HIT_DIST = R * 1.8;
@@ -86,7 +90,7 @@ export class Game {
     this.particles = new Particles();
     this.best = Number(localStorage.getItem('bs-best') || 0);
 
-    this.state = 'menu'; // menu | playing | paused | clearing | dying | levelclear | gameover
+    this.state = 'menu'; // menu | playing | paused | clearing | dying | levelclear | gameover | powerup
     this.time = 0;
     this.level = 1;
     this.score = 0;
@@ -98,11 +102,18 @@ export class Game {
 
     this.aimAngle = 0;
     this.aimPoint = null; // logical pointer pos while aiming
-    this.projectile = null;
+    this.projectiles = []; // multiple in flight when Wide Shot is active
     this.current = 0;
     this.next = 1;
     this.recoil = 0;
     this.swapPulse = 0;
+
+    // --- Roguelite layer (charge meter → powerup choice, ported from
+    // Voidburst but reworked around this engine's own mechanics) ---
+    this.mods = defaultMods();
+    this.activePowerups = []; // [{ id, remaining }]
+    this.charge = 0;
+    this._pendingPowerupChoice = null;
 
     this.popAnims = [];
     this.fallers = [];
@@ -140,6 +151,13 @@ export class Game {
     this.score = 0;
     this.combo = 0;
     this.level = 1;
+    // Roguelite state resets per run, not per level — powerups picked
+    // mid-run persist across level clears until they time out.
+    this.mods = defaultMods();
+    this.activePowerups = [];
+    this.charge = 0;
+    this.ui.updateCharge(0);
+    this.ui.updateActivePowerups([]);
     this.startLevel();
   }
 
@@ -148,7 +166,7 @@ export class Game {
     this.particles.clear();
     this.popAnims = [];
     this.fallers = [];
-    this.projectile = null;
+    this.projectiles = [];
     this.ceilingY = 0;
     this.targetCeilingY = 0;
     this.shotsLeft = SHOTS_PER_DROP;
@@ -211,6 +229,86 @@ export class Game {
     this.ui.updateScore(this.score, this.best);
   }
 
+  /* ---------------- Roguelite charge / powerups ---------------- */
+
+  addCharge(n) {
+    if (this.charge >= CHARGE_MAX) return; // already banked, waiting on modal
+    this.charge = Math.min(CHARGE_MAX, this.charge + n);
+    this.ui.updateCharge(this.charge / CHARGE_MAX);
+    if (this.charge >= CHARGE_MAX) this.offerPowerup();
+  }
+
+  offerPowerup() {
+    this._prePowerupState = this.state;
+    this.state = 'powerup';
+    this._pendingPowerupChoice = rollPowerups(3, this.activePowerups.map((p) => p.id));
+    this.sound.levelUp();
+    this.ui.showPowerupChoice(this._pendingPowerupChoice, (chosen) => this.choosePowerup(chosen));
+  }
+
+  choosePowerup(powerup) {
+    const existing = this.activePowerups.find((p) => p.id === powerup.id);
+    if (existing) {
+      existing.remaining = POWERUP_DURATION;
+    } else {
+      if (this.activePowerups.length >= MAX_ACTIVE) {
+        // Evict whichever active powerup has the least time left.
+        let minIdx = 0;
+        for (let i = 1; i < this.activePowerups.length; i++) {
+          if (this.activePowerups[i].remaining < this.activePowerups[minIdx].remaining) minIdx = i;
+        }
+        this.activePowerups.splice(minIdx, 1);
+      }
+      this.activePowerups.push({ id: powerup.id, remaining: POWERUP_DURATION });
+    }
+    this.recomputeMods();
+    this.charge = 0;
+    this.ui.updateCharge(0);
+    this.ui.updateActivePowerups(this.getActivePowerupView());
+    this.ui.hideOverlay();
+    this.sound.click();
+    this.state = this._prePowerupState || 'playing';
+
+    if (this._pendingLevelClear) {
+      this._pendingLevelClear = false;
+      this.triggerLevelClear();
+    }
+  }
+
+  recomputeMods() {
+    this.mods = defaultMods();
+    for (const ap of this.activePowerups) {
+      const def = getPowerupDef(ap.id);
+      if (def) def.apply(this.mods);
+    }
+  }
+
+  getActivePowerupView() {
+    return this.activePowerups.map((ap) => {
+      const def = getPowerupDef(ap.id);
+      return {
+        id: ap.id,
+        name: def?.name || ap.id,
+        icon: def?.icon || 'coin',
+        fraction: Math.max(0, Math.min(1, ap.remaining / POWERUP_DURATION)),
+      };
+    });
+  }
+
+  tickPowerups(dt) {
+    if (!this.activePowerups.length) return;
+    let changed = false;
+    for (let i = this.activePowerups.length - 1; i >= 0; i--) {
+      this.activePowerups[i].remaining -= dt;
+      if (this.activePowerups[i].remaining <= 0) {
+        this.activePowerups.splice(i, 1);
+        changed = true;
+      }
+    }
+    if (changed) this.recomputeMods();
+    this.ui.updateActivePowerups(this.getActivePowerupView());
+  }
+
   triggerLevelClear() {
     this.state = 'clearing';
     this.stateTimer = 1.0;
@@ -271,22 +369,29 @@ export class Game {
   }
 
   swap() {
-    if (this.state !== 'playing' || this.projectile) return;
+    if (this.state !== 'playing' || this.projectiles.length) return;
     [this.current, this.next] = [this.next, this.current];
     this.swapPulse = 1;
     this.sound.swap();
   }
 
   fire() {
-    if (this.state !== 'playing' || this.projectile) return;
+    if (this.state !== 'playing' || this.projectiles.length) return;
     const a = this.aimAngle;
-    this.projectile = {
-      x: SHOOTER_X + Math.sin(a) * (R + 6),
-      y: SHOOTER_Y - Math.cos(a) * (R + 6),
-      vx: Math.sin(a) * PROJECTILE_SPEED,
-      vy: -Math.cos(a) * PROJECTILE_SPEED,
-      color: this.current,
-    };
+    const count = this.mods.shotCount;
+    // Wide Shot fires a small spread instead of a single straight shot;
+    // with count 1 this collapses to exactly the original behavior.
+    for (let i = 0; i < count; i++) {
+      const spread = (i - (count - 1) / 2) * 0.16;
+      const sa = Math.max(-AIM_LIMIT, Math.min(AIM_LIMIT, a + spread));
+      this.projectiles.push({
+        x: SHOOTER_X + Math.sin(sa) * (R + 6),
+        y: SHOOTER_Y - Math.cos(sa) * (R + 6),
+        vx: Math.sin(sa) * PROJECTILE_SPEED,
+        vy: -Math.cos(sa) * PROJECTILE_SPEED,
+        color: this.current,
+      });
+    }
     this.current = this.next;
     this.next = this.pickColor();
     this.recoil = 1;
@@ -328,33 +433,42 @@ export class Game {
     return hit;
   }
 
+  /** Advance every in-flight ball (usually 1, up to 3 with Wide Shot). */
   updateProjectile(dt) {
-    const p = this.projectile;
-    if (!p) return;
+    if (!this.projectiles.length) return;
     const dist = PROJECTILE_SPEED * dt;
     const steps = Math.max(1, Math.ceil(dist / (R * 0.4)));
     const stepT = dt / steps;
-    for (let i = 0; i < steps; i++) {
-      // Velocity is re-read every substep so a mid-frame wall bounce
-      // changes direction immediately (otherwise the ball rides the wall).
-      p.x += p.vx * stepT;
-      p.y += p.vy * stepT;
-      if (p.x < R) { p.x = 2 * R - p.x; p.vx = -p.vx; this.sound.bounce(); }
-      else if (p.x > W - R) { p.x = 2 * (W - R) - p.x; p.vx = -p.vx; this.sound.bounce(); }
-      if (this.hitsGrid(p.x, p.y)) {
-        this.landProjectile();
-        return;
+
+    // Iterate backwards since landing/removal splices out of the array.
+    for (let idx = this.projectiles.length - 1; idx >= 0; idx--) {
+      const p = this.projectiles[idx];
+      let landed = false;
+      for (let i = 0; i < steps; i++) {
+        // Velocity is re-read every substep so a mid-frame wall bounce
+        // changes direction immediately (otherwise the ball rides the wall).
+        p.x += p.vx * stepT;
+        p.y += p.vy * stepT;
+        if (p.x < R) { p.x = 2 * R - p.x; p.vx = -p.vx; this.sound.bounce(); }
+        else if (p.x > W - R) { p.x = 2 * (W - R) - p.x; p.vx = -p.vx; this.sound.bounce(); }
+        if (this.hitsGrid(p.x, p.y)) {
+          this.landProjectile(idx);
+          landed = true;
+          break;
+        }
+        if (p.y < -R * 2 || p.y > H + R * 2) { // safety net
+          this.projectiles.splice(idx, 1);
+          landed = true;
+          break;
+        }
       }
-      if (p.y < -R * 2 || p.y > H + R * 2) { // safety net
-        this.projectile = null;
-        return;
-      }
+      if (landed) continue;
     }
   }
 
-  landProjectile() {
-    const p = this.projectile;
-    this.projectile = null;
+  landProjectile(idx) {
+    const p = this.projectiles[idx];
+    this.projectiles.splice(idx, 1);
     const cell = this.findSnapCell(p.x, p.y);
     if (!cell) return; // board is somehow unreachable — drop the shot
     this.grid.set(cell.col, cell.row, { color: p.color, wobble: null });
@@ -380,12 +494,36 @@ export class Game {
   resolveLanding(col, row) {
     const landX = this.grid.cellX(col, row);
     const landY = this.ceilingY + this.grid.cellY(row);
-    const cluster = this.grid.matchCluster(col, row);
+    let cluster = this.grid.matchCluster(col, row);
+    const matchMin = this.mods.matchMinOverride ?? MATCH_MIN;
     let points = 0;
     let popped = 0;
     let dropped = 0;
 
-    if (cluster.length >= MATCH_MIN) {
+    if (cluster.length >= matchMin) {
+      // Color Bomb: escalate to every bubble of this color on the board.
+      if (this.mods.colorWipe) {
+        const targetColor = this.grid.get(col, row).color;
+        const all = [];
+        this.grid.forEach((cell, c, r) => { if (cell.color === targetColor) all.push([c, r]); });
+        cluster = all;
+      }
+      // Big Bang: on clusters of 5+, pull in one extra ring of same-color
+      // neighbors per stacked application (rarely more than 1-2 in practice).
+      if (this.mods.popRadiusBonus > 0 && cluster.length >= 5) {
+        const seen = new Set(cluster.map(([c, r]) => c + ',' + r));
+        for (let shell = 0; shell < this.mods.popRadiusBonus; shell++) {
+          const frontier = [...cluster];
+          for (const [c, r] of frontier) {
+            for (const [nc, nr] of this.grid.neighbors(c, r)) {
+              const key = nc + ',' + nr;
+              const cell = this.grid.get(nc, nr);
+              if (cell && !seen.has(key)) { seen.add(key); cluster.push([nc, nr]); }
+            }
+          }
+        }
+      }
+
       popped = cluster.length;
       cluster.forEach(([c, r], i) => {
         const delay = i * 0.05;
@@ -420,8 +558,13 @@ export class Game {
 
       this.combo = Math.min(this.combo + 1, 6);
       const mult = Math.min(this.combo, 4);
-      points = (popped * 10 + dropped * 25) * mult;
+      points = Math.round((popped * 10 + dropped * 25) * mult * this.mods.scoreMult);
       this.addScore(points);
+
+      // Charge meter fills with the directly-matched pop only — not the
+      // floating-bubble bonus drop — so one lucky big cascade can't max it
+      // in a single shot. Same rule Voidburst used, ported over.
+      this.addCharge(popped);
 
       const px = Math.max(40, Math.min(W - 40, landX));
       const py = Math.max(this.ceilingY + 30, landY - 10);
@@ -448,17 +591,26 @@ export class Game {
     }
 
     if (this.grid.isEmpty()) {
-      this.triggerLevelClear();
+      // If this same shot also maxed the charge meter, the powerup modal
+      // takes priority — triggerLevelClear() runs once it's dismissed
+      // instead of overwriting state='powerup' right after it's set.
+      if (this.state === 'powerup') {
+        this._pendingLevelClear = true;
+      } else {
+        this.triggerLevelClear();
+      }
       return;
     }
 
-    // Ceiling pressure
+    // Ceiling pressure — Freeze powerup suspends the advance entirely.
     this.shotsLeft--;
     if (this.shotsLeft <= 0) {
       this.shotsLeft = SHOTS_PER_DROP;
-      this.targetCeilingY += ROW_H;
-      this.sound.drop();
-      this.shake = Math.max(this.shake, 2.5);
+      if (!this.mods.freezeCeiling) {
+        this.targetCeilingY += ROW_H;
+        this.sound.drop();
+        this.shake = Math.max(this.shake, 2.5);
+      }
     }
 
     // Danger check against where the ceiling is heading.
@@ -504,7 +656,12 @@ export class Game {
       }
     }
 
-    if (this.state === 'menu' || this.state === 'paused') return;
+    if (this.state === 'menu' || this.state === 'paused' || this.state === 'powerup') return;
+
+    // Active powerups tick down in real time during live play only — not
+    // while the choice modal is up, so reading the cards doesn't burn the
+    // timer on whatever's already active.
+    this.tickPowerups(dt);
 
     // Smooth ceiling descent
     this.ceilingY += (this.targetCeilingY - this.ceilingY) * Math.min(1, dt * 5);
@@ -634,12 +791,11 @@ export class Game {
       else drawBubble(ctx, f.color, f.x, f.y); // waiting to detach — still visible
     }
 
-    if (this.state === 'playing' && !this.projectile && this.aimPoint) {
+    if (this.state === 'playing' && !this.projectiles.length && this.aimPoint) {
       this.renderTrajectory(ctx);
     }
 
-    if (this.projectile) {
-      const p = this.projectile;
+    for (const p of this.projectiles) {
       // Motion trail
       ctx.globalAlpha = 0.25;
       const nv = Math.hypot(p.vx, p.vy) || 1;
@@ -798,7 +954,7 @@ export class Game {
     }
 
     // Loaded bubble (with recoil kick)
-    if ((this.state === 'playing' || this.state === 'paused') || this.projectile) {
+    if ((this.state === 'playing' || this.state === 'paused') || this.projectiles.length) {
       const kick = this.recoil * 6;
       const bx = x - Math.sin(this.aimAngle) * kick;
       const by = y + Math.cos(this.aimAngle) * kick;

@@ -1,6 +1,7 @@
 import { W, H } from './config.js';
 import { Sound } from './audio.js';
 import { Game } from './game.js';
+import { renderIcon } from './icons.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -37,8 +38,15 @@ const overlayTitle = document.getElementById('overlay-title');
 const overlaySub = document.getElementById('overlay-sub');
 const overlayBtn = document.getElementById('overlay-btn');
 const muteBtn = document.getElementById('mute');
+const chargeBar = document.getElementById('chargeBar');
+const chargeBarFill = document.getElementById('chargeBarFill');
+const activePowerupsHud = document.getElementById('activePowerups');
+const powerupModal = document.getElementById('powerupModal');
+const powerupList = document.getElementById('powerupList');
 
 let overlayAction = null;
+let onChoosePowerup = null;
+const apNodes = {};
 
 const ui = {
   updateScore(score, best) {
@@ -58,6 +66,62 @@ const ui = {
   hideOverlay() {
     overlayEl.classList.add('hidden');
     overlayAction = null;
+  },
+
+  /** Roguelite charge meter — fills as bubbles pop, full = powerup pick. */
+  updateCharge(fraction) {
+    if (!chargeBarFill) return;
+    chargeBarFill.style.width = `${Math.round(Math.max(0, Math.min(1, fraction)) * 100)}%`;
+    if (chargeBar) chargeBar.classList.toggle('full', fraction >= 1);
+  },
+
+  /** 3-card powerup choice modal. */
+  showPowerupChoice(choices, onChoose) {
+    onChoosePowerup = onChoose;
+    powerupList.innerHTML = '';
+    choices.forEach((p) => {
+      const card = document.createElement('div');
+      card.className = 'powerup-card';
+      card.innerHTML = `<div class="icon">${renderIcon(p.icon, '#f6b545', 26)}</div><div class="name">${p.name}</div><div class="desc">${p.desc}</div>`;
+      card.addEventListener('click', () => {
+        powerupModal.classList.add('hidden');
+        sound.click();
+        onChoosePowerup(p);
+      });
+      powerupList.appendChild(card);
+    });
+    powerupModal.classList.remove('hidden');
+  },
+
+  /** Active-powerup strip: small ring icons with a depleting timer arc. */
+  updateActivePowerups(list) {
+    if (!activePowerupsHud) return;
+    if (!list.length) {
+      activePowerupsHud.classList.add('hidden');
+      activePowerupsHud.innerHTML = '';
+      for (const k of Object.keys(apNodes)) delete apNodes[k];
+      return;
+    }
+    activePowerupsHud.classList.remove('hidden');
+    const seen = new Set(list.map((p) => p.id));
+    for (const id of Object.keys(apNodes)) {
+      if (!seen.has(id)) { apNodes[id].el.remove(); delete apNodes[id]; }
+    }
+    const RADIUS = 14, CIRC = 2 * Math.PI * RADIUS;
+    list.forEach((p) => {
+      let node = apNodes[p.id];
+      if (!node) {
+        const el = document.createElement('div');
+        el.className = 'active-powerup';
+        el.title = p.name;
+        el.innerHTML = `<svg viewBox="0 0 34 34" width="34" height="34"><circle class="ap-track" cx="17" cy="17" r="${RADIUS}" /><circle class="ap-bar" cx="17" cy="17" r="${RADIUS}" stroke-dasharray="${CIRC}" transform="rotate(-90 17 17)" /></svg><span class="ap-icon">${renderIcon(p.icon, '#f6b545', 15)}</span>`;
+        activePowerupsHud.appendChild(el);
+        node = { el, bar: el.querySelector('.ap-bar') };
+        apNodes[p.id] = node;
+      }
+      node.bar.style.strokeDashoffset = String(CIRC * (1 - p.fraction));
+      node.bar.classList.toggle('low', p.fraction < 0.25);
+    });
   },
 };
 
