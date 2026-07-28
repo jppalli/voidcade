@@ -40,41 +40,77 @@
 
       <h1 class="hero-headline">
         <span class="hl-line hl-1">PLAY</span>
-        <span class="hl-line hl-2">SOMETHING</span>
-        <span class="hl-line hl-3">WEIRD.</span>
+        <span class="hl-line hl-2">SOMETHING.</span>
       </h1>
 
-      <div class="hero-stage">
-        <a class="stage-card stage-card-peek" href="games/panes/" data-game="panes">
-          <div class="stage-card-art panes-art">
-            <div class="panes-grid">
-              <span class="panes-cell c1">4</span>
-              <span class="panes-cell c2">2</span>
-              <span class="panes-cell c3">6</span>
+      <!-- Horizontal rail: every game gets a card here, and it scrolls
+           sideways once there are more than fit on screen. -->
+      <div class="hero-rail-wrap">
+        <div class="hero-rail" id="heroRail" role="list">
+          <a class="stage-card stage-card-featured" href="games/stackward/" data-game="stackward" role="listitem">
+            <span class="stage-card-badge">★ Featured</span>
+            <div class="stage-card-art stackward-art">
+              <span></span><span></span><span></span><span></span>
             </div>
-          </div>
-          <span class="stage-card-name">Panes</span>
-        </a>
+            <span class="stage-card-name">Stackward</span>
+            <span class="stage-card-play">Play now <span class="play-arrow">→</span></span>
+          </a>
 
-        <a class="stage-card stage-card-featured" href="games/stackward/" data-game="stackward">
-          <span class="stage-card-badge">★ Featured</span>
-          <div class="stage-card-art stackward-art">
-            <span></span><span></span><span></span><span></span>
-          </div>
-          <span class="stage-card-name">Stackward</span>
-          <span class="stage-card-play">Play now <span class="play-arrow">→</span></span>
-        </a>
-
-        <a class="stage-card stage-card-peek stage-card-peek-right" href="games/pipsandpaths/" data-game="pipsandpaths">
-          <div class="stage-card-art pips-art">
-            <div class="die-face">
-              <span class="pip"></span><span class="pip"></span>
-              <span class="pip"></span><span class="pip"></span>
-              <span class="pip"></span><span class="pip"></span>
+          <a class="stage-card" href="games/wardens/" data-game="wardens" role="listitem">
+            <div class="stage-card-art wardens-art">
+              <div class="wardens-grid">
+                <span class="wd-cell wd-c1"></span>
+                <span class="wd-cell wd-c2"></span>
+                <span class="wd-cell wd-c3"></span>
+                <span class="wd-cell wd-c4"></span>
+                <span class="wd-warden"></span>
+              </div>
             </div>
-          </div>
-          <span class="stage-card-name">Pips &amp; Paths</span>
-        </a>
+            <span class="stage-card-name">Wardens</span>
+            <span class="stage-card-play">Play now <span class="play-arrow">→</span></span>
+          </a>
+
+          <a class="stage-card" href="games/panes/" data-game="panes" role="listitem">
+            <div class="stage-card-art panes-art">
+              <div class="panes-grid">
+                <span class="panes-cell c1">4</span>
+                <span class="panes-cell c2">2</span>
+                <span class="panes-cell c3">6</span>
+              </div>
+            </div>
+            <span class="stage-card-name">Panes</span>
+            <span class="stage-card-play">Play now <span class="play-arrow">→</span></span>
+          </a>
+
+          <a class="stage-card" href="games/pipsandpaths/" data-game="pipsandpaths" role="listitem">
+            <div class="stage-card-art pips-art">
+              <div class="die-face">
+                <span class="pip"></span><span class="pip"></span>
+                <span class="pip"></span><span class="pip"></span>
+                <span class="pip"></span><span class="pip"></span>
+              </div>
+            </div>
+            <span class="stage-card-name">Pips &amp; Paths</span>
+            <span class="stage-card-play">Play now <span class="play-arrow">→</span></span>
+          </a>
+
+          <a class="stage-card" href="games/bubbleshooter/" data-game="bubbleshooter" role="listitem">
+            <div class="stage-card-art bubbleshooter-art">
+              <span class="bs-bubble bs-1"></span>
+              <span class="bs-bubble bs-2"></span>
+              <span class="bs-bubble bs-3"></span>
+            </div>
+            <span class="stage-card-name">Bubble Shooter</span>
+            <span class="stage-card-play">Play now <span class="play-arrow">→</span></span>
+          </a>
+        </div>
+
+        <button class="rail-nav rail-nav-prev" id="railPrev" type="button" aria-label="Scroll games left">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <button class="rail-nav rail-nav-next" id="railNext" type="button" aria-label="Scroll games right">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
       </div>
     </section>
 
