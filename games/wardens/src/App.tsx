@@ -61,6 +61,10 @@ export default function App() {
       id: currentLevelRef.id,
       size: currentLevelRef.size,
       seed: seedForLevel(currentLevelRef.id),
+      singletonDomains: currentLevelRef.singletons,
+      // Levels that don't hand out singletons must not grow one by accident —
+      // that would gift a free Warden in a level meant to be solved.
+      minDomainSize: currentLevelRef.singletons > 0 ? 1 : 2,
     });
   }, [currentLevelRef]);
 

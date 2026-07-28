@@ -11,6 +11,12 @@ export interface LevelDef {
   tip?: string;
   /** grants a boon choice on completion */
   boon?: boolean;
+  /**
+   * How many domains to shrink to a single cell. A one-cell domain gives away
+   * one Warden position for free, so early levels use them as a foothold and
+   * later levels drop them entirely.
+   */
+  singletons?: number;
 }
 
 /** Authoring shape: `levelCount` is derived from `levels`, not written by hand. */
@@ -28,20 +34,31 @@ const REALM_SPECS: RealmSpec[] = [
     levels: [
       {
         size: 4,
-        tip: 'Every colored domain holds exactly one Warden. Tap where you think one belongs.',
+        tip: 'Every colored domain holds exactly one Warden. A domain of a single cell gives its Warden away — start there.',
+        singletons: 2,
       },
       {
         size: 4,
         tip: 'Only one Warden per row and per column, too. Nothing may share a line.',
+        singletons: 1,
       },
       {
         size: 5,
         tip: 'Wardens never touch — not even at the corners. Leave a gap around each one.',
         boon: true,
+        singletons: 2,
       },
-      { size: 5, tip: 'A domain squeezed into a single row must hold its Warden there.' },
-      { size: 5, tip: 'Count what is left. When a row has one legal cell, that cell is certain.' },
-      { size: 6, boon: true },
+      {
+        size: 5,
+        tip: 'A domain squeezed into a single row must hold its Warden there.',
+        singletons: 1,
+      },
+      {
+        size: 5,
+        tip: 'Count what is left. When a row has one legal cell, that cell is certain.',
+        singletons: 1,
+      },
+      { size: 6, boon: true, singletons: 1 },
       { size: 6 },
       { size: 6 },
     ],
@@ -97,6 +114,7 @@ export interface LevelRef {
   realm: RealmDef;
   size: number;
   tip?: string;
+  singletons: number;
   /** stable id used as the generation seed and progress key */
   id: string;
   grantsBoon: boolean;
@@ -118,6 +136,7 @@ export function getAllLevelRefs(): LevelRef[] {
         realm,
         size: def.size,
         tip: def.tip,
+        singletons: def.singletons ?? 0,
         id: `${spec.id}-${levelInRealm}`,
         grantsBoon: !!def.boon,
       });
