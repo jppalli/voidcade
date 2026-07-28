@@ -51,12 +51,20 @@
 
   <!-- ============ level map ============ -->
   <section id="screen-map" class="screen hidden">
-    <div class="topBar">
-      <button class="iconBtn" data-nav="title" title="Back"><svg class="icon"><use href="#i-back"/></svg></button>
-      <div class="topBarTitle">Level Map<small id="mapProgress"></small></div>
-      <button class="iconBtn" id="btnSoundMap" title="Toggle sound"><svg class="icon"><use href="#i-sound-on"/></svg></button>
+    <div class="mapHeader">
+      <button class="btn back" data-nav="title"><svg class="icon"><use href="#i-back"/></svg><span>Title</span></button>
+      <h2>Adventure Map</h2>
+      <div class="mapHeaderRight">
+        <span id="mapProgressChip" class="mapProgressChip"></span>
+        <button class="iconBtn" id="btnSoundMap" title="Toggle sound"><svg class="icon"><use href="#i-sound-on"/></svg></button>
+      </div>
     </div>
-    <div class="mapBody" id="mapBody"></div>
+    <div id="mapWrap">
+      <div id="mapRegions" aria-hidden="true"></div>
+      <svg id="mapPath" aria-hidden="true" style="position:absolute;inset:0;pointer-events:none;z-index:1"></svg>
+      <div id="mapBanners" style="position:absolute;inset:0;z-index:2;pointer-events:none;height:0"></div>
+      <div id="mapNodes"   style="position:absolute;inset:0;z-index:3;height:0"></div>
+    </div>
   </section>
 
   <!-- ============ game ============ -->

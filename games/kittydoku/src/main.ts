@@ -8,9 +8,8 @@ import {
   setSoundEnabled,
   soundEnabled,
 } from './audio/sound';
-import { CHAPTERS, TOTAL_LEVELS, allLevels, levelAt, type LevelRef } from './game/levels';
+import { TOTAL_LEVELS, allLevels, levelAt, type LevelRef } from './game/levels';
 import {
-  cleanCount,
   loadProgress,
   recordWin,
   saveProgress,
@@ -19,6 +18,7 @@ import {
 } from './game/progress';
 import { Game } from './game/state';
 import { catSvg, pastel, pawSvg } from './render/art';
+import { renderMap, scrollToFrontier } from './ui/map';
 
 type Screen = 'title' | 'map' | 'game';
 
@@ -32,9 +32,18 @@ let winPending = false;
 
 function show(screen: Screen) {
   (['title', 'map', 'game'] as Screen[]).forEach((s) => {
-    $(`screen-${s}`).classList.toggle('hidden', s !== screen);
+    const el = $(`screen-${s}`);
+    el.classList.toggle('hidden', s !== screen);
+    if (s === screen) {
+      el.classList.remove('entering');
+      void el.offsetWidth;
+      el.classList.add('entering');
+    }
   });
-  if (screen === 'map') renderMap();
+  if (screen === 'map') {
+    renderMap(progress, startLevel);
+    requestAnimationFrame(scrollToFrontier);
+  }
   if (screen === 'title') renderTitle();
   window.scrollTo({ top: 0 });
 }
@@ -62,58 +71,6 @@ function seedTitleFloat() {
       ${pawSvg(tints[i % tints.length], size)}
     </span>`;
   }).join('');
-}
-
-// ---------------------------------------------------------------- map
-
-function renderMap() {
-  const refs = allLevels();
-  $('mapProgress').textContent = `${solvedCount(progress)} of ${TOTAL_LEVELS} solved · ${cleanCount(
-    progress
-  )} without hints`;
-
-  $('mapBody').innerHTML = CHAPTERS.map((chapter, ci) => {
-    const rows = refs
-      .filter((r) => r.chapterIndex === ci)
-      .map((ref) => {
-        const unlocked = ref.index <= progress.unlocked;
-        const result = progress.results[ref.index];
-        const stamp = result?.solved
-          ? `<span class="stamp ${result.clean ? 'clean' : ''}">
-               <svg><use href="${result.clean ? '#i-star' : '#i-check'}"/></svg>
-             </span>`
-          : '';
-        const face = unlocked
-          ? `${ref.levelInChapter + 1}<span class="lvlSize">${ref.size}×${ref.size}</span>`
-          : `<svg class="lockIcon"><use href="#i-lock"/></svg>`;
-        return `<button class="levelBtn ${result?.solved ? 'done' : ''}" data-level="${ref.index}"
-                  ${unlocked ? '' : 'disabled'}
-                  aria-label="Level ${ref.levelInChapter + 1}, ${ref.size} by ${ref.size}">
-                  ${face}${stamp}
-                </button>`;
-      })
-      .join('');
-
-    return `<div class="chapter">
-      <div class="chapterHead">
-        <div class="chapterDot" style="background:${chapter.accent}"></div>
-        <div>
-          <div class="chapterName">${chapter.name}</div>
-          <div class="chapterBlurb">${chapter.blurb}</div>
-        </div>
-      </div>
-      <div class="levelRow">${rows}</div>
-    </div>`;
-  }).join('');
-
-  $('mapBody')
-    .querySelectorAll<HTMLButtonElement>('button[data-level]')
-    .forEach((btn) =>
-      btn.addEventListener('click', () => {
-        playTap();
-        startLevel(Number(btn.dataset.level));
-      })
-    );
 }
 
 // ---------------------------------------------------------------- game
@@ -330,6 +287,7 @@ function init() {
     show('map');
   });
 
+  // Nav buttons (data-nav="title" / "map" / "game")
   document.querySelectorAll<HTMLElement>('[data-nav]').forEach((el) =>
     el.addEventListener('click', () => {
       playTap();
@@ -390,7 +348,7 @@ function init() {
     show('map');
   });
 
-  // Sound toggles
+  // Sound toggles — three buttons covering title / map / game screens
   ['btnSoundTitle', 'btnSoundMap', 'btnSoundGame'].forEach((id) =>
     $(id).addEventListener('click', () => {
       setSoundEnabled(!soundEnabled());
@@ -399,7 +357,7 @@ function init() {
     })
   );
 
-  // Keyboard shortcuts
+  // Keyboard shortcuts in the game screen
   window.addEventListener('keydown', (e) => {
     if ($('screen-game').classList.contains('hidden')) return;
     if (e.key === 'r' || e.key === 'R') $('btnReset').click();
