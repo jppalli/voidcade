@@ -245,13 +245,15 @@ body {
 
 .hero-rail {
   display: flex;
-  align-items: stretch;
-  gap: 18px;
+  align-items: center;
+  /* Cards overlap via negative margins instead of a gap */
+  gap: 0;
   overflow-x: auto;
   scroll-behavior: smooth;
-  scroll-snap-type: x mandatory;
-  padding: 10px clamp(20px, 5vw, 64px) 18px;
-  /* Room for the offset shadows so they don't get clipped */
+  scroll-snap-type: x proximity;
+  /* Generous vertical padding: overflow-x:auto also clips vertically, so the
+     tilt, float drift and offset shadows all need room inside the scroller. */
+  padding: 34px clamp(20px, 5vw, 64px) 42px;
   scrollbar-width: thin;
   scrollbar-color: rgba(255,255,255,0.22) transparent;
   -webkit-overflow-scrolling: touch;
@@ -275,8 +277,13 @@ body {
 }
 
 .stage-card {
+  /* --tilt and --y0 drive the resting angle and vertical offset; each card
+     gets its own values below so the row looks hand-scattered. */
+  --tilt: -2deg;
+  --y0: 0px;
   flex: 0 0 auto;
   width: clamp(168px, 21vw, 224px);
+  margin-left: -34px; /* overlap the previous card */
   scroll-snap-align: center;
   display: flex;
   flex-direction: column;
@@ -287,17 +294,30 @@ body {
   border: 3px solid #000;
   border-radius: 20px;
   padding: 16px 16px 18px;
-  box-shadow: 6px 6px 0 rgba(0,0,0,0.5);
-  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  box-shadow: 8px 8px 0 rgba(0,0,0,0.5);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.18s ease;
+}
+
+.stage-card:first-child {
+  margin-left: 0;
+}
+
+/* Alternating tilt/offset, woven z-order so the overlap reads as a stack. */
+.stage-card:nth-child(odd) { --tilt: -5deg; --y0: 8px; z-index: 2; }
+.stage-card:nth-child(even) { --tilt: 5deg; --y0: -6px; z-index: 3; }
+
+.stage-card-featured {
+  --tilt: -2deg;
+  --y0: 0px;
+  z-index: 6;
+  border-color: var(--accent);
 }
 
 .stage-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 9px 11px 0 rgba(0,0,0,0.5);
-}
-
-.stage-card-featured {
-  border-color: var(--accent);
+  transform: rotate(var(--tilt)) translateY(calc(var(--y0) - 10px)) scale(1.05);
+  box-shadow: 12px 14px 0 rgba(0,0,0,0.5);
+  z-index: 8;
+  animation: none; /* freeze the float so it doesn't fight the hover lift */
 }
 
 .stage-card-badge {
@@ -344,22 +364,38 @@ body {
   transform: translateX(3px);
 }
 
-/* Cards rise into place on load, staggered left to right. */
+/* Cards fly in staggered left to right, then drift gently forever. Both
+   keyframes are written in terms of --tilt/--y0 so every card animates
+   around its own resting position. */
 .stage-card {
-  animation: cardRise 0.5s cubic-bezier(0.34,1.56,0.64,1) both;
+  animation: cardRise 0.55s cubic-bezier(0.34,1.56,0.64,1) both,
+             cardFloat 5s ease-in-out infinite;
 }
 
-.stage-card:nth-child(1) { animation-delay: 0.04s; }
-.stage-card:nth-child(2) { animation-delay: 0.10s; }
-.stage-card:nth-child(3) { animation-delay: 0.16s; }
-.stage-card:nth-child(4) { animation-delay: 0.22s; }
-.stage-card:nth-child(5) { animation-delay: 0.28s; }
-.stage-card:nth-child(6) { animation-delay: 0.34s; }
-.stage-card:nth-child(7) { animation-delay: 0.40s; }
+.stage-card:nth-child(1) { animation-delay: 0.04s, 0.6s; }
+.stage-card:nth-child(2) { animation-delay: 0.11s, 1.1s; }
+.stage-card:nth-child(3) { animation-delay: 0.18s, 0.35s; }
+.stage-card:nth-child(4) { animation-delay: 0.25s, 1.4s; }
+.stage-card:nth-child(5) { animation-delay: 0.32s, 0.85s; }
+.stage-card:nth-child(6) { animation-delay: 0.39s, 1.75s; }
+.stage-card:nth-child(7) { animation-delay: 0.46s, 0.2s; }
 
 @keyframes cardRise {
-  from { opacity: 0; transform: translateY(28px) scale(0.92); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+  from { opacity: 0; transform: rotate(calc(var(--tilt) * 2.5)) translateY(46px) scale(0.86); }
+  to   { opacity: 1; transform: rotate(var(--tilt)) translateY(var(--y0)) scale(1); }
+}
+
+@keyframes cardFloat {
+  0%, 100% { transform: rotate(var(--tilt)) translateY(var(--y0)) scale(1); }
+  50%      { transform: rotate(var(--tilt)) translateY(calc(var(--y0) - 9px)) scale(1); }
+}
+
+/* Respect users who'd rather not have constant motion. */
+@media (prefers-reduced-motion: reduce) {
+  .stage-card {
+    animation: none;
+    transform: rotate(var(--tilt)) translateY(var(--y0));
+  }
 }
 
 /* Arrow buttons for scrolling the rail on pointer devices. Hidden when the
@@ -406,8 +442,12 @@ body {
 }
 
 @media (max-width: 560px) {
-  .hero-rail { gap: 14px; }
-  .stage-card { width: 152px; padding: 13px 13px 15px; }
+  .stage-card {
+    width: 156px;
+    margin-left: -26px;
+    padding: 13px 13px 15px;
+  }
+  .hero-rail { padding-top: 28px; padding-bottom: 34px; }
 }
 
 /* ---------------- Ad slots ---------------- */

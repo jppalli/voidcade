@@ -21,9 +21,17 @@ function setupHeroRail() {
   };
 
   const scrollByCard = (direction) => {
-    const card = rail.querySelector('.stage-card');
-    const step = card ? card.offsetWidth + 18 : rail.clientWidth * 0.8;
-    rail.scrollBy({ left: direction * step * 2, behavior: 'smooth' });
+    // Measure the real card-to-card distance rather than assuming a gap:
+    // the cards overlap via negative margins, so the pitch is smaller than
+    // the card width.
+    const items = rail.querySelectorAll('.stage-card');
+    let pitch = rail.clientWidth * 0.6;
+    if (items.length >= 2) {
+      pitch = items[1].offsetLeft - items[0].offsetLeft;
+    } else if (items.length === 1) {
+      pitch = items[0].offsetWidth;
+    }
+    rail.scrollBy({ left: direction * pitch * 2, behavior: 'smooth' });
   };
 
   prev.addEventListener('click', () => scrollByCard(-1));
