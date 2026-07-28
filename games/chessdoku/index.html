@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChessDoku</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>♛</text></svg>">
+  <link rel="stylesheet" href="/src/styles.css">
+</head>
+<body>
+
+  <!-- ============ SVG ICON SET ============ -->
+  <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+    <symbol id="i-next" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
+    <symbol id="i-reset" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></symbol>
+    <symbol id="i-sound-on" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></symbol>
+    <symbol id="i-sound-off" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+    <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21c1.18.54 2.03 2.03 2.03 4"/><path d="M6 2h12v7a6 6 0 0 1-12 0V2Z"/></symbol>
+  </svg>
+
+  <!-- ============ TITLE SCREEN ============ -->
+  <section id="screen-title" class="screen">
+    <div class="titleFloat" aria-hidden="true"></div>
+    <div class="titleCard">
+      <h1 class="logo"><span class="logoGlyph">♛</span>ChessDoku<span class="logoGlyph">♞</span></h1>
+      <p class="tagline">Chess pieces. Sudoku rules. Zero casualties.</p>
+      <div class="titleButtons">
+        <button class="btn primary big" id="btnContinue">Continue</button>
+        <button class="btn big" id="btnChapters">Adventure Map</button>
+        <button class="btn big" id="btnHowTo">How to Play</button>
+      </div>
+      <div class="titleFooter">
+        <button class="iconBtn" id="btnSoundTitle" title="Toggle sound"><svg class="icon"><use href="#i-sound-on"/></svg></button>
+        <span id="titleProgress"></span>
+      </div>
+      <a class="voidcadeLink" href="../../">← Back to Voidcade</a>
+    </div>
+  </section>
+
+  <!-- ============ ADVENTURE MAP ============ -->
+  <section id="screen-map" class="screen mapScreen hidden">
+    <div class="mapHeader">
+      <button class="btn back" data-nav="title"><svg class="icon"><use href="#i-back"/></svg><span>Title</span></button>
+      <h2>Adventure Map</h2>
+      <div class="mapHeaderRight">
+        <span id="mapProgress" class="mapProgressChip"></span>
+        <button class="iconBtn" id="btnSoundMap" title="Toggle sound"><svg class="icon"><use href="#i-sound-on"/></svg></button>
+      </div>
+    </div>
+    <div id="mapWrap">
+      <div id="mapRegions" aria-hidden="true"></div>
+      <svg id="mapPath" aria-hidden="true"></svg>
+      <div id="mapBanners"></div>
+      <div id="mapNodes"></div>
+    </div>
+  </section>
+
+  <!-- ============ GAME SCREEN ============ -->
+  <section id="screen-game" class="screen hidden">
+    <div class="gameHeader">
+      <button class="btn back" data-nav="map"><svg class="icon"><use href="#i-back"/></svg><span>Map</span></button>
+      <div class="gameTitleBlock">
+        <div id="hudChapter"></div>
+        <div id="hudLevelName"></div>
+        <div id="hudStars"></div>
+      </div>
+      <div class="gameHeaderRight">
+        <button class="iconBtn" id="btnReset" title="Reset level (R)"><svg class="icon"><use href="#i-reset"/></svg></button>
+        <button class="iconBtn" id="btnSoundGame" title="Toggle sound"><svg class="icon"><use href="#i-sound-on"/></svg></button>
+      </div>
+    </div>
+    <div class="gameLayout">
+      <div id="boardHolder"><canvas id="boardCanvas"></canvas></div>
+      <aside class="sidePanel">
+        <div id="hudDesc"></div>
+        <div id="hudRuleTags"></div>
+        <div class="trayHeader">Pieces to place</div>
+        <div id="tray"></div>
+        <div id="hudStatus"></div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============ WIN MODAL ============ -->
+  <div id="winOverlay" class="overlay hidden">
+    <div class="modal winModal">
+      <div class="winMedal"><svg class="icon"><use href="#i-trophy"/></svg></div>
+      <h2>Level Complete!</h2>
+      <div id="winStars" class="winStars"></div>
+      <p id="winText"></p>
+      <div class="modalButtons">
+        <button class="btn" id="btnWinLevels">Map</button>
+        <button class="btn primary" id="btnWinNext"><span id="btnWinNextLabel">Next level</span><svg class="icon"><use href="#i-next"/></svg></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ HOW TO PLAY MODAL ============ -->
+  <div id="howToOverlay" class="overlay hidden">
+    <div class="modal howToModal">
+      <h2>How to Play</h2>
+      <p>Place every piece from the tray onto the board so that <strong>no piece attacks another</strong> — the fixed purple pieces included.</p>
+      <ul class="howToList">
+        <li><span class="glyph">♛</span><strong>Queen</strong> — attacks rows, columns &amp; diagonals</li>
+        <li><span class="glyph">♜</span><strong>Rook</strong> — attacks along rows &amp; columns</li>
+        <li><span class="glyph">♝</span><strong>Bishop</strong> — attacks along diagonals</li>
+        <li><span class="glyph">♞</span><strong>Knight</strong> — jumps in an L, leaps over blockers</li>
+        <li><span class="glyph">♚</span><strong>King</strong> — attacks the 8 touching squares</li>
+        <li><span class="glyph">♟</span><strong>Pawn</strong> — attacks the 2 squares diagonally above it</li>
+      </ul>
+      <p>Sliding pieces stop at the first piece or <em>cracked square</em> in their path — walls can shield pieces from each other.</p>
+      <p>Some levels add <strong>sudoku rules</strong>: exactly one piece per row and column, or one piece per outlined box. Fixed purple pieces are givens — they cannot be moved.</p>
+      <p class="howToHint">Click a tray piece to select it, click a square to place it, click a placed piece to take it back.</p>
+      <div class="modalButtons">
+        <button class="btn primary" id="btnHowToClose">Got it</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
