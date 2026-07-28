@@ -20,7 +20,7 @@ export interface RealmDef {
   id: string;
   name: string;
   blurb: string;
-  size: number;
+  /** filled in from the realm's level list */
   levelCount: number;
   colorFrom: string;
   colorTo: string;

@@ -7,9 +7,10 @@ interface MenuScreenProps {
   progress: Progress;
   onPlay: () => void;
   onOpenSaga: () => void;
+  onOpenRules: () => void;
 }
 
-export default function MenuScreen({ progress, onPlay, onOpenSaga }: MenuScreenProps) {
+export default function MenuScreen({ progress, onPlay, onOpenSaga, onOpenRules }: MenuScreenProps) {
   const levelsCleared = Object.values(progress.results).filter((r) => r.completed).length;
 
   return (
@@ -45,6 +46,15 @@ export default function MenuScreen({ progress, onPlay, onOpenSaga }: MenuScreenP
           }}
         >
           View Saga Map
+        </button>
+        <button
+          className="btn-secondary"
+          onClick={() => {
+            playClick();
+            onOpenRules();
+          }}
+        >
+          How to Play
         </button>
       </div>
 

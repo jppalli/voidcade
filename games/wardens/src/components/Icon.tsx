@@ -41,6 +41,16 @@ export function StarIcon({ filled, size = 20 }: { filled: boolean; size?: number
   );
 }
 
+export function HelpIcon({ size = 20 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.4 9.2a2.7 2.7 0 1 1 3.6 2.5c-.7.3-1 .9-1 1.6v.3" />
+      <line x1="12" y1="17" x2="12" y2="17.01" strokeWidth={2.4} />
+    </svg>
+  );
+}
+
 export function HeartIcon({ filled, size = 22 }: { filled: boolean; size?: number }) {
   return (
     <svg viewBox="0 0 24 24" width={size} height={size}>

@@ -231,6 +231,7 @@ button {
 
 .path-node-row {
   display: flex;
+  align-items: center;
   justify-content: center;
   width: 100%;
 }
@@ -270,6 +271,29 @@ button {
 
 .path-node.boon-node {
   border-style: dashed;
+}
+
+.path-node-size {
+  align-self: center;
+  margin-left: 10px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  color: var(--text-dimmer);
+}
+
+.path-node-boon {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--realm-color, var(--accent));
+  border: 2px solid var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .path-node-stars {
@@ -335,6 +359,34 @@ button {
   font-weight: 700;
   color: var(--accent);
   text-align: center;
+}
+
+/* Teaching banner shown on the early levels. Reads as guidance, not chrome. */
+.level-tip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 480px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(125, 255, 212, 0.28);
+  background: rgba(125, 255, 212, 0.07);
+  color: #d6fff2;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.level-tip-badge {
+  flex-shrink: 0;
+  font-size: 9.5px;
+  font-weight: 900;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  color: #08080f;
+  background: var(--accent);
+  border-radius: 999px;
+  padding: 3px 8px;
 }
 
 .board-wrap {
@@ -562,6 +614,102 @@ button {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.modal-card-wide {
+  max-width: 420px;
+  text-align: left;
+}
+
+.modal-card-wide .modal-title {
+  text-align: center;
+}
+
+/* How-to-play diagram: a small 4x4 board showing two legal Wardens and the
+   cells their adjacency rules out. */
+.rules-diagram {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  width: 150px;
+  height: 150px;
+  margin: 4px auto 18px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 3px solid #06060c;
+  gap: 1px;
+  background: #06060c;
+}
+
+.rules-diagram-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.rules-diagram-cell.is-blocked {
+  filter: brightness(0.6) saturate(0.75);
+}
+
+.rules-diagram-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(8, 8, 15, 0.6);
+}
+
+.rules-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.rules-list li {
+  display: flex;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+.rules-list strong {
+  color: var(--text);
+}
+
+.rules-num {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(125, 255, 212, 0.14);
+  border: 1px solid rgba(125, 255, 212, 0.35);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rules-lives {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--text-dimmer);
+  line-height: 1.5;
+  padding-top: 14px;
+  margin-bottom: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.rules-lives span {
+  flex: 1;
+  min-width: 180px;
 }
 
 /* Boon choice modal: two cards side by side */

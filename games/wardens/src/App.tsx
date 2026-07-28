@@ -1,7 +1,8 @@
 import { useCallback, useMemo, useState } from 'react';
 import BoonChoiceModal from './components/BoonChoiceModal';
 import FailModal from './components/FailModal';
-import { BackIcon, HomeIcon, SoundIcon } from './components/Icon';
+import { BackIcon, HelpIcon, HomeIcon, SoundIcon } from './components/Icon';
+import RulesModal from './components/RulesModal';
 import WinModal from './components/WinModal';
 import type { BoonId } from './engine/boons';
 import { generateWardenLevel } from './engine/generator';
@@ -14,6 +15,24 @@ import SagaScreen from './screens/SagaScreen';
 import { getAudioPrefs, playBoonAwarded, playClick, playWin, setSfxEnabled } from './sounds';
 
 type Screen = 'menu' | 'saga' | 'play';
+
+const RULES_SEEN_KEY = 'wardens_seen_rules_v1';
+
+function hasSeenRules(): boolean {
+  try {
+    return !!localStorage.getItem(RULES_SEEN_KEY);
+  } catch {
+    return false;
+  }
+}
+
+function markRulesSeen() {
+  try {
+    localStorage.setItem(RULES_SEEN_KEY, '1');
+  } catch {
+    /* localStorage unavailable — the modal just shows again next time */
+  }
+}
 
 // Rotate through pairs of boon options offered on boon-granting levels, so
 // the choice varies rather than always offering the same two.
@@ -31,6 +50,7 @@ export default function App() {
   const [failed, setFailed] = useState(false);
   const [attemptKey, setAttemptKey] = useState(0);
   const [boonChoice, setBoonChoice] = useState<BoonId[] | null>(null);
+  const [showRules, setShowRules] = useState(false);
   const [audioPrefs, setAudioPrefs] = useState(getAudioPrefs);
 
   const currentLevelRef = currentLevelIndex !== null ? getLevelRef(currentLevelIndex) : null;
@@ -58,6 +78,13 @@ export default function App() {
     setFailed(false);
     setAttemptKey((k) => k + 1);
     setScreen('play');
+
+    // First time anyone opens the very first level, teach the rules up front
+    // rather than letting them lose lives discovering them.
+    if (globalIndex === 0 && !hasSeenRules()) {
+      markRulesSeen();
+      setShowRules(true);
+    }
   };
 
   const handlePlayFromMenu = () => {
@@ -142,6 +169,16 @@ export default function App() {
               </>
             )}
           </span>
+          <button
+            className="icon-btn"
+            onClick={() => {
+              playClick();
+              setShowRules(true);
+            }}
+            aria-label="How to play"
+          >
+            <HelpIcon />
+          </button>
           <button className="icon-btn" onClick={toggleSfx} aria-label="Toggle sound">
             <SoundIcon on={audioPrefs.sfx} />
           </button>
@@ -149,7 +186,12 @@ export default function App() {
       )}
 
       {screen === 'menu' && (
-        <MenuScreen progress={progress} onPlay={handlePlayFromMenu} onOpenSaga={() => setScreen('saga')} />
+        <MenuScreen
+          progress={progress}
+          onPlay={handlePlayFromMenu}
+          onOpenSaga={() => setScreen('saga')}
+          onOpenRules={() => setShowRules(true)}
+        />
       )}
 
       {screen === 'saga' && <SagaScreen progress={progress} onSelectLevel={startLevel} />}
@@ -190,6 +232,13 @@ export default function App() {
       )}
 
       {boonChoice && <BoonChoiceModal options={boonChoice} onChoose={handleChooseBoon} />}
+
+      {showRules && (
+        <RulesModal
+          onClose={() => setShowRules(false)}
+          closeLabel={screen === 'play' ? 'Begin' : 'Got it'}
+        />
+      )}
     </div>
   );
 }

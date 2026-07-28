@@ -59,14 +59,11 @@ export default function SagaScreen({ progress, onSelectLevel }: SagaScreenProps)
                         }}
                         aria-label={`Level ${ref.levelInRealm + 1} of ${realm.name}`}
                       >
-                        {unlocked ? (
-                          ref.grantsBoon ? (
-                            <Icon inner={boonGlyphInner('seers-eye')} color={realm.colorFrom} size={26} />
-                          ) : (
-                            ref.levelInRealm + 1
-                          )
-                        ) : (
-                          <LockIcon />
+                        {unlocked ? ref.levelInRealm + 1 : <LockIcon />}
+                        {unlocked && ref.grantsBoon && (
+                          <span className="path-node-boon" title="Clear this level to earn a boon">
+                            <Icon inner={boonGlyphInner('seers-eye')} color="#08080f" size={13} />
+                          </span>
                         )}
                         {unlocked && result?.completed && (
                           <div className="path-node-stars">
@@ -76,6 +73,11 @@ export default function SagaScreen({ progress, onSelectLevel }: SagaScreenProps)
                           </div>
                         )}
                       </button>
+                      {unlocked && (
+                        <span className="path-node-size">
+                          {ref.size}×{ref.size}
+                        </span>
+                      )}
                     </div>
                     {i < refs.length - 1 && (
                       <div className="path-node-row" style={{ justifyContent: 'center' }}>

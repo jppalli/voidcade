@@ -191,6 +191,12 @@ export default function PlayScreen({
         </div>
       </div>
 
+      {levelRef.tip && !banishMode && (
+        <div className="level-tip">
+          <span className="level-tip-badge">Lesson</span>
+          {levelRef.tip}
+        </div>
+      )}
       {state.aegisShieldActive && <div className="aegis-banner">Aegis active — your next wrong tap is free.</div>}
       {banishMode && <div className="banish-hint">Tap any cell in the domain you want to Banish.</div>}
 
