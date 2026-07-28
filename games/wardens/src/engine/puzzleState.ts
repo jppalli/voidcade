@@ -1,23 +1,23 @@
-import { cellConflictsWithPlaced, isAdjacent } from './solver';
+import { cellConflictsWithPlaced } from './solver';
 import type { CellMark, Position, WardenLevel } from './types';
+
+/** Lives granted at the start of every level. */
+export const MAX_LIVES = 3;
 
 export interface PuzzleState {
   marks: CellMark[][];
-  mistakes: number;
+  /** how many wrong taps have been made this attempt */
+  livesLost: number;
   usedHint: boolean;
-  usedBanish: boolean;
   aegisShieldActive: boolean;
-  history: CellMark[][][]; // stack of previous `marks` grids, for undo
 }
 
 export function createInitialState(size: number): PuzzleState {
   return {
     marks: Array.from({ length: size }, () => new Array<CellMark>(size).fill('empty')),
-    mistakes: 0,
+    livesLost: 0,
     usedHint: false,
-    usedBanish: false,
     aegisShieldActive: false,
-    history: [],
   };
 }
 
@@ -35,45 +35,31 @@ export function getWardenPositions(marks: CellMark[][]): Position[] {
   return out;
 }
 
-/** Returns positions of all wardens that conflict with at least one other placed warden. */
-export function findConflicts(marks: CellMark[][], regions: number[][]): Set<string> {
-  const wardens = getWardenPositions(marks);
-  const conflicts = new Set<string>();
-  for (let i = 0; i < wardens.length; i++) {
-    for (let j = i + 1; j < wardens.length; j++) {
-      const a = wardens[i];
-      const b = wardens[j];
-      const sameRow = a.row === b.row;
-      const sameCol = a.col === b.col;
-      const sameRegion = regions[a.row][a.col] === regions[b.row][b.col];
-      const adjacent = isAdjacent(a, b);
-      if (sameRow || sameCol || sameRegion || adjacent) {
-        conflicts.add(`${a.row},${a.col}`);
-        conflicts.add(`${b.row},${b.col}`);
-      }
-    }
-  }
-  return conflicts;
+/** True if this cell holds a Warden in the level's one true solution. */
+export function isSolutionCell(level: WardenLevel, row: number, col: number): boolean {
+  return level.solution.some((p) => p.row === row && p.col === col);
 }
 
+/**
+ * Since a Warden can only ever be placed on a true-solution cell now, the
+ * puzzle is solved once every solution cell has been revealed.
+ */
 export function isSolved(marks: CellMark[][], level: WardenLevel): boolean {
-  const wardens = getWardenPositions(marks);
-  if (wardens.length !== level.size) return false;
-  const conflicts = findConflicts(marks, level.regions);
-  return conflicts.size === 0;
+  return level.solution.every((p) => marks[p.row][p.col] === 'warden');
 }
 
-/** Cycles a cell: empty -> x -> warden -> empty. */
-export function nextMark(current: CellMark): CellMark {
-  if (current === 'empty') return 'x';
-  if (current === 'x') return 'warden';
-  return 'empty';
+export function livesRemaining(state: PuzzleState): number {
+  return Math.max(0, MAX_LIVES - state.livesLost);
+}
+
+export function isOutOfLives(state: PuzzleState): boolean {
+  return state.livesLost >= MAX_LIVES;
 }
 
 /**
  * Applies the Banish boon to one region: every cell in that region which
- * conflicts with an already-placed warden (same row/col/region/adjacency)
- * gets auto-marked with an X, unless it's already a warden.
+ * conflicts with an already-revealed Warden gets crossed out for free (no
+ * life cost), doing the tedious elimination work for the player.
  */
 export function applyBanish(marks: CellMark[][], regions: number[][], regionIndex: number): CellMark[][] {
   const next = cloneMarks(marks);

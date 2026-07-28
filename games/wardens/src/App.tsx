@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import BoonChoiceModal from './components/BoonChoiceModal';
+import FailModal from './components/FailModal';
 import { BackIcon, HomeIcon, SoundIcon } from './components/Icon';
 import WinModal from './components/WinModal';
 import type { BoonId } from './engine/boons';
@@ -27,6 +28,8 @@ export default function App() {
   const [progress, setProgress] = useState<Progress>(() => loadProgress());
   const [currentLevelIndex, setCurrentLevelIndex] = useState<number | null>(null);
   const [winInfo, setWinInfo] = useState<{ stars: number } | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [attemptKey, setAttemptKey] = useState(0);
   const [boonChoice, setBoonChoice] = useState<BoonId[] | null>(null);
   const [audioPrefs, setAudioPrefs] = useState(getAudioPrefs);
 
@@ -52,6 +55,8 @@ export default function App() {
   const startLevel = (globalIndex: number) => {
     setCurrentLevelIndex(globalIndex);
     setWinInfo(null);
+    setFailed(false);
+    setAttemptKey((k) => k + 1);
     setScreen('play');
   };
 
@@ -61,18 +66,27 @@ export default function App() {
     startLevel(Math.min(nextIdx, TOTAL_LEVELS - 1));
   };
 
-  const handleWin = (mistakes: number, usedHint: boolean) => {
+  const handleWin = (livesLost: number, usedHint: boolean) => {
     if (currentLevelIndex === null || !currentLevelRef) return;
     playWin();
 
-    updateProgress((p) => recordLevelWin(p, currentLevelIndex, mistakes, usedHint));
-    const stars = starsForResult({ completed: true, mistakes, usedHint });
+    updateProgress((p) => recordLevelWin(p, currentLevelIndex, livesLost, usedHint));
+    const stars = starsForResult({ completed: true, mistakes: livesLost, usedHint });
     setWinInfo({ stars });
 
     if (currentLevelRef.grantsBoon) {
       const setIdx = Math.floor(currentLevelRef.globalIndex / 3) % BOON_OPTION_SETS.length;
       setBoonChoice(BOON_OPTION_SETS[setIdx]);
     }
+  };
+
+  const handleFail = () => {
+    setFailed(true);
+  };
+
+  const handleRetry = () => {
+    setFailed(false);
+    setAttemptKey((k) => k + 1);
   };
 
   const handleChooseBoon = (id: BoonId) => {
@@ -146,7 +160,9 @@ export default function App() {
           level={currentLevel}
           progress={progress}
           onWin={handleWin}
+          onFail={handleFail}
           onSpendBoon={handleSpendBoon}
+          attemptKey={attemptKey}
         />
       )}
 
@@ -158,6 +174,16 @@ export default function App() {
           onNext={handleNextLevel}
           onMap={() => {
             setWinInfo(null);
+            setScreen('saga');
+          }}
+        />
+      )}
+
+      {failed && (
+        <FailModal
+          onRetry={handleRetry}
+          onMap={() => {
+            setFailed(false);
             setScreen('saga');
           }}
         />

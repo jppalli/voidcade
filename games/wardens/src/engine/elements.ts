@@ -5,20 +5,28 @@
 export interface ElementDef {
   id: string;
   name: string;
+  /** bright accent used for the Warden glyph and borders */
   color: string;
-  glow: string;
+  /** solid, clearly-distinguishable region fill for the board */
+  cell: string;
+  /** darker ink used for glyphs drawn on top of the bright fill */
+  ink: string;
 }
 
+// Region fills are deliberately solid mid-tone colors (not low-alpha tints)
+// so adjacent domains stay easy to tell apart, including on small phone
+// screens. Each `ink` is a darkened version of its fill so the Warden glyph
+// reads clearly on top of it.
 export const ELEMENTS: ElementDef[] = [
-  { id: 'fire',    name: 'Fire',    color: '#ff6b6b', glow: '#ff6b6b55' },
-  { id: 'water',   name: 'Water',   color: '#4dd0ff', glow: '#4dd0ff55' },
-  { id: 'earth',   name: 'Earth',   color: '#9a7b4f', glow: '#9a7b4f55' },
-  { id: 'air',     name: 'Air',     color: '#d8e4ff', glow: '#d8e4ff44' },
-  { id: 'lightning', name: 'Lightning', color: '#ffe14d', glow: '#ffe14d55' },
-  { id: 'frost',   name: 'Frost',   color: '#8affea', glow: '#8affea55' },
-  { id: 'bloom',   name: 'Bloom',   color: '#7dffb0', glow: '#7dffb055' },
-  { id: 'shadow',  name: 'Shadow',  color: '#b58aff', glow: '#b58aff55' },
-  { id: 'radiant', name: 'Radiant', color: '#ff9fe0', glow: '#ff9fe055' },
+  { id: 'fire',      name: 'Fire',      color: '#ff8a75', cell: '#c94f3d', ink: '#2b0b06' },
+  { id: 'water',     name: 'Water',     color: '#6fd2ff', cell: '#2f7fc4', ink: '#04182b' },
+  { id: 'earth',     name: 'Earth',     color: '#e0b072', cell: '#9c7238', ink: '#2a1a05' },
+  { id: 'air',       name: 'Air',       color: '#eef2ff', cell: '#8f9bbf', ink: '#151a2b' },
+  { id: 'lightning', name: 'Lightning', color: '#ffe98a', cell: '#c9a520', ink: '#2b2103' },
+  { id: 'frost',     name: 'Frost',     color: '#9dffee', cell: '#2fa896', ink: '#032722' },
+  { id: 'bloom',     name: 'Bloom',     color: '#9dffc4', cell: '#3aa762', ink: '#04250f' },
+  { id: 'shadow',    name: 'Shadow',    color: '#c9a8ff', cell: '#7a55c4', ink: '#170a2b' },
+  { id: 'radiant',   name: 'Radiant',   color: '#ffc9ee', cell: '#dd7fbb', ink: '#33082a' },
 ];
 
 // Neon line-art glyph paths, same rendering convention as Bubble Shooter's

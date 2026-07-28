@@ -52,11 +52,14 @@ export function isLevelUnlocked(progress: Progress, globalIndex: number): boolea
   return globalIndex <= progress.unlockedIndex;
 }
 
+/**
+ * Stars map directly to lives kept: clear without losing a life (and
+ * without a hint) for all 3. `mistakes` here is the count of lives lost.
+ */
 export function starsForResult(result: LevelResult | undefined): number {
   if (!result?.completed) return 0;
-  if (result.usedHint) return 1;
-  if (result.mistakes === 0) return 3;
-  if (result.mistakes <= 2) return 2;
+  if (result.mistakes === 0 && !result.usedHint) return 3;
+  if (result.mistakes <= 1) return 2;
   return 1;
 }
 

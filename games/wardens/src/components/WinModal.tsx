@@ -25,6 +25,8 @@ export default function WinModal({ stars, isLastInRealm, isSagaComplete, onNext,
             ? "You've cleared every realm in the saga so far. More await in future updates."
             : isLastInRealm
             ? 'The next realm grows larger, and its elements grow stranger.'
+            : stars === 3
+            ? 'Not a single life lost. Every domain found its Warden.'
             : 'Every row, column, and domain finds its balance.'}
         </div>
         <div className="modal-actions">

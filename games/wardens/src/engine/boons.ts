@@ -11,19 +11,19 @@ export const BOONS: BoonDef[] = [
   {
     id: 'seers-eye',
     name: "Seer's Eye",
-    description: 'Reveals one cell that is guaranteed correct in the true placement.',
+    description: 'Places one Warden for you, free and always correct.',
     glyph: 'seers-eye',
   },
   {
     id: 'banish',
     name: 'Banish',
-    description: 'Choose a domain — every cell in it that cannot hold a Warden is marked for you.',
+    description: 'Choose a domain — every cell in it that cannot hold a Warden is crossed out free of charge.',
     glyph: 'banish',
   },
   {
     id: 'aegis',
     name: 'Aegis',
-    description: 'Shields you from your next mistake. The wrong placement is undone instead of counted against you.',
+    description: 'Your next wrong tap costs you no life. Guess boldly, once.',
     glyph: 'aegis',
   },
 ];

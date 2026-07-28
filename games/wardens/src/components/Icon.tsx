@@ -41,6 +41,20 @@ export function StarIcon({ filled, size = 20 }: { filled: boolean; size?: number
   );
 }
 
+export function HeartIcon({ filled, size = 22 }: { filled: boolean; size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size}>
+      <path
+        d="M12 20.5s-7.5-4.6-7.5-9.6a4.4 4.4 0 0 1 7.5-3.1 4.4 4.4 0 0 1 7.5 3.1c0 5-7.5 9.6-7.5 9.6Z"
+        fill={filled ? '#ff5d6c' : 'none'}
+        stroke={filled ? '#ff5d6c' : '#4a4a5c'}
+        strokeWidth={filled ? 0 : 1.8}
+        style={filled ? { filter: 'drop-shadow(0 0 4px #ff5d6c88)' } : undefined}
+      />
+    </svg>
+  );
+}
+
 export function LockIcon({ size = 18 }: { size?: number }) {
   return (
     <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
@@ -98,15 +112,6 @@ export function LightbulbIcon({ size = 20 }: { size?: number }) {
       <path d="M9 18h6" />
       <path d="M10 21h4" />
       <path d="M12 3a6 6 0 0 0-3.5 10.9c.4.3.7.8.7 1.3V16h5.6v-.8c0-.5.3-1 .7-1.3A6 6 0 0 0 12 3Z" />
-    </svg>
-  );
-}
-
-export function UndoIcon({ size = 20 }: { size?: number }) {
-  return (
-    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 10h10a5 5 0 010 10h-2" />
-      <path d="M4 10l4-4M4 10l4 4" />
     </svg>
   );
 }

@@ -1,160 +1,155 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import Icon, { LightbulbIcon, RestartIcon, UndoIcon, XMarkGlyph } from '../components/Icon';
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
+import Icon, { HeartIcon, LightbulbIcon, RestartIcon, XMarkGlyph } from '../components/Icon';
 import { boonGlyphInner, type BoonId } from '../engine/boons';
 import { elementGlyphInner, getElement } from '../engine/elements';
 import type { Progress } from '../engine/progress';
 import {
+  MAX_LIVES,
   applyBanish,
   cloneMarks,
   createInitialState,
-  findConflicts,
-  getWardenPositions,
+  isOutOfLives,
+  isSolutionCell,
   isSolved,
-  nextMark,
+  livesRemaining,
   type PuzzleState,
 } from '../engine/puzzleState';
-import { findSolution } from '../engine/solver';
 import type { LevelRef } from '../engine/saga';
 import type { WardenLevel } from '../engine/types';
-import { playMark, playMistake, playPlaceWarden, playRemove } from '../sounds';
+import { playMark, playMistake, playPlaceWarden } from '../sounds';
 
 interface PlayScreenProps {
   levelRef: LevelRef;
   level: WardenLevel;
   progress: Progress;
-  onWin: (mistakes: number, usedHint: boolean) => void;
+  onWin: (livesLost: number, usedHint: boolean) => void;
+  onFail: () => void;
   onSpendBoon: (id: BoonId) => void;
+  /** bumped by the parent to force a fresh attempt (retry after failing) */
+  attemptKey: number;
 }
 
-export default function PlayScreen({ levelRef, level, progress, onWin, onSpendBoon }: PlayScreenProps) {
+export default function PlayScreen({
+  levelRef,
+  level,
+  progress,
+  onWin,
+  onFail,
+  onSpendBoon,
+  attemptKey,
+}: PlayScreenProps) {
   const [state, setState] = useState<PuzzleState>(() => createInitialState(level.size));
   const [errorCells, setErrorCells] = useState<Set<string>>(new Set());
   const [hintCell, setHintCell] = useState<string | null>(null);
   const [banishMode, setBanishMode] = useState(false);
-  const wonRef = useRef(false);
+  const resolvedRef = useRef(false);
 
-  // Reset local puzzle state whenever the level changes.
+  // Fresh state whenever the level or the attempt changes.
   useEffect(() => {
     setState(createInitialState(level.size));
     setErrorCells(new Set());
     setHintCell(null);
     setBanishMode(false);
-    wonRef.current = false;
-  }, [level]);
-
-  const conflicts = useMemo(() => findConflicts(state.marks, level.regions), [state.marks, level.regions]);
+    resolvedRef.current = false;
+  }, [level, attemptKey]);
 
   const size = level.size;
 
-  const applyMarksUpdate = useCallback(
-    (updater: (marks: import('../engine/types').CellMark[][]) => import('../engine/types').CellMark[][]) => {
+  const revealCell = useCallback(
+    (row: number, col: number) => {
+      if (resolvedRef.current) return;
+      if (state.marks[row][col] !== 'empty') return; // already resolved, ignore
+
+      setHintCell(null);
+      const correct = isSolutionCell(level, row, col);
+
+      if (correct) {
+        setState((prev) => {
+          const marks = cloneMarks(prev.marks);
+          marks[row][col] = 'warden';
+          return { ...prev, marks };
+        });
+        playPlaceWarden();
+        return;
+      }
+
+      // Wrong guess: cross the cell out permanently. Aegis absorbs the life
+      // cost (but the cell still gets crossed, since it genuinely is wrong).
+      const shielded = state.aegisShieldActive;
       setState((prev) => {
-        const nextMarks = updater(prev.marks);
-        return { ...prev, marks: nextMarks, history: [...prev.history, cloneMarks(prev.marks)] };
+        const marks = cloneMarks(prev.marks);
+        marks[row][col] = 'x';
+        return {
+          ...prev,
+          marks,
+          livesLost: shielded ? prev.livesLost : prev.livesLost + 1,
+          aegisShieldActive: shielded ? false : prev.aegisShieldActive,
+        };
       });
+
+      if (!shielded) {
+        setErrorCells(new Set([`${row},${col}`]));
+        playMistake();
+        setTimeout(() => setErrorCells(new Set()), 420);
+      } else {
+        playMark();
+      }
     },
-    []
+    [level, state.marks, state.aegisShieldActive]
   );
 
   const handleCellClick = useCallback(
     (row: number, col: number) => {
-      if (wonRef.current) return;
+      if (resolvedRef.current) return;
 
       if (banishMode) {
         const region = level.regions[row][col];
-        applyMarksUpdate((marks) => applyBanish(marks, level.regions, region));
+        setState((prev) => ({ ...prev, marks: applyBanish(prev.marks, level.regions, region) }));
         setBanishMode(false);
         onSpendBoon('banish');
         return;
       }
 
-      setHintCell(null);
-      const current = state.marks[row][col];
-      const next = nextMark(current);
-
-      // Decide up front (using the current, pre-update marks) whether this
-      // placement conflicts, so exactly one state update — and one history
-      // entry — happens per click, keeping Undo predictable.
-      let willConflict = false;
-      if (next === 'warden') {
-        const wardensAfter = getWardenPositions(state.marks).concat({ row, col });
-        willConflict = wardensAfter.some((w) => {
-          if (w.row === row && w.col === col) return false;
-          const sameRow = w.row === row;
-          const sameCol = w.col === col;
-          const sameRegion = level.regions[w.row][w.col] === level.regions[row][col];
-          const adjacent = Math.abs(w.row - row) <= 1 && Math.abs(w.col - col) <= 1;
-          return sameRow || sameCol || sameRegion || adjacent;
-        });
-      }
-
-      const shieldWillAbsorb = willConflict && state.aegisShieldActive;
-
-      setState((prev) => {
-        const copy = cloneMarks(prev.marks);
-        copy[row][col] = shieldWillAbsorb ? 'empty' : next;
-        return {
-          ...prev,
-          marks: copy,
-          history: [...prev.history, cloneMarks(prev.marks)],
-          mistakes: willConflict && !shieldWillAbsorb ? prev.mistakes + 1 : prev.mistakes,
-          aegisShieldActive: shieldWillAbsorb ? false : prev.aegisShieldActive,
-        };
-      });
-
-      if (next === 'warden') {
-        if (willConflict) {
-          if (!shieldWillAbsorb) {
-            setErrorCells(new Set([`${row},${col}`]));
-            playMistake();
-            setTimeout(() => setErrorCells(new Set()), 420);
-          }
-        } else {
-          playPlaceWarden();
-        }
-      } else if (next === 'x') {
-        playMark();
-      } else {
-        playRemove();
-      }
+      revealCell(row, col);
     },
-    [banishMode, level.regions, onSpendBoon, state.aegisShieldActive, state.marks, applyMarksUpdate]
+    [banishMode, level.regions, onSpendBoon, revealCell]
   );
 
-  // Win check
+  // Win / loss resolution
   useEffect(() => {
-    if (wonRef.current) return;
-    if (isSolved(state.marks, level)) {
-      wonRef.current = true;
-      setTimeout(() => onWin(state.mistakes, state.usedHint), 300);
-    }
-  }, [state.marks, state.mistakes, state.usedHint, level, onWin]);
+    if (resolvedRef.current) return;
 
-  const undo = () => {
-    setState((prev) => {
-      if (prev.history.length === 0) return prev;
-      const last = prev.history[prev.history.length - 1];
-      playRemove();
-      return { ...prev, marks: last, history: prev.history.slice(0, -1) };
-    });
-  };
+    if (isSolved(state.marks, level)) {
+      resolvedRef.current = true;
+      setTimeout(() => onWin(state.livesLost, state.usedHint), 320);
+      return;
+    }
+
+    if (isOutOfLives(state)) {
+      resolvedRef.current = true;
+      setTimeout(() => onFail(), 520);
+    }
+  }, [state, level, onWin, onFail]);
 
   const restart = () => {
     setState(createInitialState(level.size));
     setErrorCells(new Set());
     setHintCell(null);
-    wonRef.current = false;
+    setBanishMode(false);
+    resolvedRef.current = false;
+  };
+
+  const revealHintCell = (markUsedHint: boolean) => {
+    const target = level.solution.find((p) => state.marks[p.row][p.col] !== 'warden');
+    if (!target) return null;
+    setHintCell(`${target.row},${target.col}`);
+    if (markUsedHint) setState((prev) => ({ ...prev, usedHint: true }));
+    setTimeout(() => setHintCell(null), 2400);
+    return target;
   };
 
   const useHint = () => {
-    const solution = findSolution(level.regions, level.size);
-    if (!solution) return;
-    // Find a solution cell that isn't already correctly marked as a warden.
-    const target = solution.find((p) => state.marks[p.row][p.col] !== 'warden');
-    if (!target) return;
-    setHintCell(`${target.row},${target.col}`);
-    setState((prev) => ({ ...prev, usedHint: true }));
-    setTimeout(() => setHintCell(null), 2200);
+    revealHintCell(true);
   };
 
   const banishCount = progress.inventory.banish ?? 0;
@@ -163,13 +158,16 @@ export default function PlayScreen({ levelRef, level, progress, onWin, onSpendBo
 
   const useSeersEye = () => {
     if (seersEyeCount <= 0) return;
-    const solution = findSolution(level.regions, level.size);
-    if (!solution) return;
-    const target = solution.find((p) => state.marks[p.row][p.col] !== 'warden');
+    // Seer's Eye doesn't just point — it places the Warden for you.
+    const target = level.solution.find((p) => state.marks[p.row][p.col] !== 'warden');
     if (!target) return;
-    setHintCell(`${target.row},${target.col}`);
+    setState((prev) => {
+      const marks = cloneMarks(prev.marks);
+      marks[target.row][target.col] = 'warden';
+      return { ...prev, marks };
+    });
+    playPlaceWarden();
     onSpendBoon('seers-eye');
-    setTimeout(() => setHintCell(null), 2600);
   };
 
   const useAegis = () => {
@@ -178,56 +176,72 @@ export default function PlayScreen({ levelRef, level, progress, onWin, onSpendBo
     onSpendBoon('aegis');
   };
 
+  const lives = livesRemaining(state);
+
   return (
     <div className="play-screen">
       <div className="play-hud">
         <span className="play-hud-label">
           {levelRef.realm.name} · {levelRef.levelInRealm + 1}
         </span>
-        <div className="mistake-dots" aria-label={`${state.mistakes} mistakes`}>
-          {Array.from({ length: Math.max(state.mistakes, 3) }).map((_, i) => (
-            <span key={i} className={`mistake-dot ${i < state.mistakes ? 'filled' : ''}`} />
+        <div className="lives-row" aria-label={`${lives} lives remaining`}>
+          {Array.from({ length: MAX_LIVES }).map((_, i) => (
+            <HeartIcon key={i} filled={i < lives} size={22} />
           ))}
         </div>
       </div>
 
+      {state.aegisShieldActive && <div className="aegis-banner">Aegis active — your next wrong tap is free.</div>}
       {banishMode && <div className="banish-hint">Tap any cell in the domain you want to Banish.</div>}
 
       <div className="board-wrap">
-        <div className="board-grid" style={{ gridTemplateColumns: `repeat(${size}, 1fr)`, gridTemplateRows: `repeat(${size}, 1fr)` }}>
+        <div
+          className="board-grid"
+          style={{ gridTemplateColumns: `repeat(${size}, 1fr)`, gridTemplateRows: `repeat(${size}, 1fr)` }}
+        >
           {level.regions.map((rowRegions, r) =>
             rowRegions.map((regionIdx, c) => {
-              const elementIdx = level.elementOrder[regionIdx];
-              const element = getElement(elementIdx);
+              const element = getElement(level.elementOrder[regionIdx]);
               const mark = state.marks[r][c];
               const key = `${r},${c}`;
               const isError = errorCells.has(key);
               const isHint = hintCell === key;
-              const isConflicted = conflicts.has(key);
 
-              const edgeClasses = [
-                r === 0 || level.regions[r - 1][c] !== regionIdx ? 'region-edge-top' : '',
-                r === size - 1 || level.regions[r + 1][c] !== regionIdx ? 'region-edge-bottom' : '',
-                c === 0 || rowRegions[c - 1] !== regionIdx ? 'region-edge-left' : '',
-                c === size - 1 || rowRegions[c + 1] !== regionIdx ? 'region-edge-right' : '',
-              ]
-                .filter(Boolean)
-                .join(' ');
+              // Thick dark border only where this cell meets a *different*
+              // domain (or the board edge), so region shapes read clearly.
+              // All four edges go into one combined box-shadow — separate CSS
+              // classes would each overwrite the others.
+              const edges: string[] = [];
+              if (r === 0 || level.regions[r - 1][c] !== regionIdx) edges.push('inset 0 3px 0 0 #06060c');
+              if (r === size - 1 || level.regions[r + 1][c] !== regionIdx) edges.push('inset 0 -3px 0 0 #06060c');
+              if (c === 0 || rowRegions[c - 1] !== regionIdx) edges.push('inset 3px 0 0 0 #06060c');
+              if (c === size - 1 || rowRegions[c + 1] !== regionIdx) edges.push('inset -3px 0 0 0 #06060c');
+              // Thin cell separators inside a domain, listed last so the
+              // thick domain borders above paint over them.
+              edges.push('inset 0 -1px 0 0 rgba(6,6,12,0.32)');
+              edges.push('inset -1px 0 0 0 rgba(6,6,12,0.32)');
 
               return (
                 <button
                   key={key}
-                  className={`board-cell ${edgeClasses} ${isError ? 'error-flash' : ''} ${isHint ? 'hint-glow' : ''}`}
-                  style={{ '--cell-color': `${element.color}22` } as CSSProperties}
+                  className={`board-cell ${isError ? 'error-flash' : ''} ${isHint ? 'hint-glow' : ''} ${
+                    mark === 'x' ? 'is-crossed' : ''
+                  }`}
+                  style={
+                    {
+                      '--cell-color': element.cell,
+                      boxShadow: edges.join(', '),
+                    } as CSSProperties
+                  }
                   onClick={() => handleCellClick(r, c)}
                   aria-label={`Row ${r + 1}, column ${c + 1}, ${element.name} domain`}
                 >
-                  {mark === 'x' && <XMarkGlyph size={Math.max(14, 60 / size)} />}
+                  {mark === 'x' && <XMarkGlyph size={Math.max(16, 220 / size)} color="rgba(8,8,15,0.62)" />}
                   {mark === 'warden' && (
                     <Icon
                       inner={elementGlyphInner(element.id)}
-                      color={isConflicted ? '#ff5252' : element.color}
-                      size={Math.max(20, 200 / size)}
+                      color={element.ink}
+                      size={Math.max(20, 210 / size)}
                       className="cell-warden"
                     />
                   )}
@@ -239,10 +253,6 @@ export default function PlayScreen({ levelRef, level, progress, onWin, onSpendBo
       </div>
 
       <div className="play-controls">
-        <button className="control-btn" onClick={undo} disabled={state.history.length === 0}>
-          <UndoIcon />
-          Undo
-        </button>
         <button className="control-btn" onClick={restart}>
           <RestartIcon />
           Restart
@@ -261,7 +271,11 @@ export default function PlayScreen({ levelRef, level, progress, onWin, onSpendBo
           Banish
           {banishCount > 0 && <span className="control-btn-badge">{banishCount}</span>}
         </button>
-        <button className="control-btn" onClick={useAegis} disabled={aegisCount <= 0 || state.aegisShieldActive}>
+        <button
+          className="control-btn"
+          onClick={useAegis}
+          disabled={aegisCount <= 0 || state.aegisShieldActive}
+        >
           <Icon inner={boonGlyphInner('aegis')} color="#7dffd4" size={20} />
           Aegis
           {aegisCount > 0 && <span className="control-btn-badge">{aegisCount}</span>}
@@ -269,8 +283,8 @@ export default function PlayScreen({ levelRef, level, progress, onWin, onSpendBo
       </div>
 
       <p className="rules-hint">
-        Tap to mark, tap again for a Warden. One per row, column, and domain. No two Wardens may stand
-        side by side, not even diagonally.
+        One Warden per row, column, and colored domain — and no two may touch, not even diagonally. Tap where you
+        think one belongs. Guess wrong and you lose a life.
       </p>
     </div>
   );
