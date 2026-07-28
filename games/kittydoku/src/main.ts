@@ -17,7 +17,7 @@ import {
   type Progress,
 } from './game/progress';
 import { Game } from './game/state';
-import { catSvg, pastel, pawSvg } from './render/art';
+import { catSvg, mascotSvg, pastel, pawSvg } from './render/art';
 import { renderMap, scrollToFrontier } from './ui/map';
 
 type Screen = 'title' | 'map' | 'game';
@@ -51,7 +51,7 @@ function show(screen: Screen) {
 // ---------------------------------------------------------------- title
 
 function renderTitle() {
-  $('titleCat').innerHTML = catSvg('#e0687f', 92);
+  $('titleCat').innerHTML = mascotSvg(92);
   const done = solvedCount(progress);
   $('titleProgress').textContent =
     done === 0 ? `${TOTAL_LEVELS} cosy puzzles` : `${done} / ${TOTAL_LEVELS} solved`;
@@ -211,7 +211,7 @@ function finishLevel() {
   saveProgress(progress);
 
   const isLast = g.ref.index >= TOTAL_LEVELS - 1;
-  $('winCat').innerHTML = catSvg('#e0687f', 96);
+  $('winCat').innerHTML = mascotSvg(96);
   $('winTitle').textContent = g.usedHint ? 'All cosy!' : 'Purrfect!';
   $('winText').textContent = isLast
     ? 'Every cat in the game has found its spot. Thanks for playing!'

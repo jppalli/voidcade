@@ -1,4 +1,31 @@
 /**
+ * The KittyDoku mascot — flat-vector happy cat face.
+ * Used on the title screen, win modal, and any spot needing a large cat.
+ */
+export function mascotSvg(size = 100): string {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="${size}" height="${size}" aria-hidden="true">
+  <path d="M25 42 L28 13 Q28.5 8 33 11 L55 25 Z" fill="#b0a2d6"/>
+  <path d="M75 42 L72 13 Q71.5 8 67 11 L45 25 Z" fill="#b0a2d6"/>
+  <ellipse cx="50" cy="57" rx="32" ry="29" fill="#b0a2d6"/>
+  <path d="M30.5 36 L32.5 18 L46 27 Z" fill="#ded8f0"/>
+  <path d="M69.5 36 L67.5 18 L54 27 Z" fill="#ded8f0"/>
+  <ellipse cx="33" cy="62" rx="5.5" ry="3.4" fill="#e7908c" opacity="0.75"/>
+  <ellipse cx="67" cy="62" rx="5.5" ry="3.4" fill="#e7908c" opacity="0.75"/>
+  <g fill="none" stroke="#fff8ef" stroke-width="3" stroke-linecap="round">
+    <line x1="22" y1="60" x2="6"  y2="57"/>
+    <line x1="22" y1="67" x2="7"  y2="69"/>
+    <line x1="78" y1="60" x2="94" y2="57"/>
+    <line x1="78" y1="67" x2="93" y2="69"/>
+  </g>
+  <g fill="none" stroke="#fff8ef" stroke-width="3.4" stroke-linecap="round">
+    <path d="M32 57.5 Q38 51.5 44 57.5"/>
+    <path d="M56 57.5 Q62 51.5 68 57.5"/>
+    <path d="M43 65 Q50 73 57 65"/>
+  </g>
+</svg>`;
+}
+
+/**
  * Pastel region palette. Nine entries so boards up to 9x9 always have a
  * distinct colour per region. `fill` is the square, `ink` is the cat drawn on
  * top of it — each ink is a deep version of its own hue so the cat reads
