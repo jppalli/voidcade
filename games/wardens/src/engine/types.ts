@@ -1,7 +1,6 @@
-export interface Position {
-  row: number;
-  col: number;
-}
+import type { Position } from '@arcade/queens-core';
+
+export type { Position };
 
 export interface WardenLevel {
   id: string;

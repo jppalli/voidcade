@@ -1,3 +1,4 @@
+import { seedFromString } from '@arcade/queens-core';
 import type { RealmDef } from './types';
 
 /**
@@ -147,10 +148,4 @@ export function getLevelRef(globalIndex: number): LevelRef | null {
 }
 
 /** Deterministic per-level seed: stable across sessions, unique per level id. */
-export function seedForLevel(id: string): number {
-  let h = 0;
-  for (let i = 0; i < id.length; i++) {
-    h = (Math.imul(h, 31) + id.charCodeAt(i)) | 0;
-  }
-  return Math.abs(h) + 1_000_000;
-}
+export const seedForLevel = seedFromString;

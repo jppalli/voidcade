@@ -1,0 +1,20 @@
+{
+  "name": "kittydoku",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "verify-levels": "vite-node tools/verify-levels.ts"
+  },
+  "dependencies": {
+    "@arcade/queens-core": "*"
+  },
+  "devDependencies": {
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0",
+    "vite-node": "^3.2.4"
+  }
+}

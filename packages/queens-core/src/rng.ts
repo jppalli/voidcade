@@ -1,6 +1,5 @@
-// Mulberry32 — small, fast, good-enough seeded PRNG. Same technique used
-// elsewhere in this repo (Pips & Paths) so puzzle generation is fully
-// deterministic per seed: same seed always produces the same puzzle.
+// Mulberry32 — small, fast, good-enough seeded PRNG. Generation is fully
+// deterministic per seed: the same seed always produces the same puzzle.
 
 export type RNG = () => number;
 
@@ -23,6 +22,11 @@ export function shuffle<T>(arr: T[], rng: RNG): T[] {
   return a;
 }
 
-export function randInt(rng: RNG, maxExclusive: number): number {
-  return Math.floor(rng() * maxExclusive);
+/** Stable string -> positive integer hash, for deriving a seed from a level id. */
+export function seedFromString(id: string): number {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) {
+    h = (Math.imul(h, 31) + id.charCodeAt(i)) | 0;
+  }
+  return Math.abs(h) + 1_000_000;
 }

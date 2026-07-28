@@ -626,7 +626,8 @@ body {
 /* These art pieces are centred with translate(-50%,-50%); the zoom has to
    preserve that or they'd jump to the corner. */
 .game-card:hover .bubbleshooter-art .bs-bubble,
-.game-card:hover .chessdoku-art .cd-piece {
+.game-card:hover .chessdoku-art .cd-piece,
+.game-card:hover .kittydoku-art .kd-cat {
   transform: translate(-50%, -50%) scale(1.06);
 }
 
@@ -799,6 +800,46 @@ body {
   color: #ff8fb0;
   background: rgba(255,143,176,0.08);
   border-color: rgba(255,143,176,0.2);
+}
+
+.game-tag-cream {
+  color: #ffd6a5;
+  background: rgba(255,214,165,0.08);
+  border-color: rgba(255,214,165,0.22);
+}
+
+/* KittyDoku: pastel colour patches with a cat sitting on one — the art is
+   light where every other card is dark, which suits the cosy pitch. */
+.kittydoku-art {
+  background: radial-gradient(circle at 50% 20%, rgba(255,248,239,0.22), transparent 62%), #f3e6d8;
+}
+
+.kd-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 3px;
+  width: 88px;
+  height: 88px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid #4a3b34;
+}
+
+.kd-cell { border-radius: 2px; }
+.kd-1 { background: #ffd6a5; }
+.kd-2 { background: #d7c7ff; }
+.kd-3 { background: #b8ebc8; }
+.kd-4 { background: #ffc9d9; }
+
+.kd-cat {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 40px;
+  filter: drop-shadow(0 2px 3px rgba(74,59,52,0.3));
 }
 
 /* ChessDoku: a 4x4 checkerboard fragment with a line-art piece on top. */
