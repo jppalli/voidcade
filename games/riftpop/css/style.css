@@ -118,6 +118,32 @@ body {
   display: none;
 }
 
+/* Small wordmark between the back button and the stats — identifies the
+   game without competing with the score/level readouts for space. */
+#logoMark {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  border-right: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+#logoMark span {
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.2px;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+@media (max-width: 380px) {
+  /* Narrow phones: keep the glyph, drop the wordmark so score/level/best
+     never get squeezed. */
+  #logoMark span { display: none; }
+  #logoMark { padding: 0 8px; }
+}
+
 #mute.off .icon-on {
   display: none;
 }

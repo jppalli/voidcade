@@ -625,7 +625,7 @@ body {
 
 /* These art pieces are centred with translate(-50%,-50%); the zoom has to
    preserve that or they'd jump to the corner. */
-.game-card:hover .bubbleshooter-art .bs-bubble,
+.game-card:hover .riftpop-art .rp-bubble,
 .game-card:hover .chessdoku-art .cd-piece,
 .game-card:hover .kittydoku-art .kd-cat {
   transform: translate(-50%, -50%) scale(1.06);
@@ -725,19 +725,39 @@ body {
   border-color: rgba(77,221,255,0.2);
 }
 
-/* Small pyramid of 3 bubbles in the game's own palette (red/orange/blue). */
-.bubbleshooter-art {
-  background: radial-gradient(circle at 50% 25%, rgba(61,139,255,0.1), transparent 60%), #0f1424;
+/* Riftpop: a torn purple ring spilling out orbs in the game's own palette
+   (red/orange/blue), instead of a plain pyramid of bubbles — the rift is the
+   whole point of the rebrand from "Bubble Shooter". */
+.riftpop-art {
+  background: radial-gradient(circle at 50% 25%, rgba(185,104,255,0.14), transparent 60%), #120f1e;
 }
 
-.bs-bubble {
+.rp-ring {
   position: absolute;
-  width: 26px;
-  height: 26px;
+  top: 50%;
+  left: 50%;
+  width: 58px;
+  height: 58px;
+  transform: translate(-50%, -50%);
+  border: 2px dashed rgba(185,104,255,0.55);
+  border-radius: 50%;
+  box-shadow: 0 0 16px rgba(185,104,255,0.35);
+  animation: riftSpin 12s linear infinite;
+}
+
+@keyframes riftSpin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to   { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+.rp-bubble {
+  position: absolute;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
 }
 
-.bs-bubble::after {
+.rp-bubble::after {
   content: '';
   position: absolute;
   top: 18%;
@@ -748,9 +768,9 @@ body {
   background: rgba(255,255,255,0.45);
 }
 
-.bs-1 { background: #ff4d6b; box-shadow: 0 0 12px #ff4d6b; top: 38%; left: 50%; transform: translate(-50%, -50%); }
-.bs-2 { background: #ffa502; box-shadow: 0 0 12px #ffa502; top: 62%; left: 38%; transform: translate(-50%, -50%); }
-.bs-3 { background: #3d8bff; box-shadow: 0 0 12px #3d8bff; top: 62%; left: 62%; transform: translate(-50%, -50%); }
+.rp-1 { background: #3d8bff; box-shadow: 0 0 12px #3d8bff; top: 38%; left: 44%; transform: translate(-50%, -50%); }
+.rp-2 { background: #ff4d6b; box-shadow: 0 0 12px #ff4d6b; top: 58%; left: 64%; transform: translate(-50%, -50%); }
+.rp-3 { background: #ffa502; box-shadow: 0 0 12px #ffa502; top: 66%; left: 40%; transform: translate(-50%, -50%); }
 
 /* Wardens: a small 2x2 fragment of colored domains with a warden glyph
    sitting in one cell, hinting at the region-puzzle mechanic. */

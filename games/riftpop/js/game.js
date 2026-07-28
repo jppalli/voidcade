@@ -142,7 +142,7 @@ export class Game {
   showMenu() {
     this.state = 'menu';
     this.ui.showOverlay({
-      title: 'Bubble Shooter',
+      title: 'Riftpop',
       sub: 'Pop groups of three or more.\nClear the board before it reaches the line.',
       btn: 'Play',
       onClick: () => this.newGame(),

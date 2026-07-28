@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Bubble Shooter</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='42' fill='%233d8bff'/><ellipse cx='36' cy='34' rx='14' ry='9' fill='white' opacity='0.7' transform='rotate(-30 36 34)'/></svg>" />
+  <title>Riftpop</title>
+  <meta name="description" content="A void tears open above the board. Pop the orbs it spits out, ride the charge meter, and mutate your run with roguelite powerups." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><radialGradient id='r' cx='50%25' cy='42%25' r='60%25'><stop offset='0%25' stop-color='%23151027'/><stop offset='100%25' stop-color='%233d1a5c'/></radialGradient></defs><circle cx='50' cy='50' r='44' fill='url(%23r)'/><circle cx='50' cy='50' r='44' fill='none' stroke='%23b968ff' stroke-width='3'/><circle cx='38' cy='38' r='11' fill='%233d8bff'/><circle cx='63' cy='45' r='8' fill='%23ff4d6b'/><circle cx='47' cy='64' r='9' fill='%23ffa502'/></svg>" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet" />
@@ -18,6 +19,14 @@
           <path d="M15 5l-7 7 7 7"/>
         </svg>
       </a>
+      <div id="logoMark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#b968ff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3 3 8v8l9 5 9-5V8z" opacity="0.5"/>
+          <circle cx="9.5" cy="10.5" r="2.6" fill="#3d8bff" stroke="none"/>
+          <circle cx="15" cy="13.5" r="2" fill="#ff4d6b" stroke="none"/>
+        </svg>
+        <span>Riftpop</span>
+      </div>
       <div class="stat">
         <span class="label">Score</span>
         <span class="value" id="score">0</span>
@@ -57,7 +66,7 @@
 
       <div id="overlay" class="hidden">
         <div class="panel">
-          <h1 id="overlay-title">Bubble Shooter</h1>
+          <h1 id="overlay-title">Riftpop</h1>
           <p id="overlay-sub">Pop groups of three or more.</p>
           <button id="overlay-btn" class="btn">Play</button>
         </div>
