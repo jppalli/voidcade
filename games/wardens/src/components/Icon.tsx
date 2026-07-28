@@ -7,8 +7,8 @@ interface IconProps {
 
 /**
  * Renders neon line-art glyphs from raw SVG inner markup strings (defined
- * in engine/elements.ts and engine/boons.ts). Same rendering convention as
- * Bubble Shooter's icons.js, ported to a React component.
+ * in engine/elements.ts). Same rendering convention as Bubble Shooter's
+ * icons.js, ported to a React component.
  */
 export default function Icon({ inner, color = '#8ab6ff', size = 22, className }: IconProps) {
   return (

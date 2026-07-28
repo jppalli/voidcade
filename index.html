@@ -46,13 +46,18 @@
       <!-- Horizontal rail: every game gets a card here, and it scrolls
            sideways once there are more than fit on screen. -->
       <div class="hero-rail-wrap">
+        <!-- The featured card sits in the middle of the row on purpose; keep
+             it centered in this list when adding new games. -->
         <div class="hero-rail" id="heroRail" role="list">
-          <a class="stage-card stage-card-featured" href="games/stackward/" data-game="stackward" role="listitem">
-            <span class="stage-card-badge">★ Featured</span>
-            <div class="stage-card-art stackward-art">
-              <span></span><span></span><span></span><span></span>
+          <a class="stage-card" href="games/panes/" data-game="panes" role="listitem">
+            <div class="stage-card-art panes-art">
+              <div class="panes-grid">
+                <span class="panes-cell c1">4</span>
+                <span class="panes-cell c2">2</span>
+                <span class="panes-cell c3">6</span>
+              </div>
             </div>
-            <span class="stage-card-name">Stackward</span>
+            <span class="stage-card-name">Panes</span>
             <span class="stage-card-play">Play now <span class="play-arrow">→</span></span>
           </a>
 
@@ -70,15 +75,12 @@
             <span class="stage-card-play">Play now <span class="play-arrow">→</span></span>
           </a>
 
-          <a class="stage-card" href="games/panes/" data-game="panes" role="listitem">
-            <div class="stage-card-art panes-art">
-              <div class="panes-grid">
-                <span class="panes-cell c1">4</span>
-                <span class="panes-cell c2">2</span>
-                <span class="panes-cell c3">6</span>
-              </div>
+          <a class="stage-card stage-card-featured" id="railFeatured" href="games/stackward/" data-game="stackward" role="listitem">
+            <span class="stage-card-badge">★ Featured</span>
+            <div class="stage-card-art stackward-art">
+              <span></span><span></span><span></span><span></span>
             </div>
-            <span class="stage-card-name">Panes</span>
+            <span class="stage-card-name">Stackward</span>
             <span class="stage-card-play">Play now <span class="play-arrow">→</span></span>
           </a>
 
@@ -197,7 +199,7 @@
           <div class="game-card-body">
             <span class="game-tag game-tag-purple">Puzzle · Saga</span>
             <h3>Wardens</h3>
-            <p>Place one Warden per row, column, and elemental domain — never side by side. A saga across realms, with boons to collect.</p>
+            <p>Place one Warden per row, column, and elemental domain — never side by side. A logic saga across three realms.</p>
             <span class="game-card-play">Play now <span class="play-arrow">→</span></span>
           </div>
         </a>

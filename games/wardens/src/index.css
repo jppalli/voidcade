@@ -269,9 +269,7 @@ button {
   cursor: default;
 }
 
-.path-node.boon-node {
-  border-style: dashed;
-}
+
 
 .path-node-size {
   align-self: center;
@@ -280,20 +278,6 @@ button {
   font-weight: 800;
   letter-spacing: 0.4px;
   color: var(--text-dimmer);
-}
-
-.path-node-boon {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--realm-color, var(--accent));
-  border: 2px solid var(--bg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .path-node-stars {
@@ -352,13 +336,6 @@ button {
   display: flex;
   gap: 4px;
   align-items: center;
-}
-
-.aegis-banner {
-  font-size: 12.5px;
-  font-weight: 700;
-  color: var(--accent);
-  text-align: center;
 }
 
 /* Teaching banner shown on the early levels. Reads as guidance, not chrome. */
@@ -710,56 +687,6 @@ button {
 .rules-lives span {
   flex: 1;
   min-width: 180px;
-}
-
-/* Boon choice modal: two cards side by side */
-.boon-choice-grid {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 18px;
-}
-
-.boon-card {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 18px 12px;
-  border-radius: 16px;
-  border: 1px solid var(--border-strong);
-  background: var(--bg-raise-2);
-  transition: border-color 0.15s ease, transform 0.15s ease;
-}
-
-.boon-card:hover {
-  border-color: var(--accent);
-  transform: translateY(-3px);
-}
-
-.boon-card svg {
-  width: 34px;
-  height: 34px;
-}
-
-.boon-card-name {
-  font-size: 13px;
-  font-weight: 800;
-}
-
-.boon-card-desc {
-  font-size: 11px;
-  color: var(--text-dimmer);
-  line-height: 1.4;
-}
-
-/* ---------- Boon target picker (Banish) ---------- */
-.banish-hint {
-  font-size: 12.5px;
-  color: var(--accent);
-  font-weight: 700;
-  text-align: center;
-  padding: 8px 0;
 }
 
 /* ---------- Utility ---------- */

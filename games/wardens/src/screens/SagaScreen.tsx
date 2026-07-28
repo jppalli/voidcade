@@ -1,6 +1,5 @@
 import type { CSSProperties } from 'react';
-import Icon, { LockIcon, StarIcon } from '../components/Icon';
-import { boonGlyphInner } from '../engine/boons';
+import { LockIcon, StarIcon } from '../components/Icon';
 import type { Progress } from '../engine/progress';
 import { isLevelUnlocked, starsForResult } from '../engine/progress';
 import { REALMS, getAllLevelRefs } from '../engine/saga';
@@ -50,7 +49,7 @@ export default function SagaScreen({ progress, onSelectLevel }: SagaScreenProps)
                   <div key={ref.id}>
                     <div className={`path-node-row ${rowAlignment(ref.levelInRealm)}`}>
                       <button
-                        className={`path-node ${unlocked ? 'unlocked' : 'locked'} ${ref.grantsBoon ? 'boon-node' : ''}`}
+                        className={`path-node ${unlocked ? 'unlocked' : 'locked'}`}
                         disabled={!unlocked}
                         onClick={() => {
                           if (!unlocked) return;
@@ -60,11 +59,6 @@ export default function SagaScreen({ progress, onSelectLevel }: SagaScreenProps)
                         aria-label={`Level ${ref.levelInRealm + 1} of ${realm.name}`}
                       >
                         {unlocked ? ref.levelInRealm + 1 : <LockIcon />}
-                        {unlocked && ref.grantsBoon && (
-                          <span className="path-node-boon" title="Clear this level to earn a boon">
-                            <Icon inner={boonGlyphInner('seers-eye')} color="#08080f" size={13} />
-                          </span>
-                        )}
                         {unlocked && result?.completed && (
                           <div className="path-node-stars">
                             {[0, 1, 2].map((s) => (

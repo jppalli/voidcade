@@ -259,6 +259,18 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
+/* Zero-width auto-margin spacers centre the row when it fits, and collapse
+   to nothing when it overflows. Using these instead of
+   `justify-content: center` avoids the bug where centred overflowing content
+   becomes unreachable at the start of a scroll container. Pseudo-elements
+   don't count as children, so the :nth-child tilts below are unaffected. */
+.hero-rail::before,
+.hero-rail::after {
+  content: '';
+  flex: 0 0 0;
+  margin: auto;
+}
+
 .hero-rail::-webkit-scrollbar {
   height: 8px;
 }
@@ -306,11 +318,16 @@ body {
 .stage-card:nth-child(odd) { --tilt: -5deg; --y0: 8px; z-index: 2; }
 .stage-card:nth-child(even) { --tilt: 5deg; --y0: -6px; z-index: 3; }
 
-.stage-card-featured {
+/* Doubled class so this beats the :nth-child rules above on specificity —
+   the featured card keeps its own tilt and sits above its neighbours no
+   matter which position it occupies in the row. */
+.stage-card.stage-card-featured {
   --tilt: -2deg;
-  --y0: 0px;
+  --y0: -2px;
   z-index: 6;
+  width: clamp(190px, 25vw, 262px);
   border-color: var(--accent);
+  box-shadow: 8px 8px 0 rgba(0,0,0,0.5), 0 0 26px rgba(125,255,212,0.18);
 }
 
 .stage-card:hover {

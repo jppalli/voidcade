@@ -1,11 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import Icon, { HeartIcon, LightbulbIcon, RestartIcon, XMarkGlyph } from '../components/Icon';
-import { boonGlyphInner, type BoonId } from '../engine/boons';
 import { elementGlyphInner, getElement } from '../engine/elements';
-import type { Progress } from '../engine/progress';
 import {
   MAX_LIVES,
-  applyBanish,
   cloneMarks,
   createInitialState,
   isOutOfLives,
@@ -16,32 +13,21 @@ import {
 } from '../engine/puzzleState';
 import type { LevelRef } from '../engine/saga';
 import type { WardenLevel } from '../engine/types';
-import { playMark, playMistake, playPlaceWarden } from '../sounds';
+import { playMistake, playPlaceWarden } from '../sounds';
 
 interface PlayScreenProps {
   levelRef: LevelRef;
   level: WardenLevel;
-  progress: Progress;
   onWin: (livesLost: number, usedHint: boolean) => void;
   onFail: () => void;
-  onSpendBoon: (id: BoonId) => void;
   /** bumped by the parent to force a fresh attempt (retry after failing) */
   attemptKey: number;
 }
 
-export default function PlayScreen({
-  levelRef,
-  level,
-  progress,
-  onWin,
-  onFail,
-  onSpendBoon,
-  attemptKey,
-}: PlayScreenProps) {
+export default function PlayScreen({ levelRef, level, onWin, onFail, attemptKey }: PlayScreenProps) {
   const [state, setState] = useState<PuzzleState>(() => createInitialState(level.size));
   const [errorCells, setErrorCells] = useState<Set<string>>(new Set());
   const [hintCell, setHintCell] = useState<string | null>(null);
-  const [banishMode, setBanishMode] = useState(false);
   const resolvedRef = useRef(false);
 
   // Fresh state whenever the level or the attempt changes.
@@ -49,21 +35,19 @@ export default function PlayScreen({
     setState(createInitialState(level.size));
     setErrorCells(new Set());
     setHintCell(null);
-    setBanishMode(false);
     resolvedRef.current = false;
   }, [level, attemptKey]);
 
   const size = level.size;
 
-  const revealCell = useCallback(
+  const handleCellClick = useCallback(
     (row: number, col: number) => {
       if (resolvedRef.current) return;
       if (state.marks[row][col] !== 'empty') return; // already resolved, ignore
 
       setHintCell(null);
-      const correct = isSolutionCell(level, row, col);
 
-      if (correct) {
+      if (isSolutionCell(level, row, col)) {
         setState((prev) => {
           const marks = cloneMarks(prev.marks);
           marks[row][col] = 'warden';
@@ -73,46 +57,17 @@ export default function PlayScreen({
         return;
       }
 
-      // Wrong guess: cross the cell out permanently. Aegis absorbs the life
-      // cost (but the cell still gets crossed, since it genuinely is wrong).
-      const shielded = state.aegisShieldActive;
+      // Wrong guess: cross the cell out permanently and take a life.
       setState((prev) => {
         const marks = cloneMarks(prev.marks);
         marks[row][col] = 'x';
-        return {
-          ...prev,
-          marks,
-          livesLost: shielded ? prev.livesLost : prev.livesLost + 1,
-          aegisShieldActive: shielded ? false : prev.aegisShieldActive,
-        };
+        return { ...prev, marks, livesLost: prev.livesLost + 1 };
       });
-
-      if (!shielded) {
-        setErrorCells(new Set([`${row},${col}`]));
-        playMistake();
-        setTimeout(() => setErrorCells(new Set()), 420);
-      } else {
-        playMark();
-      }
+      setErrorCells(new Set([`${row},${col}`]));
+      playMistake();
+      setTimeout(() => setErrorCells(new Set()), 420);
     },
-    [level, state.marks, state.aegisShieldActive]
-  );
-
-  const handleCellClick = useCallback(
-    (row: number, col: number) => {
-      if (resolvedRef.current) return;
-
-      if (banishMode) {
-        const region = level.regions[row][col];
-        setState((prev) => ({ ...prev, marks: applyBanish(prev.marks, level.regions, region) }));
-        setBanishMode(false);
-        onSpendBoon('banish');
-        return;
-      }
-
-      revealCell(row, col);
-    },
-    [banishMode, level.regions, onSpendBoon, revealCell]
+    [level, state.marks]
   );
 
   // Win / loss resolution
@@ -135,45 +90,16 @@ export default function PlayScreen({
     setState(createInitialState(level.size));
     setErrorCells(new Set());
     setHintCell(null);
-    setBanishMode(false);
     resolvedRef.current = false;
   };
 
-  const revealHintCell = (markUsedHint: boolean) => {
-    const target = level.solution.find((p) => state.marks[p.row][p.col] !== 'warden');
-    if (!target) return null;
-    setHintCell(`${target.row},${target.col}`);
-    if (markUsedHint) setState((prev) => ({ ...prev, usedHint: true }));
-    setTimeout(() => setHintCell(null), 2400);
-    return target;
-  };
-
   const useHint = () => {
-    revealHintCell(true);
-  };
-
-  const banishCount = progress.inventory.banish ?? 0;
-  const seersEyeCount = progress.inventory['seers-eye'] ?? 0;
-  const aegisCount = progress.inventory.aegis ?? 0;
-
-  const useSeersEye = () => {
-    if (seersEyeCount <= 0) return;
-    // Seer's Eye doesn't just point — it places the Warden for you.
+    if (resolvedRef.current) return;
     const target = level.solution.find((p) => state.marks[p.row][p.col] !== 'warden');
     if (!target) return;
-    setState((prev) => {
-      const marks = cloneMarks(prev.marks);
-      marks[target.row][target.col] = 'warden';
-      return { ...prev, marks };
-    });
-    playPlaceWarden();
-    onSpendBoon('seers-eye');
-  };
-
-  const useAegis = () => {
-    if (aegisCount <= 0 || state.aegisShieldActive) return;
-    setState((prev) => ({ ...prev, aegisShieldActive: true }));
-    onSpendBoon('aegis');
+    setHintCell(`${target.row},${target.col}`);
+    setState((prev) => ({ ...prev, usedHint: true }));
+    setTimeout(() => setHintCell(null), 2400);
   };
 
   const lives = livesRemaining(state);
@@ -191,14 +117,12 @@ export default function PlayScreen({
         </div>
       </div>
 
-      {levelRef.tip && !banishMode && (
+      {levelRef.tip && (
         <div className="level-tip">
           <span className="level-tip-badge">Lesson</span>
           {levelRef.tip}
         </div>
       )}
-      {state.aegisShieldActive && <div className="aegis-banner">Aegis active — your next wrong tap is free.</div>}
-      {banishMode && <div className="banish-hint">Tap any cell in the domain you want to Banish.</div>}
 
       <div className="board-wrap">
         <div
@@ -266,25 +190,6 @@ export default function PlayScreen({
         <button className="control-btn" onClick={useHint}>
           <LightbulbIcon />
           Hint
-        </button>
-        <button className="control-btn" onClick={useSeersEye} disabled={seersEyeCount <= 0}>
-          <Icon inner={boonGlyphInner('seers-eye')} color="#7dffd4" size={20} />
-          Seer's Eye
-          {seersEyeCount > 0 && <span className="control-btn-badge">{seersEyeCount}</span>}
-        </button>
-        <button className="control-btn" onClick={() => setBanishMode((b) => !b)} disabled={banishCount <= 0}>
-          <Icon inner={boonGlyphInner('banish')} color="#7dffd4" size={20} />
-          Banish
-          {banishCount > 0 && <span className="control-btn-badge">{banishCount}</span>}
-        </button>
-        <button
-          className="control-btn"
-          onClick={useAegis}
-          disabled={aegisCount <= 0 || state.aegisShieldActive}
-        >
-          <Icon inner={boonGlyphInner('aegis')} color="#7dffd4" size={20} />
-          Aegis
-          {aegisCount > 0 && <span className="control-btn-badge">{aegisCount}</span>}
         </button>
       </div>
 

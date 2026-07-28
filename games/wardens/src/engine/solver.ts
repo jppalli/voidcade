@@ -92,28 +92,4 @@ export function findSolution(regions: number[][], size: number): Position[] | nu
   return backtrack(0);
 }
 
-/**
- * Given the current board marks (which cells the player has marked as
- * warden/x/empty), returns cells that are "definitely wrong" — i.e. cells
- * that cannot hold a warden in ANY valid solution consistent with the
- * wardens already placed. Used by the Banish boon and mistake detection.
- *
- * This is intentionally simple: a cell is safe-to-eliminate if placing a
- * warden there directly conflicts (same row/col/region/adjacency) with an
- * already-placed warden. It does not do deep constraint propagation.
- */
-export function cellConflictsWithPlaced(
-  cell: Position,
-  region: number,
-  regions: number[][],
-  placedWardens: Position[]
-): boolean {
-  for (const w of placedWardens) {
-    if (w.row === cell.row && w.col === cell.col) continue;
-    if (w.row === cell.row) return true;
-    if (w.col === cell.col) return true;
-    if (regions[w.row][w.col] === region) return true;
-    if (isAdjacent(w, cell)) return true;
-  }
-  return false;
-}
+

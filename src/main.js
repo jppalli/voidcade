@@ -34,6 +34,17 @@ function setupHeroRail() {
     rail.scrollBy({ left: direction * pitch * 2, behavior: 'smooth' });
   };
 
+  // Open with the featured game centred. Set scrollLeft directly rather than
+  // using scrollIntoView, which would also scroll the page vertically.
+  const centerFeatured = () => {
+    const featured = document.getElementById('railFeatured');
+    if (!featured) return;
+    const target = featured.offsetLeft - (rail.clientWidth - featured.offsetWidth) / 2;
+    const maxScroll = rail.scrollWidth - rail.clientWidth;
+    rail.scrollLeft = Math.max(0, Math.min(target, maxScroll));
+    updateArrows();
+  };
+
   prev.addEventListener('click', () => scrollByCard(-1));
   next.addEventListener('click', () => scrollByCard(1));
   rail.addEventListener('scroll', updateArrows, { passive: true });
@@ -44,6 +55,8 @@ function setupHeroRail() {
   }
 
   updateArrows();
+  // Wait for layout/fonts so offsetLeft measurements are final.
+  requestAnimationFrame(centerFeatured);
 }
 
 async function bootstrap() {

@@ -1,18 +1,16 @@
 import { useCallback, useMemo, useState } from 'react';
-import BoonChoiceModal from './components/BoonChoiceModal';
 import FailModal from './components/FailModal';
 import { BackIcon, HelpIcon, HomeIcon, SoundIcon } from './components/Icon';
 import RulesModal from './components/RulesModal';
 import WinModal from './components/WinModal';
-import type { BoonId } from './engine/boons';
 import { generateWardenLevel } from './engine/generator';
-import { grantBoon, loadProgress, recordLevelWin, saveProgress, spendBoon, starsForResult, type Progress } from './engine/progress';
+import { loadProgress, recordLevelWin, saveProgress, starsForResult, type Progress } from './engine/progress';
 import { TOTAL_LEVELS, getLevelRef, seedForLevel } from './engine/saga';
 import type { WardenLevel } from './engine/types';
 import MenuScreen from './screens/MenuScreen';
 import PlayScreen from './screens/PlayScreen';
 import SagaScreen from './screens/SagaScreen';
-import { getAudioPrefs, playBoonAwarded, playClick, playWin, setSfxEnabled } from './sounds';
+import { getAudioPrefs, playClick, playWin, setSfxEnabled } from './sounds';
 
 type Screen = 'menu' | 'saga' | 'play';
 
@@ -34,14 +32,6 @@ function markRulesSeen() {
   }
 }
 
-// Rotate through pairs of boon options offered on boon-granting levels, so
-// the choice varies rather than always offering the same two.
-const BOON_OPTION_SETS: BoonId[][] = [
-  ['seers-eye', 'banish'],
-  ['banish', 'aegis'],
-  ['aegis', 'seers-eye'],
-];
-
 export default function App() {
   const [screen, setScreen] = useState<Screen>('menu');
   const [progress, setProgress] = useState<Progress>(() => loadProgress());
@@ -49,7 +39,6 @@ export default function App() {
   const [winInfo, setWinInfo] = useState<{ stars: number } | null>(null);
   const [failed, setFailed] = useState(false);
   const [attemptKey, setAttemptKey] = useState(0);
-  const [boonChoice, setBoonChoice] = useState<BoonId[] | null>(null);
   const [showRules, setShowRules] = useState(false);
   const [audioPrefs, setAudioPrefs] = useState(getAudioPrefs);
 
@@ -102,13 +91,7 @@ export default function App() {
     playWin();
 
     updateProgress((p) => recordLevelWin(p, currentLevelIndex, livesLost, usedHint));
-    const stars = starsForResult({ completed: true, mistakes: livesLost, usedHint });
-    setWinInfo({ stars });
-
-    if (currentLevelRef.grantsBoon) {
-      const setIdx = Math.floor(currentLevelRef.globalIndex / 3) % BOON_OPTION_SETS.length;
-      setBoonChoice(BOON_OPTION_SETS[setIdx]);
-    }
+    setWinInfo({ stars: starsForResult({ completed: true, mistakes: livesLost, usedHint }) });
   };
 
   const handleFail = () => {
@@ -118,16 +101,6 @@ export default function App() {
   const handleRetry = () => {
     setFailed(false);
     setAttemptKey((k) => k + 1);
-  };
-
-  const handleChooseBoon = (id: BoonId) => {
-    playBoonAwarded();
-    updateProgress((p) => grantBoon(p, id));
-    setBoonChoice(null);
-  };
-
-  const handleSpendBoon = (id: BoonId) => {
-    updateProgress((p) => spendBoon(p, id) ?? p);
   };
 
   const handleNextLevel = () => {
@@ -148,7 +121,9 @@ export default function App() {
     playClick();
   };
 
-  const isLastInRealm = currentLevelRef ? currentLevelRef.levelInRealm === currentLevelRef.realm.levelCount - 1 : false;
+  const isLastInRealm = currentLevelRef
+    ? currentLevelRef.levelInRealm === currentLevelRef.realm.levelCount - 1
+    : false;
   const isSagaComplete = currentLevelIndex !== null && currentLevelIndex >= TOTAL_LEVELS - 1 && !!winInfo;
 
   return (
@@ -204,15 +179,13 @@ export default function App() {
         <PlayScreen
           levelRef={currentLevelRef}
           level={currentLevel}
-          progress={progress}
           onWin={handleWin}
           onFail={handleFail}
-          onSpendBoon={handleSpendBoon}
           attemptKey={attemptKey}
         />
       )}
 
-      {winInfo && !boonChoice && (
+      {winInfo && (
         <WinModal
           stars={winInfo.stars}
           isLastInRealm={isLastInRealm}
@@ -235,13 +208,8 @@ export default function App() {
         />
       )}
 
-      {boonChoice && <BoonChoiceModal options={boonChoice} onChoose={handleChooseBoon} />}
-
       {showRules && (
-        <RulesModal
-          onClose={() => setShowRules(false)}
-          closeLabel={screen === 'play' ? 'Begin' : 'Got it'}
-        />
+        <RulesModal onClose={() => setShowRules(false)} closeLabel={screen === 'play' ? 'Begin' : 'Got it'} />
       )}
     </div>
   );

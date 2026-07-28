@@ -9,8 +9,6 @@ import type { RealmDef } from './types';
 export interface LevelDef {
   size: number;
   tip?: string;
-  /** grants a boon choice on completion */
-  boon?: boolean;
   /**
    * How many domains to shrink to a single cell. A one-cell domain gives away
    * one Warden position for free, so early levels use them as a foothold and
@@ -45,7 +43,6 @@ const REALM_SPECS: RealmSpec[] = [
       {
         size: 5,
         tip: 'Wardens never touch — not even at the corners. Leave a gap around each one.',
-        boon: true,
         singletons: 2,
       },
       {
@@ -58,7 +55,7 @@ const REALM_SPECS: RealmSpec[] = [
         tip: 'Count what is left. When a row has one legal cell, that cell is certain.',
         singletons: 1,
       },
-      { size: 6, boon: true, singletons: 1 },
+      { size: 6, singletons: 1 },
       { size: 6 },
       { size: 6 },
     ],
@@ -72,10 +69,10 @@ const REALM_SPECS: RealmSpec[] = [
     levels: [
       { size: 6, tip: 'Larger boards reward patience. Find the forced cell before you guess.' },
       { size: 7 },
-      { size: 7, boon: true },
       { size: 7 },
       { size: 7 },
-      { size: 8, boon: true },
+      { size: 7 },
+      { size: 8 },
       { size: 8 },
       { size: 8 },
     ],
@@ -89,10 +86,10 @@ const REALM_SPECS: RealmSpec[] = [
     levels: [
       { size: 8 },
       { size: 8 },
-      { size: 9, boon: true },
       { size: 9 },
       { size: 9 },
-      { size: 9, boon: true },
+      { size: 9 },
+      { size: 9 },
       { size: 9 },
       { size: 9 },
     ],
@@ -117,7 +114,6 @@ export interface LevelRef {
   singletons: number;
   /** stable id used as the generation seed and progress key */
   id: string;
-  grantsBoon: boolean;
 }
 
 let cachedRefs: LevelRef[] | null = null;
@@ -138,7 +134,6 @@ export function getAllLevelRefs(): LevelRef[] {
         tip: def.tip,
         singletons: def.singletons ?? 0,
         id: `${spec.id}-${levelInRealm}`,
-        grantsBoon: !!def.boon,
       });
       globalIndex++;
     });

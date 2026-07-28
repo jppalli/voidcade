@@ -117,27 +117,6 @@ export function playWin() {
   }
 }
 
-export function playBoonAwarded() {
-  if (!_prefs.sfx) return;
-  try {
-    tone(660, 0, 0.5, 0.13, 'sine');
-    tone(990, 0.08, 0.5, 0.09, 'sine');
-    tone(1320, 0.16, 0.6, 0.06, 'sine');
-  } catch {
-    /* audio unavailable */
-  }
-}
-
-export function playBoonUsed() {
-  if (!_prefs.sfx) return;
-  try {
-    tone(880, 0, 0.18, 0.12, 'triangle');
-    tone(1180, 0.06, 0.22, 0.08, 'triangle');
-  } catch {
-    /* audio unavailable */
-  }
-}
-
 export function playClick() {
   if (!_prefs.sfx) return;
   try {

@@ -1,21 +1,18 @@
-import type { BoonId } from './boons';
 import { TOTAL_LEVELS } from './saga';
 
 const STORAGE_KEY = 'wardens_progress_v1';
 
 export interface LevelResult {
   completed: boolean;
+  /** lives lost on the best clear of this level */
   mistakes: number;
   usedHint: boolean;
-  bestMoveTimeMs?: number;
 }
 
 export interface Progress {
   /** highest globalIndex unlocked (playable). Starts at 0. */
   unlockedIndex: number;
   results: Record<number, LevelResult>; // key: globalIndex
-  /** boons currently held, ready to spend */
-  inventory: Record<BoonId, number>;
   totalStars: number;
 }
 
@@ -23,7 +20,6 @@ function emptyProgress(): Progress {
   return {
     unlockedIndex: 0,
     results: {},
-    inventory: { 'seers-eye': 0, banish: 0, aegis: 0 },
     totalStars: 0,
   };
 }
@@ -34,7 +30,7 @@ export function loadProgress(): Progress {
     if (!raw) return emptyProgress();
     const parsed = JSON.parse(raw);
     // Merge with defaults in case new fields were added since last save.
-    return { ...emptyProgress(), ...parsed, inventory: { ...emptyProgress().inventory, ...parsed.inventory } };
+    return { ...emptyProgress(), ...parsed };
   } catch {
     return emptyProgress();
   }
@@ -85,17 +81,4 @@ export function recordLevelWin(
   }
 
   return { ...progress, results, unlockedIndex, totalStars };
-}
-
-export function grantBoon(progress: Progress, boonId: BoonId, amount = 1): Progress {
-  return {
-    ...progress,
-    inventory: { ...progress.inventory, [boonId]: (progress.inventory[boonId] ?? 0) + amount },
-  };
-}
-
-export function spendBoon(progress: Progress, boonId: BoonId): Progress | null {
-  const have = progress.inventory[boonId] ?? 0;
-  if (have <= 0) return null;
-  return { ...progress, inventory: { ...progress.inventory, [boonId]: have - 1 } };
 }
