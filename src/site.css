@@ -288,11 +288,30 @@ body {
   background: rgba(255,255,255,0.3);
 }
 
+/* Registered so they can be smoothly transitioned. The hover lift is applied
+   *inside* the float keyframes via these variables, rather than by overriding
+   `transform` and killing the animation — doing the latter dropped the
+   entrance animation's fill state and re-ran it on mouse-out, which made
+   cards flash and fade out. */
+@property --lift {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+@property --pop {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+
 .stage-card {
   /* --tilt and --y0 drive the resting angle and vertical offset; each card
      gets its own values below so the row looks hand-scattered. */
   --tilt: -2deg;
   --y0: 0px;
+  --lift: 0px;
+  --pop: 1;
   flex: 0 0 auto;
   width: clamp(168px, 21vw, 224px);
   margin-left: -34px; /* overlap the previous card */
@@ -307,7 +326,8 @@ body {
   border-radius: 20px;
   padding: 16px 16px 18px;
   box-shadow: 8px 8px 0 rgba(0,0,0,0.5);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.18s ease;
+  transition: --lift 0.2s ease, --pop 0.2s ease, box-shadow 0.2s ease,
+              border-color 0.18s ease;
 }
 
 .stage-card:first-child {
@@ -330,11 +350,15 @@ body {
   box-shadow: 8px 8px 0 rgba(0,0,0,0.5), 0 0 26px rgba(125,255,212,0.18);
 }
 
-.stage-card:hover {
-  transform: rotate(var(--tilt)) translateY(calc(var(--y0) - 10px)) scale(1.05);
+/* Hover only nudges the variables the keyframes already read, so the float
+   keeps running and nothing re-triggers on mouse-out. */
+.stage-card:hover,
+.stage-card:focus-visible {
+  --lift: 12px;
+  --pop: 1.05;
   box-shadow: 12px 14px 0 rgba(0,0,0,0.5);
+  border-color: var(--accent);
   z-index: 8;
-  animation: none; /* freeze the float so it doesn't fight the hover lift */
 }
 
 .stage-card-badge {
@@ -363,22 +387,54 @@ body {
   letter-spacing: -0.3px;
 }
 
-.stage-card-play {
-  margin-top: 6px;
-  font-size: 12.5px;
-  font-weight: 700;
-  color: var(--accent);
+/* Play pill: reads as a real button instead of a text link with a stray
+   arrow. Outlined at rest, fills with the accent when the card is hovered. */
+.stage-card-play,
+.game-card-play {
+  margin-top: 10px;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  justify-content: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(125,255,212,0.4);
+  background: rgba(125,255,212,0.08);
+  color: var(--accent);
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
 }
 
-.stage-card-play .play-arrow {
-  transition: transform 0.15s ease;
+.game-card-play {
+  margin-top: auto;
+  align-self: flex-start;
 }
 
-.stage-card:hover .play-arrow {
-  transform: translateX(3px);
+.stage-card:hover .stage-card-play,
+.stage-card:focus-visible .stage-card-play,
+.game-card:hover .game-card-play,
+.game-card:focus-visible .game-card-play {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #08080f;
+}
+
+/* Triangular play glyph, drawn in CSS so there's no arrow character to
+   misalign with the text baseline. */
+.play-arrow {
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 4.5px 0 4.5px 7px;
+  border-color: transparent transparent transparent currentColor;
+  transition: transform 0.16s ease;
+}
+
+.stage-card:hover .play-arrow,
+.game-card:hover .play-arrow {
+  transform: translateX(2px);
 }
 
 /* Cards fly in staggered left to right, then drift gently forever. Both
@@ -399,19 +455,21 @@ body {
 
 @keyframes cardRise {
   from { opacity: 0; transform: rotate(calc(var(--tilt) * 2.5)) translateY(46px) scale(0.86); }
-  to   { opacity: 1; transform: rotate(var(--tilt)) translateY(var(--y0)) scale(1); }
+  to   { opacity: 1; transform: rotate(var(--tilt)) translateY(calc(var(--y0) - var(--lift))) scale(var(--pop)); }
 }
 
 @keyframes cardFloat {
-  0%, 100% { transform: rotate(var(--tilt)) translateY(var(--y0)) scale(1); }
-  50%      { transform: rotate(var(--tilt)) translateY(calc(var(--y0) - 9px)) scale(1); }
+  0%, 100% { transform: rotate(var(--tilt)) translateY(calc(var(--y0) - var(--lift))) scale(var(--pop)); }
+  50%      { transform: rotate(var(--tilt)) translateY(calc(var(--y0) - var(--lift) - 9px)) scale(var(--pop)); }
 }
 
-/* Respect users who'd rather not have constant motion. */
+/* Respect users who'd rather not have constant motion. Keep the hover lift —
+   it's a direct response to input, not ambient movement. */
 @media (prefers-reduced-motion: reduce) {
   .stage-card {
     animation: none;
-    transform: rotate(var(--tilt)) translateY(var(--y0));
+    opacity: 1;
+    transform: rotate(var(--tilt)) translateY(calc(var(--y0) - var(--lift))) scale(var(--pop));
   }
 }
 
@@ -511,47 +569,97 @@ body {
 }
 
 .section-head h2 {
-  font-size: 24px;
-  font-weight: 800;
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: -0.6px;
 }
 
 .section-count {
-  font-size: 12px;
-  color: var(--text-dimmer);
-  font-weight: 600;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: rgba(125,255,212,0.08);
+  border: 1px solid rgba(125,255,212,0.2);
+  border-radius: 999px;
+  padding: 5px 12px;
+  white-space: nowrap;
 }
 
 .game-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(272px, 1fr));
+  gap: 22px;
 }
 
 .game-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   text-decoration: none;
   color: #fff;
   background: var(--bg-raise);
   border: 1px solid var(--border);
-  border-radius: 18px;
+  border-radius: 20px;
   overflow: hidden;
   transition: border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
 }
 
-.game-card:hover {
-  border-color: rgba(125,255,212,0.35);
-  transform: translateY(-4px);
-  box-shadow: 0 16px 34px rgba(0,0,0,0.4);
+.game-card:hover,
+.game-card:focus-visible {
+  border-color: rgba(125,255,212,0.45);
+  transform: translateY(-5px);
+  box-shadow: 0 18px 38px rgba(0,0,0,0.45);
 }
 
-/* Stackward gets the featured treatment: spans two columns on wider
-   screens and gets a taller art area, since it's the flagship game. */
+/* Art gets a gentle push-in on hover. The wrapper clips it, so the zoom
+   never bleeds past the rounded corners. */
+.game-card .game-card-art > * {
+  transition: transform 0.35s cubic-bezier(0.22,1,0.36,1);
+}
+
+.game-card:hover .game-card-art > * {
+  transform: scale(1.06);
+}
+
+/* These art pieces are centred with translate(-50%,-50%); the zoom has to
+   preserve that or they'd jump to the corner. */
+.game-card:hover .bubbleshooter-art .bs-bubble,
+.game-card:hover .chessdoku-art .cd-piece {
+  transform: translate(-50%, -50%) scale(1.06);
+}
+
+/* Stackward gets the featured treatment: it spans two columns and, on wide
+   enough screens, lays out side by side so the row doesn't get a giant
+   letterboxed art block. */
 .game-card-featured {
   grid-column: span 2;
 }
 
-.game-card-featured .game-card-art { height: 180px; }
+.game-card-featured .game-card-art { height: 190px; }
+
+@media (min-width: 760px) {
+  .game-card-featured {
+    flex-direction: row;
+    align-items: stretch;
+  }
+  .game-card-featured .game-card-art {
+    height: auto;
+    flex: 0 0 46%;
+  }
+  .game-card-featured .game-card-body {
+    justify-content: center;
+    padding: 26px 28px;
+  }
+  .game-card-featured .game-card-body h3 {
+    font-size: 22px;
+  }
+  .game-card-featured .game-card-body p {
+    font-size: 13.5px;
+    max-width: 42ch;
+  }
+}
 
 @media (max-width: 640px) {
   .game-card-featured { grid-column: span 1; }
@@ -782,22 +890,24 @@ body {
 }
 
 .game-card-body {
-  padding: 18px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
   flex: 1;
 }
 
 .game-card-body h3 {
-  font-size: 16px;
-  margin: 10px 0 6px;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: -0.3px;
+  margin: 12px 0 7px;
 }
 
 .game-card-body p {
   font-size: 12.5px;
   color: var(--text-dim);
-  line-height: 1.5;
-  margin-bottom: 14px;
+  line-height: 1.55;
+  margin-bottom: 16px;
 }
 
 .game-tag {
@@ -831,33 +941,24 @@ body {
   border-color: rgba(255,184,77,0.2);
 }
 
-.game-card-play {
-  margin-top: auto;
-  font-size: 12.5px;
-  font-weight: 700;
-  color: #fff;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
 
-.play-arrow {
-  transition: transform 0.15s ease;
-}
 
-.game-card:hover .play-arrow {
-  transform: translateX(3px);
-}
-
+/* Placeholder card: dashed and quiet so it clearly isn't a playable game. */
 .game-card-soon {
   cursor: default;
-  opacity: 0.7;
+  opacity: 0.55;
+  background: transparent;
+  border-style: dashed;
 }
 
 .game-card-soon:hover {
   transform: none;
   border-color: var(--border);
   box-shadow: none;
+}
+
+.game-card-soon:hover .game-card-art > * {
+  transform: none;
 }
 
 .ad-slot-infeed {
