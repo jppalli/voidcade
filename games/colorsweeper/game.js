@@ -46,7 +46,7 @@ export class Game {
       const cell = this._cells[r][c];
       cell.solved = true;
       cell.clueColor = this._solution[r][c];
-      cell.clueValue = clueValue(this._solution, r, c);
+      cell.clueValue = this._level._clueValues[`${r},${c}`];
       cell.showClue = true;
     }
 
@@ -81,7 +81,9 @@ export class Game {
     if (correct) {
       cell.solved = true;
       cell.clueColor = selectedColor;
-      cell.clueValue = clueValue(this._solution, r, c);
+      // Use pre-verified value if this was a start clue, else compute live
+      cell.clueValue = this._level._clueValues[`${r},${c}`] ??
+                       clueValue(this._solution, r, c);
       // Reveal the number immediately if it's useful (value > 0 or = 0 with
       // at least one unconfirmed neighbour that can benefit from the info)
       cell.showClue = this._shouldShowClue(r, c);

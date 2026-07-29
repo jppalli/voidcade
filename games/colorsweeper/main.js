@@ -1,12 +1,12 @@
 import { Game, MAX_LIVES } from './game.js';
-import { COLORS } from './levels.js';
+import { COLORS, LEVELS } from './levels.js';
 
 // ---------------------------------------------------------------- state
 
 let game = null;
-let selectedColor = 0;   // 0=orange, 1=dark, 2=yellow
-let flagMode = false;    // if true, tap places/removes a flag instead of painting
-let wrongTimer = null;   // timeout handle for clearing a wrong-guess flash
+let selectedColor = 0;
+let flagMode = false;
+let wrongTimer = null;
 
 // ---------------------------------------------------------------- DOM refs
 
@@ -14,10 +14,9 @@ const $ = id => document.getElementById(id);
 const boardEl   = $('board');
 const livesEl   = $('lives');
 const levelName = $('levelName');
-const colorBtns = Array.from(document.querySelectorAll('.color-btn'));
+const colorBtns = [0,1,2].map(i => $(`colorBtn${i}`));
 const flagBtn   = $('flagBtn');
 const paintBtn  = $('paintBtn');
-const msgEl     = $('message');
 const nextBtn   = $('nextBtn');
 const retryBtn  = $('retryBtn');
 const levelSel  = $('levelSelect');
@@ -37,17 +36,14 @@ function initLevel(index) {
 }
 
 // Populate level selector
-COLORS; // ensure import side-effects
-import('./levels.js').then(({ LEVELS }) => {
-  LEVELS.forEach((lvl, i) => {
-    const opt = document.createElement('option');
-    opt.value = i;
-    opt.textContent = `Level ${i + 1}: ${lvl.name}`;
-    levelSel.appendChild(opt);
-  });
-  levelSel.addEventListener('change', () => initLevel(Number(levelSel.value)));
-  initLevel(0);
+LEVELS.forEach((lvl, i) => {
+  const opt = document.createElement('option');
+  opt.value = i;
+  opt.textContent = `${i + 1}. ${lvl.name}`;
+  levelSel.appendChild(opt);
 });
+levelSel.addEventListener('change', () => initLevel(Number(levelSel.value)));
+initLevel(0);
 
 // ---------------------------------------------------------------- grid
 
