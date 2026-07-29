@@ -60,10 +60,25 @@ function buildGrid() {
       cell.dataset.c = c;
       cell.setAttribute('aria-label', `Row ${r+1} Col ${c+1}`);
 
-      // Single tap: paint or flag
-      cell.addEventListener('click', () => onCellTap(r, c));
-      // Double tap: auto-flag for 0-clue cells
-      cell.addEventListener('dblclick', e => { e.preventDefault(); onCellDbl(r, c); });
+      // Use a tap-count timer so double-tap works on both mouse and touch.
+      // dblclick is unreliable on mobile; this approach works everywhere.
+      let tapCount = 0, tapTimer = null;
+      const DOUBLE_TAP_MS = 300;
+
+      cell.addEventListener('click', (e) => {
+        e.preventDefault();
+        tapCount++;
+        if (tapCount === 1) {
+          tapTimer = setTimeout(() => {
+            tapCount = 0;
+            onCellTap(r, c);      // single tap
+          }, DOUBLE_TAP_MS);
+        } else {
+          clearTimeout(tapTimer);
+          tapCount = 0;
+          onCellDbl(r, c);        // double tap
+        }
+      });
 
       boardEl.appendChild(cell);
     }
