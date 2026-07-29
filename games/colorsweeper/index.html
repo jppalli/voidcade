@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Color Sweeper</title>
+  <meta name="description" content="A color logic puzzle — paint every cell, use the number clues, and never place a wrong color.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='10' fill='%23f5f2ee'/%3E%3Crect x='4' y='4' width='18' height='18' rx='5' fill='%23f4631e'/%3E%3Crect x='26' y='4' width='18' height='18' rx='5' fill='%232d3340'/%3E%3Crect x='4' y='26' width='18' height='18' rx='5' fill='%23e8c04a'/%3E%3Crect x='26' y='26' width='18' height='18' rx='5' fill='%23f4631e'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- ── header ── -->
+    <header class="header">
+      <div class="header-left">
+        <a href="../../">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+               stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m15 18-6-6 6-6"/>
+          </svg>
+          Voidcade
+        </a>
+      </div>
+      <span id="levelName">—</span>
+      <div id="lives"></div>
+    </header>
+
+    <!-- ── level selector ── -->
+    <select id="levelSelect" aria-label="Choose a level"></select>
+
+    <!-- ── board ── -->
+    <div id="boardWrap">
+      <div id="board"></div>
+    </div>
+
+    <!-- ── hint ── -->
+    <div class="hint-bar">
+      Double-tap a <strong>0</strong> clue to auto-mark its neighbours.
+    </div>
+
+    <!-- ── controls ── -->
+    <div class="controls">
+      <div class="mode-group">
+        <button class="color-btn" id="colorBtn0" title="Orange" aria-label="Select orange"></button>
+        <button class="color-btn" id="colorBtn1" title="Dark"   aria-label="Select dark"></button>
+        <button class="color-btn" id="colorBtn2" title="Yellow" aria-label="Select yellow"></button>
+      </div>
+      <button class="tool-btn" id="paintBtn" title="Paint mode" aria-pressed="true">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 20h9"/>
+          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+        </svg>
+        Paint
+      </button>
+      <button class="tool-btn" id="flagBtn" title="Flag mode — mark a color as absent" aria-pressed="false">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="6" y1="6" x2="18" y2="18"/>
+          <line x1="18" y1="6" x2="6" y2="18"/>
+        </svg>
+        Flag
+      </button>
+    </div>
+
+  </div><!-- /#app -->
+
+  <!-- ── message panel ── -->
+  <div id="msgPanel" class="msg-overlay hidden" role="dialog" aria-modal="true">
+    <div class="msg-card">
+      <div id="msgTitle"></div>
+      <p id="msgSub"></p>
+      <div class="msg-actions">
+        <button class="btn-primary" id="nextBtn">Next level</button>
+        <button class="btn-secondary" id="retryBtn">Retry</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>

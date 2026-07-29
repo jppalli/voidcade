@@ -18,6 +18,7 @@
     "dev:chessdoku": "npm run dev --workspace=chessdoku",
     "dev:kittydoku": "npm run dev --workspace=kittydoku",
     "dev:riftpop": "npx --yes http-server games/riftpop -p 5187 -c-1",
+    "dev:colorsweeper": "npx --yes http-server games/colorsweeper -p 5188 -c-1",
     "dev:panes": "npx --yes http-server games/panes -p 5175 -c-1"
   },
   "dependencies": {
