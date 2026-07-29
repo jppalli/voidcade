@@ -108,6 +108,8 @@ function buildBoard(ref: LevelRef) {
       cell.dataset.r = String(r);
       cell.dataset.c = String(c);
       cell.style.setProperty('--cell', tone.fill);
+      // Stagger the idle wiggle so cats aren't all in sync
+      cell.style.setProperty('--cat-delay', `${((r * ref.size + c) * 0.31) % 2.8}s`);
       cell.setAttribute('aria-label', `Row ${r + 1}, column ${c + 1}`);
 
       const edges: string[] = [];
