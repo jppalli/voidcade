@@ -287,7 +287,7 @@ button {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1px;
+  gap: 4px;
   min-width: 0;
 }
 
@@ -300,48 +300,61 @@ button {
 }
 
 .gameLevelNum {
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 900;
   color: var(--ink);
   line-height: 1.1;
 }
 
-.gameSize {
-  font-size: 10.5px;
-  font-weight: 700;
-  color: var(--ink-faint);
-}
-
-.gameHeaderRight {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  flex-shrink: 0;
-}
-
 .livesRow {
   display: flex;
-  gap: 1px;
+  gap: 2px;
   align-items: center;
 }
 
-.heart.empty svg path { fill: none; stroke: var(--line-strong); }
+.heart svg { display: block; }
+.heart.empty svg path { fill: none !important; stroke: #d4bfb7 !important; }
 
-/* Wrong guess: sad cat shown with a red tint, briefly shakes */
+/* Correct cat: pops in with a spring, then breathes gently */
+.cell .catWrap {
+  display: flex; align-items: center; justify-content: center;
+  animation: catPop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1),
+             catBreathe 3s ease-in-out 0.35s infinite;
+}
+
+@keyframes catPop {
+  from { transform: scale(0.4) translateY(6px); opacity: 0; }
+  to   { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+@keyframes catBreathe {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  40%      { transform: scale(1.04) rotate(1.5deg); }
+  60%      { transform: scale(1.02) rotate(-1deg); }
+}
+
+/* Dead cat: tilts in, then flops and bobs sadly */
+.cell .wrongWrap {
+  display: flex; align-items: center; justify-content: center;
+  animation: catFlop 0.45s cubic-bezier(0.34, 1.2, 0.64, 1),
+             catFlop2 2.5s ease-in-out 0.5s infinite;
+}
+
+@keyframes catFlop {
+  from { transform: scale(0.5) rotate(-20deg); opacity: 0; }
+  to   { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+@keyframes catFlop2 {
+  0%, 100% { transform: scale(0.95) rotate(-3deg) translateY(2px); }
+  50%      { transform: scale(0.97) rotate(2deg) translateY(-1px); }
+}
+
+/* Wrong cell: soft red outline, no harsh flash */
 .cell.wrong-cell {
-  animation: wrongShake 0.42s ease;
-}
-
-.cell.wrong-cell .wrongWrap {
-  opacity: 0.55;
-  filter: saturate(0.2) sepia(0.4);
-}
-
-@keyframes wrongShake {
-  0%, 100% { transform: rotate(0deg); }
-  20% { transform: rotate(-6deg); }
-  50% { transform: rotate(6deg); }
-  80% { transform: rotate(-4deg); }
+  outline: 3px solid rgba(231, 144, 140, 0.7);
+  outline-offset: -3px;
+  z-index: 2;
 }
 
 .tipBar {
@@ -372,25 +385,6 @@ button {
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
-
-.catCount {
-  width: 100%;
-  max-width: 520px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  margin-bottom: 12px;
-}
-
-.catCount i {
-  width: 11px; height: 11px;
-  border-radius: 50%;
-  background: var(--line-strong);
-  transition: background 0.2s ease, transform 0.2s ease;
-}
-
-.catCount i.on { background: var(--accent); transform: scale(1.25); }
 
 /* Board */
 .boardWrap {

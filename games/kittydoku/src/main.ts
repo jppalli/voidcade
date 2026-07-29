@@ -16,7 +16,7 @@ import {
   type Progress,
 } from './game/progress';
 import { Game, MAX_LIVES } from './game/state';
-import { mascotSvg, pastel, pawSvg } from './render/art';
+import { deadCatSvg, mascotSvg, pastel, pawSvg } from './render/art';
 import { renderMap, scrollToFrontier } from './ui/map';
 
 type Screen = 'title' | 'map' | 'game';
@@ -79,10 +79,8 @@ function startLevel(index: number) {
   game = new Game(ref);
   winPending = false;
 
-  // Header: chapter name left, level number right
   $('gameChapter').textContent = ref.chapter.name;
-  $('gameLevelNum').textContent = `Level ${ref.levelInChapter + 1}`;
-  $('gameSize').textContent = `${ref.size}×${ref.size}`;
+  $('gameLevelNum').textContent = `Level ${ref.levelInChapter + 1} · ${ref.size}×${ref.size}`;
 
   const tipBar = $('tipBar');
   tipBar.classList.toggle('hidden', !ref.tip);
@@ -136,9 +134,8 @@ function cellEl(r: number, c: number): HTMLElement | null {
 function renderBoard() {
   const g = game!;
   const size = g.size;
-  // Scale mascot to fit nicely: 65% of the cell. The mascot viewBox is 100×100
-  // so we just set width/height and let the SVG scale.
-  const catPx = Math.max(20, Math.round(220 / size));
+  // Scale mascot to ~72% of the cell for a big cosy feel
+  const catPx = Math.max(24, Math.round(270 / size));
 
   for (let r = 0; r < size; r++) {
     for (let c = 0; c < size; c++) {
@@ -148,12 +145,12 @@ function renderBoard() {
 
       if (mark === 'cat') {
         if (!el.querySelector('.catWrap')) {
-          el.className = el.className.replace(' wrong-cell', '');
+          el.classList.remove('wrong-cell');
           el.innerHTML = `<span class="catWrap">${mascotSvg(catPx)}</span>`;
         }
       } else if (mark === 'wrong') {
         if (!el.querySelector('.wrongWrap')) {
-          el.innerHTML = `<span class="wrongWrap">${mascotSvg(catPx)}</span>`;
+          el.innerHTML = `<span class="wrongWrap">${deadCatSvg(catPx)}</span>`;
           el.classList.add('wrong-cell');
         }
       } else {
@@ -165,22 +162,16 @@ function renderBoard() {
     }
   }
 
-  // Hearts HUD
+  // Hearts HUD — rendered in the header, updated after every tap
   $('livesRow').innerHTML = Array.from({ length: MAX_LIVES }, (_, i) =>
     `<span class="heart ${i < g.livesRemaining ? 'full' : 'empty'}">
-      <svg viewBox="0 0 24 24" width="22" height="22">
+      <svg viewBox="0 0 24 24" width="24" height="24">
         <path d="M12 20.5s-7.5-4.6-7.5-9.6a4.4 4.4 0 0 1 7.5-3.1 4.4 4.4 0 0 1 7.5 3.1c0 5-7.5 9.6-7.5 9.6Z"
           fill="${i < g.livesRemaining ? '#e7908c' : 'none'}"
-          stroke="${i < g.livesRemaining ? '#e7908c' : '#c8b0a4'}"
+          stroke="${i < g.livesRemaining ? '#e7908c' : '#d4bfb7'}"
           stroke-width="1.8"/>
       </svg>
     </span>`
-  ).join('');
-
-  // Cat counter dots
-  $('catCount').innerHTML = Array.from(
-    { length: size },
-    (_, i) => `<i class="${i < g.correctCount() ? 'on' : ''}"></i>`
   ).join('');
 
   ($('btnUndo') as HTMLButtonElement).disabled = !g.canUndo;
