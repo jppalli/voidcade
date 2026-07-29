@@ -69,11 +69,18 @@
 
   <!-- ============ game ============ -->
   <section id="screen-game" class="screen hidden">
-    <div class="topBar">
+    <div class="gameHeader">
       <button class="iconBtn" data-nav="map" title="Back to map"><svg class="icon"><use href="#i-back"/></svg></button>
-      <div class="topBarTitle" id="gameTitle">—<small id="gameSub"></small></div>
-      <button class="iconBtn" id="btnHelpGame" title="How to play"><svg class="icon"><use href="#i-help"/></svg></button>
-      <button class="iconBtn" id="btnSoundGame" title="Toggle sound"><svg class="icon"><use href="#i-sound-on"/></svg></button>
+      <div class="gameHeaderCenter">
+        <span class="gameChapter" id="gameChapter">—</span>
+        <span class="gameLevelNum" id="gameLevelNum">Level 1</span>
+        <span class="gameSize" id="gameSize"></span>
+      </div>
+      <div class="gameHeaderRight">
+        <div class="livesRow" id="livesRow" aria-label="Lives remaining"></div>
+        <button class="iconBtn" id="btnHelpGame" title="How to play"><svg class="icon"><use href="#i-help"/></svg></button>
+        <button class="iconBtn" id="btnSoundGame" title="Toggle sound"><svg class="icon"><use href="#i-sound-on"/></svg></button>
+      </div>
     </div>
 
     <div class="tipBar hidden" id="tipBar"><b>Tip</b><span id="tipText"></span></div>
@@ -89,8 +96,21 @@
       <button class="btn" id="btnHint"><svg class="icon"><use href="#i-hint"/></svg><span>Hint</span></button>
     </div>
 
-    <p class="helpText">Tap once for a paw mark, twice to place a cat, three times to clear.</p>
+    <p class="helpText">Tap a square to place a cat. Guess wrong and you lose a heart.</p>
   </section>
+
+  <!-- ============ fail modal ============ -->
+  <div id="failOverlay" class="overlay hidden">
+    <div class="modal">
+      <div class="winCat" style="opacity:0.55" id="failCat"></div>
+      <h2>No more hearts!</h2>
+      <p>The cats need a little more coaxing. Try again?</p>
+      <div class="modalButtons">
+        <button class="btn primary" id="btnFailRetry">Try again</button>
+        <button class="btn" id="btnFailMap">Level Map</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ============ win modal ============ -->
   <div id="winOverlay" class="overlay hidden">
@@ -113,9 +133,9 @@
       <ul class="howToList">
         <li><span class="howToNum">1</span><span>Place exactly one cat in every <b>row</b>, every <b>column</b>, and every <b>colour patch</b>.</span></li>
         <li><span class="howToNum">2</span><span>No two cats will sit next to each other — not side by side, not corner to corner. The faded paws above show the squares those two cats rule out.</span></li>
-        <li><span class="howToNum">3</span><span>Tap a square once for a <b>paw mark</b> (your note for "no cat here"), again to place a <b>cat</b>, again to clear it.</span></li>
+        <li><span class="howToNum">3</span><span><b>Tap</b> a square to place a cat. If you're wrong the cat looks sad, you lose a heart, and the cell stays revealed. Three hearts per level.</span></li>
       </ul>
-      <p>Every puzzle has exactly one answer and can always be worked out — no guessing, no timer, and nothing to lose.</p>
+      <p>Every puzzle has exactly one answer and can always be worked out by logic — no guessing needed.</p>
       <div class="modalButtons">
         <button class="btn primary" id="btnHowToClose">Got it</button>
       </div>

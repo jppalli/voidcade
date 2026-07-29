@@ -1,7 +1,6 @@
 import {
   playCat,
   playLift,
-  playPaw,
   playTap,
   playUnhappy,
   playWin,
@@ -16,8 +15,8 @@ import {
   solvedCount,
   type Progress,
 } from './game/progress';
-import { Game } from './game/state';
-import { catSvg, mascotSvg, pastel, pawSvg } from './render/art';
+import { Game, MAX_LIVES } from './game/state';
+import { mascotSvg, pastel, pawSvg } from './render/art';
 import { renderMap, scrollToFrontier } from './ui/map';
 
 type Screen = 'title' | 'map' | 'game';
@@ -58,7 +57,6 @@ function renderTitle() {
   $('btnPlay').textContent = done === 0 ? 'Play' : 'Continue';
 }
 
-/** Slow-drifting paw prints behind the title card. */
 function seedTitleFloat() {
   const host = $('titleFloat');
   const tints = ['#ffd6a5', '#d7c7ff', '#b8ebc8', '#ffc9d9', '#bfe3ff'];
@@ -81,8 +79,10 @@ function startLevel(index: number) {
   game = new Game(ref);
   winPending = false;
 
-  $('gameTitle').firstChild!.textContent = ref.chapter.name;
-  $('gameSub').textContent = `Level ${ref.levelInChapter + 1} · ${ref.size}×${ref.size}`;
+  // Header: chapter name left, level number right
+  $('gameChapter').textContent = ref.chapter.name;
+  $('gameLevelNum').textContent = `Level ${ref.levelInChapter + 1}`;
+  $('gameSize').textContent = `${ref.size}×${ref.size}`;
 
   const tipBar = $('tipBar');
   tipBar.classList.toggle('hidden', !ref.tip);
@@ -112,9 +112,6 @@ function buildBoard(ref: LevelRef) {
       cell.style.setProperty('--cell', tone.fill);
       cell.setAttribute('aria-label', `Row ${r + 1}, column ${c + 1}`);
 
-      // Thick dark edges only where this cell meets a *different* patch, so the
-      // patch shapes read clearly. All four go in one box-shadow — separate
-      // rules would each overwrite the others.
       const edges: string[] = [];
       const same = (rr: number, cc: number) =>
         rr >= 0 && rr < ref.size && cc >= 0 && cc < ref.size && g.regionAt(rr, cc) === region;
@@ -122,8 +119,6 @@ function buildBoard(ref: LevelRef) {
       if (!same(r + 1, c)) edges.push('inset 0 -3px 0 0 var(--ink)');
       if (!same(r, c - 1)) edges.push('inset 3px 0 0 0 var(--ink)');
       if (!same(r, c + 1)) edges.push('inset -3px 0 0 0 var(--ink)');
-      // Faint separators inside a patch, listed last so the thick patch edges
-      // above paint over them.
       edges.push('inset 0 -1px 0 0 rgba(74,59,52,0.16)');
       edges.push('inset -1px 0 0 0 rgba(74,59,52,0.16)');
       cell.style.boxShadow = edges.join(', ');
@@ -141,37 +136,46 @@ function cellEl(r: number, c: number): HTMLElement | null {
 function renderBoard() {
   const g = game!;
   const size = g.size;
-  const unhappy = g.unhappyCats();
-  const catPx = Math.max(22, Math.round(320 / size));
-  const pawPx = Math.max(12, Math.round(150 / size));
+  // Scale mascot to fit nicely: 65% of the cell. The mascot viewBox is 100×100
+  // so we just set width/height and let the SVG scale.
+  const catPx = Math.max(20, Math.round(220 / size));
 
   for (let r = 0; r < size; r++) {
     for (let c = 0; c < size; c++) {
       const el = cellEl(r, c);
       if (!el) continue;
       const mark = g.marks[r][c];
-      const tone = pastel(g.regionAt(r, c));
-
-      const wasUnhappy = el.classList.contains('unhappy');
-      const isUnhappy = unhappy.has(`${r},${c}`);
 
       if (mark === 'cat') {
-        // Only rebuild when the contents actually change, so the pop animation
-        // doesn't replay on every unrelated re-render.
         if (!el.querySelector('.catWrap')) {
-          el.innerHTML = `<span class="catWrap">${catSvg(tone.ink, catPx)}</span>`;
+          el.className = el.className.replace(' wrong-cell', '');
+          el.innerHTML = `<span class="catWrap">${mascotSvg(catPx)}</span>`;
         }
-      } else if (mark === 'paw') {
-        if (!el.querySelector('.pawMark')) {
-          el.innerHTML = `<span class="pawMark">${pawSvg(tone.ink, pawPx)}</span>`;
+      } else if (mark === 'wrong') {
+        if (!el.querySelector('.wrongWrap')) {
+          el.innerHTML = `<span class="wrongWrap">${mascotSvg(catPx)}</span>`;
+          el.classList.add('wrong-cell');
         }
-      } else if (el.innerHTML !== '') {
-        el.innerHTML = '';
+      } else {
+        if (el.innerHTML !== '') {
+          el.innerHTML = '';
+          el.classList.remove('wrong-cell');
+        }
       }
-
-      if (isUnhappy !== wasUnhappy) el.classList.toggle('unhappy', isUnhappy);
     }
   }
+
+  // Hearts HUD
+  $('livesRow').innerHTML = Array.from({ length: MAX_LIVES }, (_, i) =>
+    `<span class="heart ${i < g.livesRemaining ? 'full' : 'empty'}">
+      <svg viewBox="0 0 24 24" width="22" height="22">
+        <path d="M12 20.5s-7.5-4.6-7.5-9.6a4.4 4.4 0 0 1 7.5-3.1 4.4 4.4 0 0 1 7.5 3.1c0 5-7.5 9.6-7.5 9.6Z"
+          fill="${i < g.livesRemaining ? '#e7908c' : 'none'}"
+          stroke="${i < g.livesRemaining ? '#e7908c' : '#c8b0a4'}"
+          stroke-width="1.8"/>
+      </svg>
+    </span>`
+  ).join('');
 
   // Cat counter dots
   $('catCount').innerHTML = Array.from(
@@ -185,21 +189,25 @@ function renderBoard() {
 function onCellClick(r: number, c: number) {
   const g = game;
   if (!g || winPending) return;
+  if (g.marks[r][c] !== 'empty') return; // already resolved
 
-  const next = g.cycle(r, c);
+  const result = g.tap(r, c);
   renderBoard();
 
-  if (next === 'cat') {
-    // A cat that breaks a rule mews softly instead of costing anything.
-    if (g.unhappyCats().has(`${r},${c}`)) playUnhappy();
-    else playCat();
-  } else if (next === 'paw') {
-    playPaw();
-  } else {
-    playLift();
+  if (result === 'correct') {
+    playCat();
+    if (g.isSolved()) finishLevel();
+  } else if (result === 'wrong') {
+    playUnhappy();
+    if (g.outOfLives) {
+      winPending = true;
+      setTimeout(showFailModal, 480);
+    }
   }
+}
 
-  if (g.isSolved()) finishLevel();
+function showFailModal() {
+  $('failOverlay').classList.remove('hidden');
 }
 
 function finishLevel() {
@@ -215,9 +223,9 @@ function finishLevel() {
   $('winTitle').textContent = g.usedHint ? 'All cosy!' : 'Purrfect!';
   $('winText').textContent = isLast
     ? 'Every cat in the game has found its spot. Thanks for playing!'
-    : g.usedHint
-      ? 'Every cat has a spot of its own. Try the next one without a hint for a gold star.'
-      : 'Solved with no hints — gold star earned.';
+    : g.livesLost === 0 && !g.usedHint
+      ? 'Not a single life lost — gold star!'
+      : 'Every cat has a spot of its own.';
   ($('btnWinNext') as HTMLButtonElement).classList.toggle('hidden', isLast);
 
   setTimeout(() => $('winOverlay').classList.remove('hidden'), 520);
@@ -226,8 +234,6 @@ function finishLevel() {
 // ---------------------------------------------------------------- how to play
 
 function renderDemoBoard() {
-  // Two legally placed cats on a 4x4, with faded paws on every square their
-  // adjacency rules out — the "no touching" rule is easier to see than to read.
   const regions = [
     [0, 0, 1, 1],
     [0, 2, 2, 1],
@@ -272,92 +278,75 @@ function nextUnsolvedIndex(): number {
   return next ? next.index : Math.min(progress.unlocked, TOTAL_LEVELS - 1);
 }
 
+function retryLevel() {
+  if (!game) return;
+  $('failOverlay').classList.add('hidden');
+  startLevel(game.ref.index);
+}
+
 function init() {
   seedTitleFloat();
   renderDemoBoard();
   refreshSoundButtons();
   renderTitle();
 
-  $('btnPlay').addEventListener('click', () => {
-    playTap();
-    startLevel(nextUnsolvedIndex());
-  });
-  $('btnMap').addEventListener('click', () => {
-    playTap();
-    show('map');
-  });
+  $('btnPlay').addEventListener('click', () => { playTap(); startLevel(nextUnsolvedIndex()); });
+  $('btnMap').addEventListener('click', () => { playTap(); show('map'); });
 
-  // Nav buttons (data-nav="title" / "map" / "game")
   document.querySelectorAll<HTMLElement>('[data-nav]').forEach((el) =>
-    el.addEventListener('click', () => {
-      playTap();
-      show(el.dataset.nav as Screen);
-    })
+    el.addEventListener('click', () => { playTap(); show(el.dataset.nav as Screen); })
   );
 
   // How-to modal
-  const openHowTo = () => {
-    playTap();
-    $('howToOverlay').classList.remove('hidden');
-  };
+  const openHowTo = () => { playTap(); $('howToOverlay').classList.remove('hidden'); };
   $('btnHowTo').addEventListener('click', openHowTo);
   $('btnHelpGame').addEventListener('click', openHowTo);
-  $('btnHowToClose').addEventListener('click', () => {
-    playTap();
-    $('howToOverlay').classList.add('hidden');
-  });
+  $('btnHowToClose').addEventListener('click', () => { playTap(); $('howToOverlay').classList.add('hidden'); });
 
   // Board controls
   $('btnUndo').addEventListener('click', () => {
     if (!game || winPending) return;
-    game.undo();
-    playLift();
-    renderBoard();
+    game.undo(); playLift(); renderBoard();
   });
   $('btnReset').addEventListener('click', () => {
     if (!game || winPending) return;
-    game.reset();
-    playLift();
-    renderBoard();
+    game.reset(); playLift(); renderBoard();
   });
   $('btnHint').addEventListener('click', () => {
     if (!game || winPending) return;
     const spot = game.hint();
     if (!spot) return;
-    playCat();
-    renderBoard();
+    playCat(); renderBoard();
     const el = cellEl(spot.row, spot.col);
-    if (el) {
-      el.classList.add('hintGlow');
-      setTimeout(() => el.classList.remove('hintGlow'), 2300);
-    }
+    if (el) { el.classList.add('hintGlow'); setTimeout(() => el.classList.remove('hintGlow'), 2300); }
     if (game.isSolved()) finishLevel();
   });
 
+  // Fail modal — inject sad mascot on open
+  $('btnFailRetry').addEventListener('click', () => { playTap(); retryLevel(); });
+  $('btnFailMap').addEventListener('click', () => {
+    playTap(); $('failOverlay').classList.add('hidden'); show('map');
+  });
+  // Pre-populate the fail cat now so it's ready
+  const failCatEl = document.getElementById('failCat');
+  if (failCatEl) failCatEl.innerHTML = mascotSvg(96);
+
   // Win modal
   $('btnWinNext').addEventListener('click', () => {
-    playTap();
-    $('winOverlay').classList.add('hidden');
+    playTap(); $('winOverlay').classList.add('hidden');
     const next = (game?.ref.index ?? 0) + 1;
-    if (next < TOTAL_LEVELS) startLevel(next);
-    else show('map');
+    if (next < TOTAL_LEVELS) startLevel(next); else show('map');
   });
   $('btnWinMap').addEventListener('click', () => {
-    playTap();
-    $('winOverlay').classList.add('hidden');
-    show('map');
+    playTap(); $('winOverlay').classList.add('hidden'); show('map');
   });
 
-  // Sound toggles — three buttons covering title / map / game screens
+  // Sound
   ['btnSoundTitle', 'btnSoundMap', 'btnSoundGame'].forEach((id) =>
-    $(id).addEventListener('click', () => {
-      setSoundEnabled(!soundEnabled());
-      refreshSoundButtons();
-      playTap();
-    })
+    $(id).addEventListener('click', () => { setSoundEnabled(!soundEnabled()); refreshSoundButtons(); playTap(); })
   );
 
-  // Keyboard shortcuts in the game screen
+  // Keyboard shortcuts
   window.addEventListener('keydown', (e) => {
     if ($('screen-game').classList.contains('hidden')) return;
     if (e.key === 'r' || e.key === 'R') $('btnReset').click();

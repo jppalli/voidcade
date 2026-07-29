@@ -271,6 +271,79 @@ button {
 /* ---------------- game screen ---------------- */
 #screen-game { justify-content: flex-start; }
 
+/* Clean 3-column header: back left, title center, lives+icons right */
+.gameHeader {
+  width: 100%;
+  max-width: 520px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 0 2px;
+}
+
+.gameHeaderCenter {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-width: 0;
+}
+
+.gameChapter {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.gameLevelNum {
+  font-size: 17px;
+  font-weight: 900;
+  color: var(--ink);
+  line-height: 1.1;
+}
+
+.gameSize {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--ink-faint);
+}
+
+.gameHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.livesRow {
+  display: flex;
+  gap: 1px;
+  align-items: center;
+}
+
+.heart.empty svg path { fill: none; stroke: var(--line-strong); }
+
+/* Wrong guess: sad cat shown with a red tint, briefly shakes */
+.cell.wrong-cell {
+  animation: wrongShake 0.42s ease;
+}
+
+.cell.wrong-cell .wrongWrap {
+  opacity: 0.55;
+  filter: saturate(0.2) sepia(0.4);
+}
+
+@keyframes wrongShake {
+  0%, 100% { transform: rotate(0deg); }
+  20% { transform: rotate(-6deg); }
+  50% { transform: rotate(6deg); }
+  80% { transform: rotate(-4deg); }
+}
+
 .tipBar {
   width: 100%;
   max-width: 520px;

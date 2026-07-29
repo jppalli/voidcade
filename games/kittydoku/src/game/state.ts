@@ -1,24 +1,17 @@
-import { conflictsWithPlaced, generatePuzzle, type Position, type PuzzleBoard } from '@arcade/queens-core';
+import { generatePuzzle, type Position, type PuzzleBoard } from '@arcade/queens-core';
 import type { LevelRef } from './levels';
 
-/** empty -> paw mark ("no cat here") -> cat -> empty */
-export type CellMark = 'empty' | 'paw' | 'cat';
+export type CellMark = 'empty' | 'wrong' | 'cat';
 
-export interface Snapshot {
-  marks: CellMark[][];
-}
+export const MAX_LIVES = 3;
 
-/**
- * KittyDoku is deliberately forgiving — there are no lives and no fail state.
- * A cat placed somewhere illegal simply shows as unhappy until you move it, so
- * the puzzle stays a calm logic exercise rather than a test you can lose.
- */
 export class Game {
   readonly ref: LevelRef;
   readonly board: PuzzleBoard;
   marks: CellMark[][];
+  livesLost = 0;
   usedHint = false;
-  private history: Snapshot[] = [];
+  private history: Array<{ marks: CellMark[][]; livesLost: number }> = [];
 
   constructor(ref: LevelRef) {
     this.ref = ref;
@@ -35,82 +28,72 @@ export class Game {
     return Array.from({ length: size }, () => new Array<CellMark>(size).fill('empty'));
   }
 
-  get size(): number {
-    return this.board.size;
-  }
+  get size(): number { return this.board.size; }
 
   regionAt(row: number, col: number): number {
     return this.board.regions[row][col];
   }
 
-  catPositions(): Position[] {
-    const out: Position[] = [];
-    this.marks.forEach((row, r) =>
-      row.forEach((m, c) => {
-        if (m === 'cat') out.push({ row: r, col: c });
-      })
-    );
-    return out;
+  isSolutionCell(row: number, col: number): boolean {
+    return this.board.solution.some((p) => p.row === row && p.col === col);
   }
 
-  /** Cats that break a rule against some other placed cat, as "r,c" keys. */
-  unhappyCats(): Set<string> {
-    const cats = this.catPositions();
-    const out = new Set<string>();
-    for (const cat of cats) {
-      if (conflictsWithPlaced(cat, this.board.regions, cats)) out.add(`${cat.row},${cat.col}`);
-    }
-    return out;
+  get livesRemaining(): number {
+    return Math.max(0, MAX_LIVES - this.livesLost);
   }
 
-  private pushHistory() {
-    this.history.push({ marks: this.marks.map((r) => r.slice()) });
+  get outOfLives(): boolean {
+    return this.livesLost >= MAX_LIVES;
+  }
+
+  /** Tap a cell: places a cat if correct, marks as wrong and costs a life if incorrect.
+   *  Returns what happened: 'correct' | 'wrong' | 'already-filled' */
+  tap(row: number, col: number): 'correct' | 'wrong' | 'already-filled' {
+    if (this.marks[row][col] !== 'empty') return 'already-filled';
+
+    this.history.push({ marks: this.marks.map((r) => r.slice()), livesLost: this.livesLost });
     if (this.history.length > 200) this.history.shift();
+
+    if (this.isSolutionCell(row, col)) {
+      this.marks[row][col] = 'cat';
+      return 'correct';
+    } else {
+      this.marks[row][col] = 'wrong';
+      this.livesLost++;
+      return 'wrong';
+    }
   }
 
-  get canUndo(): boolean {
-    return this.history.length > 0;
-  }
-
-  cycle(row: number, col: number): CellMark {
-    this.pushHistory();
-    const current = this.marks[row][col];
-    const next: CellMark = current === 'empty' ? 'paw' : current === 'paw' ? 'cat' : 'empty';
-    this.marks[row][col] = next;
-    return next;
-  }
+  get canUndo(): boolean { return this.history.length > 0; }
 
   undo() {
     const prev = this.history.pop();
-    if (prev) this.marks = prev.marks;
+    if (prev) {
+      this.marks = prev.marks;
+      this.livesLost = prev.livesLost;
+    }
   }
 
   reset() {
-    this.pushHistory();
+    this.history.push({ marks: this.marks.map((r) => r.slice()), livesLost: this.livesLost });
     this.marks = Game.emptyMarks(this.size);
+    this.livesLost = 0;
   }
 
-  /** Places one guaranteed-correct cat and flags the level as hinted. */
+  /** Hint: places one correct cat for free, marks as hinted. */
   hint(): Position | null {
     const target = this.board.solution.find((p) => this.marks[p.row][p.col] !== 'cat');
     if (!target) return null;
-    this.pushHistory();
+    this.history.push({ marks: this.marks.map((r) => r.slice()), livesLost: this.livesLost });
     this.marks[target.row][target.col] = 'cat';
     this.usedHint = true;
     return target;
   }
 
-  /**
-   * Solved when every solution cell holds a cat and nothing else does. Checking
-   * the count as well as the cells stops a board full of cats counting as a win.
-   */
   isSolved(): boolean {
-    const cats = this.catPositions();
-    if (cats.length !== this.size) return false;
     return this.board.solution.every((p) => this.marks[p.row][p.col] === 'cat');
   }
 
-  /** How many cats are correctly placed, for the progress readout. */
   correctCount(): number {
     return this.board.solution.filter((p) => this.marks[p.row][p.col] === 'cat').length;
   }
