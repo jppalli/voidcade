@@ -243,7 +243,7 @@ function renderDemoBoard() {
       const tone = pastel(regions[r][c]);
       const key = `${r},${c}`;
       const inner = cats.has(key)
-        ? catSvg(tone.ink, 26)
+        ? mascotSvg(26)
         : blocked.has(key)
           ? `<span class="no">${pawSvg(tone.ink, 14)}</span>`
           : '';

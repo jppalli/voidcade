@@ -626,8 +626,7 @@ body {
 /* These art pieces are centred with translate(-50%,-50%); the zoom has to
    preserve that or they'd jump to the corner. */
 .game-card:hover .riftpop-art .rp-bubble,
-.game-card:hover .chessdoku-art .cd-piece,
-.game-card:hover .kittydoku-art .kd-cat {
+.game-card:hover .chessdoku-art .cd-piece {
   transform: translate(-50%, -50%) scale(1.06);
 }
 
@@ -857,9 +856,14 @@ body {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 40px;
-  height: 40px;
-  filter: drop-shadow(0 2px 3px rgba(74,59,52,0.3));
+  width: 52px;
+  height: 52px;
+  filter: drop-shadow(0 2px 3px rgba(74,59,52,0.22));
+}
+
+.game-card:hover .kittydoku-art .kd-cat,
+.stage-card:hover .kittydoku-art .kd-cat {
+  transform: translate(-50%, -50%) scale(1.08);
 }
 
 /* ChessDoku: a 4x4 checkerboard fragment with a line-art piece on top. */
