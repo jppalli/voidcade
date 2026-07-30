@@ -1,0 +1,956 @@
+/* ---------------------------------------------------------------- palette
+ * Aimed at a casual portal audience: bright and friendly rather than moody,
+ * but kept soft — nothing fully saturated.
+ *
+ * The three play colors are chosen for *separation* before prettiness, because
+ * the entire game is telling them apart. They differ on two axes at once:
+ *   hue        coral (warm) / teal (cool) / butter (warm-light)
+ *   lightness  mid      / dark        / light
+ * Coral-against-teal is the safest pairing for red-green color blindness, and
+ * the lightness spread means even total color blindness leaves them readable.
+ */
+:root {
+  --c0: #e05c46;   /* Coral  */
+  --c1: #2f7180;   /* Teal   */
+  --c2: #f2ce89;   /* Butter */
+  --c0-deep: #bd4630;
+  --c1-deep: #1f5461;
+  --c2-deep: #cba158;
+
+  /* Space-separated triples, for rgb(var(--x) / alpha). */
+  --c0-rgb: 224 92 70;
+  --c1-rgb: 47 113 128;
+  --c2-rgb: 242 206 137;
+  --ink-rgb: 51 64 74;
+
+  --bg: #f7f4ee;        /* page */
+  --panel: #ffffff;     /* cards, cells */
+  --tray: #efe9df;      /* recessed surfaces: the board behind the cells */
+  --soft: #eee7db;      /* quiet button fill */
+  --line: #e4dbcc;
+  --line-soft: #dbd1c0; /* unearned stars, spent hearts */
+  --muted: #b6ada0;     /* locked text */
+
+  --ink: #33404a;
+  --ink-soft: #6c7a84;
+  --on-c0: #fff4f1;     /* text on coral */
+  --on-c1: #eef6f7;     /* text on teal  */
+
+  --shadow: 0 10px 30px rgb(var(--ink-rgb) / 0.10);
+  --radius: 20px;
+
+  --display: "Baloo 2", "Nunito Variable", system-ui, sans-serif;
+  --body: "Nunito Variable", system-ui, -apple-system, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--body);
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+}
+
+#app { height: 100dvh; overflow: hidden; }
+
+.icon {
+  width: 1.35em;
+  height: 1.35em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex: none;
+}
+
+/* --------------------------------------------------------------- screens */
+
+/* Entry states are CSS animations, not class toggles: a screen must end up
+   visible even where animations never run (a backgrounded tab, reduced motion). */
+.screen {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  animation: screenIn .28s ease;
+}
+@keyframes screenIn { from { opacity: 0; transform: translateY(8px); } }
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: max(12px, env(safe-area-inset-top)) 14px 8px;
+}
+.barTitle { flex: 1; text-align: center; min-width: 0; }
+.barTitle h2 {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1.15rem;
+  margin: 0;
+  letter-spacing: .2px;
+}
+.barTitle p { margin: 2px 0 0; font-size: .8rem; color: var(--ink-soft); }
+
+.iconBtn {
+  width: 42px; height: 42px;
+  display: grid; place-items: center;
+  border: none;
+  border-radius: 14px;
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: 0 2px 8px rgb(var(--ink-rgb) / .08);
+  cursor: pointer;
+  flex: none;
+  transition: transform .12s ease, background .16s ease;
+}
+.iconBtn:active { transform: scale(.92); }
+.iconBtn:disabled { opacity: .32; cursor: default; }
+.iconBtn.soft { background: var(--soft); box-shadow: none; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 13px 20px;
+  border: none;
+  border-radius: 16px;
+  background: var(--soft);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  font-size: .98rem;
+  cursor: pointer;
+  transition: transform .12s ease, filter .16s ease;
+}
+.btn:active { transform: scale(.97); }
+.btn.primary { background: var(--c0); color: #fff; box-shadow: 0 6px 16px rgb(var(--c0-rgb) / .28); }
+.btn.ghost { background: transparent; color: var(--ink-soft); }
+.btn.danger { color: var(--c0-deep); }
+.btn.big { padding: 16px 44px; font-size: 1.1rem; border-radius: 18px; }
+
+/* ----------------------------------------------------------------- title */
+
+.title { justify-content: center; align-items: center; position: relative; }
+.blob { position: absolute; border-radius: 50%; filter: blur(2px); opacity: .9; z-index: 0; }
+.b1 { width: 260px; height: 260px; background: #fbe9d2; left: -90px; bottom: -70px; }
+.b2 { width: 180px; height: 180px; background: #fbdcd4; right: -50px; bottom: 40px; }
+.b3 { width: 120px; height: 120px; background: #dcebec; right: 30px; top: 60px; }
+
+/* The blobs drift on long, mismatched periods so they never resync into an
+   obvious loop. Slow enough to read as ambient rather than as motion. */
+.b1 { animation: driftA 26s ease-in-out infinite; }
+.b2 { animation: driftB 21s ease-in-out infinite; }
+.b3 { animation: driftC 33s ease-in-out infinite; }
+@keyframes driftA { 50% { transform: translate(20px, -16px) scale(1.07); } }
+@keyframes driftB { 50% { transform: translate(-18px, 14px) scale(1.05); } }
+@keyframes driftC { 50% { transform: translate(14px, 18px) scale(.94); } }
+
+.titleCard { position: relative; z-index: 1; text-align: center; padding: 24px; }
+
+/* The stack arrives after the logo has landed, one piece at a time. The grid is
+   excluded because its tiles animate individually. */
+.titleCard > *:not(.logoGrid) { animation: riseIn .55s ease .3s backwards; }
+.titleCard > h1 { animation-delay: .3s; }
+.titleCard > .tag { animation-delay: .4s; }
+.titleCard > .playSlot { animation-delay: .5s; }
+.titleCard > .dailySlot { animation-delay: .58s; }
+.titleCard > .titleRow { animation-delay: .66s; }
+@keyframes riseIn { from { opacity: 0; transform: translateY(10px); } }
+
+.logoGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 44px);
+  gap: 7px;
+  justify-content: center;
+  margin-bottom: 22px;
+  transform: rotate(-4deg);
+  /* Keyframes must restate the rotation, or animating transform would drop it. */
+  animation: breathe 8s ease-in-out 1.4s infinite;
+}
+@keyframes breathe { 50% { transform: rotate(-3deg) scale(1.025); } }
+.logoGrid span {
+  aspect-ratio: 1;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1.3rem;
+  animation: drop .5s cubic-bezier(.2, 1.5, .5, 1) backwards;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+.logoGrid span.c0 { background: var(--c0); color: #fff; }
+.logoGrid span.c1 { background: var(--c1); color: var(--c2); }
+.logoGrid span.c2 { background: var(--c2); color: var(--c1); }
+@keyframes drop { from { opacity: 0; transform: translateY(-14px) scale(.8); } }
+
+/* The two numbered tiles keep a slow beat once they have landed — they are the
+   live part of the board, so they are the part that should look alive. The two
+   animations are spelled out longhand because they need different delays. */
+.logoGrid span.numbered {
+  animation-name: drop, clueBeat;
+  animation-duration: .5s, 3.6s;
+  animation-timing-function: cubic-bezier(.2, 1.5, .5, 1), ease-in-out;
+  animation-delay: calc(var(--i, 0) * 70ms), calc(1s + var(--i, 0) * 180ms);
+  animation-iteration-count: 1, infinite;
+  animation-fill-mode: backwards, none;
+}
+@keyframes clueBeat { 50% { transform: scale(1.08); } }
+
+h1 {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: clamp(2.4rem, 12vw, 3.3rem);
+  line-height: .95;
+  margin: 0 0 8px;
+  color: var(--c1);
+}
+h1 span { display: block; color: var(--c0); }
+.tag { margin: 0 0 26px; color: var(--ink-soft); font-size: .98rem; }
+.titleRow { display: flex; gap: 8px; justify-content: center; margin-top: 14px; align-items: center; }
+
+.voidcadeLink {
+  display: block;
+  margin-top: 16px;
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: .82rem;
+  text-decoration: none;
+  transition: color .15s;
+}
+.voidcadeLink:hover { color: var(--c0); }
+.fine { margin-top: 16px; font-size: .82rem; color: var(--ink-soft); }
+
+/* ---------------------------------------------------------- level select */
+
+/* overflow-x is pinned because the region tints are deliberately 100vw, and
+   100vw counts the scrollbar gutter — left to itself that earns a stray
+   horizontal scrollbar on desktop. */
+.scroll { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 6px 16px 30px; }
+/* On a desktop window the trail used to stretch the full width, which flattened
+   the serpentine into a wide zig-zag and pushed the nodes to the far edges. The
+   map is a column, so it gets a column's width and centres. */
+.scroll > * { max-width: 430px; margin-left: auto; margin-right: auto; }
+.star { width: .82em; height: .82em; color: var(--line-soft); fill: var(--line-soft); }
+.star.on { color: var(--c0); fill: var(--c0); }
+
+/* --------------------------------------------------------- the journey map */
+
+.mapWrap { position: relative; width: 100%; margin-top: 4px; }
+.mapRegions, .mapPath, .mapBanners, .mapNodes { position: absolute; inset: 0; }
+.mapRegions { pointer-events: none; z-index: 0; }
+.mapPath { z-index: 1; pointer-events: none; overflow: visible; }
+.mapBanners { z-index: 2; pointer-events: none; height: 0; }
+.mapNodes { z-index: 3; pointer-events: none; height: 0; }
+
+/* Region tints bleed past the map column to the full window, so a chapter reads
+   as a band of the page rather than a stripe down the middle. */
+.mapRegion {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100vw;
+  max-width: 100vw;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  overflow: hidden;
+}
+.regionMark {
+  width: clamp(150px, 46vw, 260px);
+  height: clamp(150px, 46vw, 260px);
+  color: var(--ink);
+  opacity: .045;
+  stroke-width: 1.1;
+}
+.region-0 { background: radial-gradient(58% 50% at 50% 50%, rgb(var(--c2-rgb) / .40), transparent 72%); }
+.region-1 { background: radial-gradient(58% 50% at 50% 50%, rgb(var(--c0-rgb) / .13), transparent 72%); }
+.region-2 { background: radial-gradient(58% 50% at 50% 50%, rgb(var(--c1-rgb) / .13), transparent 72%); }
+.region-3 { background: radial-gradient(58% 50% at 50% 50%, rgb(var(--c2-rgb) / .55), transparent 72%); }
+.region-4 { background: radial-gradient(58% 50% at 50% 50%, rgb(var(--c0-rgb) / .16), transparent 72%); }
+
+.mapPath .trail {
+  fill: none;
+  stroke: var(--line-soft);
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-dasharray: .1 15;
+}
+/* The trail lights up behind boards already solved. */
+.mapPath .trail.lit {
+  stroke: var(--c0);
+  opacity: .85;
+  stroke-dasharray: none;
+  stroke-width: 6;
+}
+
+.mapBanner {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(320px, 88%);
+  padding: 9px 14px;
+  border-radius: 16px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  border: 2px solid transparent;
+}
+.mbIcon { width: 1.5em; height: 1.5em; color: var(--c0); flex: none; }
+.mbText { display: flex; flex-direction: column; min-width: 0; }
+.mbName { font-family: var(--display); font-weight: 800; font-size: .98rem; line-height: 1.15; }
+.mbSub {
+  font-size: .74rem;
+  color: var(--ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mbLock { width: 1.1em; height: 1.1em; color: var(--muted); margin-left: auto; flex: none; }
+.mapBanner.locked { background: var(--tray); box-shadow: none; }
+.mapBanner.locked .mbIcon { color: var(--muted); }
+.mapBanner.cleared { border-color: var(--c2-deep); }
+
+.mapNode {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 3px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  font: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  cursor: pointer;
+  pointer-events: auto;
+  box-shadow: 0 4px 12px rgb(var(--ink-rgb) / .12);
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+.mapNode:active:not(:disabled) { transform: translate(-50%, -50%) scale(.92); }
+.mnNum { font-family: var(--display); font-weight: 800; font-size: 1.2rem; line-height: 1; }
+.mnStars { display: flex; gap: 1px; }
+.mnStars .star { width: .62em; height: .62em; }
+
+.mapNode.open { border-color: var(--c2-deep); }
+.mapNode.done {
+  background: var(--c0);
+  border-color: var(--c0-deep);
+  color: var(--on-c0);
+}
+.mapNode.done .star { color: rgba(255, 255, 255, .38); fill: rgba(255, 255, 255, .38); }
+.mapNode.done .star.on { color: #fff; fill: #fff; }
+
+/* The one you are up to: bigger, warm, and quietly pulsing. */
+.mapNode.next {
+  width: 72px;
+  height: 72px;
+  background: var(--c1);
+  border-color: var(--c2);
+  color: var(--c2);
+  z-index: 4;
+  animation: nodePulse 2s ease-out infinite;
+}
+.mapNode.next .mnNum { font-size: 1.45rem; }
+.mapNode.next .star { color: rgb(var(--c2-rgb) / .35); fill: rgb(var(--c2-rgb) / .35); }
+.mapNode.next .star.on { color: var(--c2); fill: var(--c2); }
+@keyframes nodePulse {
+  0% { box-shadow: 0 4px 12px rgb(var(--ink-rgb) / .18), 0 0 0 0 rgb(var(--c0-rgb) / .5); }
+  70% { box-shadow: 0 4px 12px rgb(var(--ink-rgb) / .18), 0 0 0 16px rgb(var(--c0-rgb) / 0); }
+  100% { box-shadow: 0 4px 12px rgb(var(--ink-rgb) / .18), 0 0 0 0 rgb(var(--c0-rgb) / 0); }
+}
+
+.mapNode.locked {
+  background: var(--tray);
+  border-color: var(--line);
+  color: var(--muted);
+  box-shadow: none;
+  cursor: default;
+}
+.mapNode.locked .icon { width: 1.15em; height: 1.15em; }
+
+.mnLabel {
+  position: absolute;
+  top: calc(100% + 9px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 3px 11px;
+  border-radius: 999px;
+  background: var(--c1);
+  color: var(--c2);
+  font-size: .7rem;
+  font-weight: 800;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------------------ play */
+
+.play .boardWrap {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  padding: 6px 10px;
+}
+
+.hearts { display: flex; gap: 4px; justify-content: center; }
+.hearts .heart { width: 1.05em; height: 1.05em; }
+.heart.on { color: var(--c0); fill: var(--c0); }
+.heart.gone { color: var(--line-soft); fill: transparent; }
+.hearts.hurt { animation: hurt .4s ease; }
+@keyframes hurt {
+  25% { transform: translateX(-5px); }
+  50% { transform: translateX(5px); }
+  75% { transform: translateX(-3px); }
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(var(--w), var(--cell, 40px));
+  grid-auto-rows: var(--cell, 40px);
+  gap: var(--gap, 6px);
+  padding: var(--gap, 6px);
+  background: var(--tray);
+  border-radius: 22px;
+  box-shadow: inset 0 2px 6px rgb(var(--ink-rgb) / .06);
+}
+
+.cell {
+  position: relative;
+  border: none;
+  padding: 0;
+  border-radius: 26%;
+  background: var(--panel);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: calc(var(--cell, 40px) * .48);
+  line-height: 1;
+  color: var(--ink);
+  transition: background .16s ease, transform .1s ease, box-shadow .16s ease;
+}
+.cell.blank { box-shadow: inset 0 0 0 2px var(--line); }
+.cell.blank:active { transform: scale(.9); }
+.cell.filled.c0 { background: var(--c0); color: var(--on-c0); }
+.cell.filled.c1 { background: var(--c1); color: var(--c2); }
+.cell.filled.c2 { background: var(--c2); color: var(--c1-deep); }
+/* Player-placed tiles sit in their slot; givens fill it edge to edge. */
+.cell.filled:not(.given) { box-shadow: inset 0 0 0 3px var(--tray); }
+.cell.given { cursor: default; }
+.cell.hinted { box-shadow: inset 0 0 0 3px var(--tray), 0 0 0 2px var(--c2-deep); }
+
+.cell .num { pointer-events: none; transition: opacity .25s ease; }
+.cell.blank .num { display: none; }
+/* A number that has found everything it was counting steps out of the way. */
+.cell.satisfied .num { opacity: .3; }
+
+.marks {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4%;
+  pointer-events: none;
+}
+.mark { display: grid; place-items: center; }
+.mark .icon { width: calc(var(--cell, 40px) * .42); height: calc(var(--cell, 40px) * .42); stroke-width: 3.4; }
+.mark.c0 { color: var(--c0); }
+.mark.c1 { color: var(--c1); }
+.mark.c2 { color: var(--c2-deep); }
+
+.cell.focus { outline: 3px solid var(--c1); outline-offset: 2px; z-index: 1; }
+.cell.neighbour { outline: 2px dashed rgb(var(--ink-rgb) / .35); outline-offset: -3px; }
+
+/* Tutorial spotlight. The ring sits *outside* the cell, with a gap in the board
+   color first — an inset ring vanishes whenever it lands on a cell of its own
+   color, which is exactly the cell a step is most likely to point at. */
+.cell.spot { z-index: 2; animation: spot 1.5s ease-in-out infinite; }
+@keyframes spot {
+  0%, 100% { box-shadow: 0 0 0 3px var(--tray), 0 0 0 6px var(--c0), 0 0 0 6px rgb(var(--c0-rgb) / .5); }
+  50% { box-shadow: 0 0 0 3px var(--tray), 0 0 0 6px var(--c0), 0 0 0 14px rgb(var(--c0-rgb) / 0); }
+}
+
+.pop { animation: pop .3s cubic-bezier(.2, 1.6, .5, 1); }
+@keyframes pop { 0% { transform: scale(.6); } 60% { transform: scale(1.1); } 100% { transform: scale(1); } }
+
+.wrong { animation: wrong .38s ease; }
+@keyframes wrong {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-5px) rotate(-3deg); }
+  45% { transform: translateX(5px) rotate(3deg); }
+  70% { transform: translateX(-3px); }
+}
+
+.glow { animation: glow .8s ease; }
+@keyframes glow {
+  0% { box-shadow: 0 0 0 0 rgb(var(--c0-rgb) / .6); }
+  100% { box-shadow: 0 0 0 14px rgb(var(--c0-rgb) / 0); }
+}
+
+.cheer { animation: cheer .5s ease; }
+@keyframes cheer { 40% { transform: scale(1.16) rotate(3deg); } }
+
+/* --------------------------------------------------------- resume journey */
+
+.playSlot { margin-top: 4px; }
+
+/* Same silhouette as the daily card so the two read as a pair, but ember
+   instead of ink — this is the primary action on the screen. */
+.journeyCard {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas: "node text go";
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 13px 16px 17px;
+  border: none;
+  border-radius: 18px;
+  background: var(--c0);
+  color: #fff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  box-shadow: 0 8px 22px rgb(var(--c0-rgb) / .3);
+  transition: transform .14s ease, box-shadow .14s ease;
+}
+.journeyCard:active { transform: scale(.97); }
+
+/* Echoes the frontier node on the map, so the card and the trail agree. */
+.jcNode {
+  grid-area: node;
+  display: grid;
+  place-items: center;
+  width: 42px; height: 42px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--c1);
+  color: var(--c2);
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1.2rem;
+  line-height: 1;
+}
+.jcNode .icon { width: 1.2em; height: 1.2em; }
+
+.jcText { grid-area: text; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.jcText b { font-family: var(--display); font-weight: 800; font-size: 1.06rem; line-height: 1.1; }
+.jcWhere {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: .78rem;
+  opacity: .88;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.jcChapter { width: 1em; height: 1em; flex: none; }
+.jcGo { grid-area: go; width: 1.3em; height: 1.3em; opacity: .9; }
+
+/* Progress runs along the foot of the card, replacing a line of fine print. */
+.jcBar {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 5px;
+  background: rgba(255, 255, 255, .25);
+}
+.jcBar i {
+  display: block;
+  height: 100%;
+  background: #fff;
+  border-radius: 0 3px 3px 0;
+  transition: width .5s ease;
+  /* Sweeps out to the real width on arrival. The width itself is inline, so the
+     entrance scales the fill rather than animating the width. */
+  transform-origin: left;
+  animation: barFill .8s cubic-bezier(.3, 1, .5, 1) .75s backwards;
+}
+@keyframes barFill { from { transform: scaleX(0); } }
+
+.journeyCard.complete { background: var(--c1); box-shadow: 0 8px 22px rgb(var(--ink-rgb) / .22); }
+.journeyCard.complete .jcNode { background: var(--c0); color: #fff; }
+.journeyCard.complete .jcBar i { background: var(--c2); }
+
+/* ----------------------------------------------------------------- daily */
+
+.dailySlot:empty { display: none; }
+.dailySlot { margin-top: 10px; }
+
+.dailyCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 13px 16px;
+  border: none;
+  border-radius: 18px;
+  background: var(--c1);
+  color: var(--on-c1);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgb(var(--ink-rgb) / .2);
+  transition: transform .14s ease;
+}
+.dailyCard:active { transform: scale(.97); }
+.select .dailyCard { margin-bottom: 24px; }
+
+.dailyMark {
+  display: grid;
+  place-items: center;
+  width: 38px; height: 38px;
+  flex: none;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .1);
+  color: var(--c2);
+}
+.dailyCard.done .dailyMark { background: var(--c0); color: #fff; }
+.dailyText { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.dailyText b { font-family: var(--display); font-weight: 800; font-size: 1rem; }
+.dailyText span { font-size: .78rem; opacity: .7; }
+
+.streak {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex: none;
+  font-weight: 800;
+  font-size: .9rem;
+  color: var(--c0);
+}
+.streak .icon {
+  width: 1.05em; height: 1.05em; fill: var(--c0);
+  transform-origin: 50% 80%;
+  animation: flicker 2.8s ease-in-out infinite;
+}
+@keyframes flicker {
+  30% { transform: scale(1.12) rotate(-3deg); }
+  65% { transform: scale(1.04) rotate(2deg); }
+}
+
+.dailyCrest {
+  display: grid;
+  place-items: center;
+  width: 62px; height: 62px;
+  margin: 0 auto 12px;
+  border-radius: 20px;
+  background: var(--soft);
+  color: var(--ink-soft);
+}
+.dailyCrest .icon { width: 2rem; height: 2rem; }
+.dailyCrest.clean { background: var(--c0); color: #fff; }
+.dailyCrest.clean .icon { fill: #fff; }
+
+.streakLine {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin: 10px 0 0;
+  font-weight: 800;
+  font-size: .9rem;
+  color: var(--c0);
+}
+.streakLine .icon { width: 1.1em; height: 1.1em; fill: var(--c0); }
+
+/* The daily runs bigger than any chapter board, so it gets the space back. */
+.dailyPlay .boardWrap { padding: 4px 6px; }
+
+/* ----------------------------------------------------------------- coach */
+
+.coach {
+  margin: 0 14px 2px;
+  padding: 12px 14px;
+  background: var(--c1);
+  color: var(--on-c1);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: .92rem;
+  line-height: 1.45;
+  box-shadow: 0 6px 18px rgb(var(--ink-rgb) / .18);
+  animation: coachIn .3s cubic-bezier(.2, 1.3, .5, 1);
+}
+@keyframes coachIn { from { opacity: 0; transform: translateY(6px); } }
+.coach.hidden { display: none; }
+.coachText { margin: 0; flex: 1; }
+.coachText b { color: var(--c2); }
+.coachText.oops { color: #ffd9cf; }
+.coach .coachNext {
+  flex: none;
+  padding: 9px 16px;
+  background: var(--c0);
+  color: #fff;
+  font-size: .86rem;
+}
+.coach .coachNext[hidden] { display: none; }
+
+.hearts.practice {
+  font-size: .74rem;
+  font-weight: 800;
+  letter-spacing: .3px;
+  color: var(--ink-soft);
+  text-transform: lowercase;
+}
+
+/* A step that wants a particular tool waves at it rather than forcing it. */
+.nudge { animation: nudge 1.4s ease-in-out infinite; }
+@keyframes nudge {
+  0%, 100% { transform: none; }
+  50% { transform: translateY(-5px); }
+}
+.seg.nudge { border-radius: 11px; box-shadow: 0 0 0 2px var(--c0); }
+
+/* --------------------------------------------------------------- toolbar */
+
+.toolbar {
+  padding: 4px 14px max(14px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+}
+
+.swatches { display: flex; gap: 12px; }
+.swatch {
+  width: 62px;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.swatchInner {
+  position: relative;
+  width: 44px; height: 44px;
+  border-radius: 15px;
+  display: grid;
+  place-items: center;
+  transition: transform .16s cubic-bezier(.2, 1.5, .5, 1), box-shadow .16s ease,
+              background-color .16s ease;
+  box-shadow: 0 3px 8px rgb(var(--ink-rgb) / .14);
+}
+.swatch.c0 .swatchInner { background: var(--c0); }
+.swatch.c1 .swatchInner { background: var(--c1); }
+.swatch.c2 .swatchInner { background: var(--c2); }
+
+.swatchX {
+  width: 24px; height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3.2;
+  stroke-linecap: round;
+  opacity: 0;
+  transform: scale(.6);
+  transition: opacity .16s ease, transform .18s cubic-bezier(.2, 1.5, .5, 1);
+}
+.swatchLabel { font-size: .68rem; font-weight: 800; color: var(--ink-soft); letter-spacing: .3px; opacity: 0; transition: opacity .16s ease; }
+.swatch.on .swatchInner { transform: scale(1.16) translateY(-2px); box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px currentColor, 0 6px 14px rgb(var(--ink-rgb) / .2); }
+.swatch.on.c0 { color: var(--c0); }
+.swatch.on.c1 { color: var(--c1); }
+.swatch.on.c2 { color: var(--c2-deep); }
+.swatch.on .swatchLabel { opacity: 1; }
+
+/* In Cross mode a swatch stops being a block of paint and becomes a preview of
+   the mark it will place: an empty square with the colored X in it, exactly as
+   the board draws it. (It used to be the filled block with an X cut across it by
+   two gradients, which clipped badly against the rounded corners.) */
+/* Note the extra `.swatches`: the per-color fills above are three classes deep,
+   so a two-class selector here loses to them and the box stays painted — which
+   left a colored X drawn on its own color, invisible. */
+.marking .swatches .swatch .swatchInner {
+  background: var(--panel);
+  box-shadow: inset 0 0 0 2px var(--line), 0 3px 8px rgb(var(--ink-rgb) / .1);
+}
+.marking .swatchX { opacity: 1; transform: none; }
+.marking .swatch.c0 .swatchX { color: var(--c0); }
+.marking .swatch.c1 .swatchX { color: var(--c1); }
+.marking .swatch.c2 .swatchX { color: var(--c2-deep); }
+
+/* The selected ring in Cross mode has to sit outside the inset border. */
+.marking .swatches .swatch.on .swatchInner {
+  box-shadow: inset 0 0 0 2px currentColor, 0 0 0 3px var(--bg),
+              0 0 0 5px currentColor, 0 6px 14px rgb(var(--ink-rgb) / .18);
+}
+
+.tools { display: flex; align-items: center; gap: 12px; }
+
+/* Hint and Undo carry their names. They used to be bare icons with a title
+   attribute, which says nothing on a touch screen. */
+.toolBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 48px;
+  padding: 6px 8px 5px;
+  border: none;
+  border-radius: 14px;
+  background: var(--soft);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+  transition: transform .12s ease, opacity .16s ease;
+}
+.toolBtn .icon { width: 1.25em; height: 1.25em; }
+.toolBtn span {
+  font-size: .62rem;
+  font-weight: 800;
+  letter-spacing: .3px;
+  color: var(--ink-soft);
+}
+.toolBtn:active:not(:disabled) { transform: scale(.93); }
+.toolBtn:disabled { opacity: .35; cursor: default; }
+.segment {
+  display: flex;
+  background: var(--soft);
+  border-radius: 14px;
+  padding: 3px;
+  gap: 2px;
+}
+.seg {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--ink-soft);
+  font: inherit;
+  font-weight: 800;
+  font-size: .84rem;
+  cursor: pointer;
+  transition: background .16s ease, color .16s ease;
+}
+.seg .icon { width: 1.1em; height: 1.1em; }
+.seg.on { background: var(--panel); color: var(--ink); box-shadow: 0 2px 6px rgb(var(--ink-rgb) / .1); }
+
+/* ---------------------------------------------------------------- modals */
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  background: rgb(var(--ink-rgb) / .38);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  z-index: 10;
+  backdrop-filter: blur(3px);
+  animation: fadeIn .2s ease;
+}
+@keyframes fadeIn { from { opacity: 0; } }
+.scrim.out { opacity: 0; transition: opacity .2s ease; }
+.modal {
+  background: var(--panel);
+  border-radius: 26px;
+  padding: 26px 24px 22px;
+  width: min(420px, 100%);
+  max-height: 86dvh;
+  overflow-y: auto;
+  text-align: center;
+  box-shadow: 0 24px 60px rgb(var(--ink-rgb) / .28);
+  animation: modalIn .24s cubic-bezier(.2, 1.3, .5, 1);
+}
+@keyframes modalIn { from { transform: translateY(14px) scale(.97); } }
+.modal h2 { font-family: var(--display); font-weight: 800; margin: 0 0 12px; font-size: 1.4rem; }
+.stack { display: flex; flex-direction: column; gap: 8px; margin: 16px 0; }
+.stack .btn { width: 100%; }
+.statLine { color: var(--ink-soft); margin: 0; font-size: .92rem; }
+.starsBig { display: flex; justify-content: center; gap: 8px; margin-bottom: 8px; }
+.starsBig .star { width: 2.4rem; height: 2.4rem; animation: drop .45s backwards cubic-bezier(.2, 1.5, .5, 1); }
+.starsBig .star:nth-child(2) { animation-delay: .12s; }
+.starsBig .star:nth-child(3) { animation-delay: .24s; }
+.heartsBig { display: flex; justify-content: center; gap: 8px; margin-bottom: 10px; }
+.heartsBig .heart { width: 2rem; height: 2rem; }
+
+.rules { text-align: left; font-size: .93rem; line-height: 1.55; color: #4a5462; }
+.rules p { margin: 0 0 12px; }
+.chip { display: inline-block; width: 15px; height: 15px; border-radius: 5px; vertical-align: -2px; margin-right: 3px; }
+.chip.c0 { background: var(--c0); }
+.chip.c1 { background: var(--c1); }
+.chip.c2 { background: var(--c2); }
+.rules h3 {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1rem;
+  color: var(--ink);
+  margin: 20px 0 8px;
+}
+.rules h3:first-of-type { margin-top: 14px; }
+.dimEg { opacity: .35; font-weight: 800; }
+.outro { color: var(--ink-soft); font-size: .92rem; line-height: 1.5; margin: 0 0 14px; }
+
+.egBlock {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #faf6ef;
+  border-radius: 16px;
+  padding: 12px;
+  margin-bottom: 4px;
+}
+.egBlock p { margin: 0; font-size: .88rem; }
+
+.miniBoard {
+  --cell: 26px;
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(var(--mw, 3), var(--cell));
+  grid-auto-rows: var(--cell);
+  gap: 3px;
+  padding: 3px;
+  background: var(--tray);
+  border-radius: 10px;
+}
+.cell.mini { position: relative; border-radius: 26%; cursor: default; }
+.cell.mini .mark .icon { width: 13px; height: 13px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+}
+
+@media (max-height: 640px) {
+  .swatchInner { width: 38px; height: 38px; }
+  .swatchLabel { display: none; }
+  .toolbar { gap: 7px; }
+
+  /* The title stack runs a few pixels over on a 320x568 phone; #app clips
+     rather than scrolls, so it has to be trimmed rather than left to spill. */
+  .logoGrid { grid-template-columns: repeat(3, 36px); gap: 6px; margin-bottom: 12px; }
+  .logoGrid span { font-size: 1.1rem; }
+  .tag { margin-bottom: 14px; font-size: .88rem; }
+  .titleRow { margin-top: 8px; }
+  .titleCard { padding: 16px; }
+}

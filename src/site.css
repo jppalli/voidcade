@@ -238,9 +238,13 @@ body {
   position: relative;
   z-index: 1;
   margin-top: clamp(16px, min(4vw, 4vh), 40px);
-  /* Full-bleed so cards can scroll past the hero's side padding */
+  /* Full-bleed so cards can scroll past the hero's side padding.
+     overflow:hidden on the outer wrapper + overflow-x:auto on the inner rail
+     means the rail itself scrolls but the page body never gets a horizontal
+     scrollbar. */
   margin-left: calc(-1 * clamp(20px, 5vw, 64px));
   margin-right: calc(-1 * clamp(20px, 5vw, 64px));
+  overflow: hidden;
 }
 
 .hero-rail {
@@ -603,7 +607,41 @@ body {
   border: 1px solid var(--border);
   border-radius: 20px;
   overflow: hidden;
-  transition: border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+  transition: border-color 0.18s ease, transform 0.22s ease, box-shadow 0.22s ease;
+  /* Cards drift in on page load, staggered by grid position */
+  animation: gridCardRise 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Stagger the entrance by card index */
+.game-grid > *:nth-child(1) { animation-delay: 0.05s; }
+.game-grid > *:nth-child(2) { animation-delay: 0.10s; }
+.game-grid > *:nth-child(3) { animation-delay: 0.15s; }
+.game-grid > *:nth-child(4) { animation-delay: 0.20s; }
+.game-grid > *:nth-child(5) { animation-delay: 0.25s; }
+.game-grid > *:nth-child(6) { animation-delay: 0.30s; }
+.game-grid > *:nth-child(7) { animation-delay: 0.35s; }
+.game-grid > *:nth-child(8) { animation-delay: 0.40s; }
+.game-grid > *:nth-child(9) { animation-delay: 0.45s; }
+
+@keyframes gridCardRise {
+  from { opacity: 0; transform: translateY(22px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Idle float on the featured card so it draws the eye */
+.game-card-featured {
+  animation: gridCardRise 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.05s both,
+             gridFeaturedFloat 5s ease-in-out 0.6s infinite;
+}
+
+@keyframes gridFeaturedFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-5px); }
+}
+
+.game-card-featured:hover,
+.game-card-featured:focus-visible {
+  animation: none; /* freeze float on hover so it doesn't fight the lift */
 }
 
 .game-card:hover,
@@ -611,6 +649,10 @@ body {
   border-color: rgba(125,255,212,0.45);
   transform: translateY(-5px);
   box-shadow: 0 18px 38px rgba(0,0,0,0.45);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-card, .game-card-featured { animation: none !important; opacity: 1; }
 }
 
 /* Art gets a gentle push-in on hover. The wrapper clips it, so the zoom
@@ -828,6 +870,46 @@ body {
   background: rgba(255,214,165,0.08);
   border-color: rgba(255,214,165,0.22);
 }
+
+.game-tag-coral {
+  color: #f2541b;
+  background: rgba(242,84,27,0.10);
+  border-color: rgba(242,84,27,0.28);
+}
+
+/* Color Clues: a 3×3 mini-grid with the three game colors (coral/teal/butter)
+   and real clue numbers to hint at the mechanics. */
+.colorclues-art {
+  background: radial-gradient(circle at 50% 25%, rgba(242,84,27,0.13), transparent 60%), #141118;
+}
+
+.cc-preview {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 3px;
+  width: 86px;
+  height: 86px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid rgba(255,255,255,0.1);
+}
+
+.cc-preview span {
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 900;
+  color: rgba(255,255,255,0.85);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+
+.cc-empty { background: #2a2535; }
+.cc-c0 { background: #c4422e; } /* coral  */
+.cc-c1 { background: #2b3543; } /* teal/dark */
+.cc-c2 { background: #b8921a; } /* butter */
 
 /* KittyDoku: pastel colour patches with a cat sitting on one — the art is
    light where every other card is dark, which suits the cosy pitch. */

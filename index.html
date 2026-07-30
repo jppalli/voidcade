@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Voidcade â€” Free browser games</title>
+<title>Voidcade &mdash; Free browser games</title>
 <meta name="description" content="A small, growing collection of free browser games. No installs, no accounts, just play.">
 <link rel="stylesheet" href="./src/site.css">
 </head>
@@ -23,14 +23,14 @@
 
     <div class="ticker" aria-hidden="true">
       <div class="ticker-track">
-        <span>NO DOWNLOADS</span><span class="ticker-dot">âœ¦</span>
-        <span>NO ACCOUNTS</span><span class="ticker-dot">âœ¦</span>
-        <span>100% FREE</span><span class="ticker-dot">âœ¦</span>
-        <span>NEW GAMES WEEKLY</span><span class="ticker-dot">âœ¦</span>
-        <span>NO DOWNLOADS</span><span class="ticker-dot">âœ¦</span>
-        <span>NO ACCOUNTS</span><span class="ticker-dot">âœ¦</span>
-        <span>100% FREE</span><span class="ticker-dot">âœ¦</span>
-        <span>NEW GAMES WEEKLY</span><span class="ticker-dot">âœ¦</span>
+        <span>NO DOWNLOADS</span><span class="ticker-dot">&#10022;</span>
+        <span>NO ACCOUNTS</span><span class="ticker-dot">&#10022;</span>
+        <span>100% FREE</span><span class="ticker-dot">&#10022;</span>
+        <span>NEW GAMES WEEKLY</span><span class="ticker-dot">&#10022;</span>
+        <span>NO DOWNLOADS</span><span class="ticker-dot">&#10022;</span>
+        <span>NO ACCOUNTS</span><span class="ticker-dot">&#10022;</span>
+        <span>100% FREE</span><span class="ticker-dot">&#10022;</span>
+        <span>NEW GAMES WEEKLY</span><span class="ticker-dot">&#10022;</span>
       </div>
     </div>
 
@@ -43,12 +43,10 @@
         <span class="hl-line hl-2">SOMETHING.</span>
       </h1>
 
-      <!-- Horizontal rail: every game gets a card here, and it scrolls
-           sideways once there are more than fit on screen. -->
       <div class="hero-rail-wrap">
-        <!-- The featured card sits in the middle of the row on purpose; keep
-             it centered in this list when adding new games. -->
         <div class="hero-rail" id="heroRail" role="list">
+
+          <!-- rail order: 3 left, FEATURED center, 3 right = 7 cards -->
           <a class="stage-card" href="games/panes/" data-game="panes" role="listitem">
             <div class="stage-card-art panes-art">
               <div class="panes-grid">
@@ -92,8 +90,27 @@
             <span class="stage-card-play">Play now <span class="play-arrow" aria-hidden="true"></span></span>
           </a>
 
-          <a class="stage-card stage-card-featured" id="railFeatured" href="games/stackward/" data-game="stackward" role="listitem">
-            <span class="stage-card-badge">â˜… Featured</span>
+          <!-- ★ FEATURED — colorclues, sits in the dead center of 7 cards -->
+          <a class="stage-card stage-card-featured" id="railFeatured" href="games/colorclues/" data-game="colorclues" role="listitem">
+            <span class="stage-card-badge">&#9733; New</span>
+            <div class="stage-card-art colorclues-art">
+              <div class="cc-preview">
+                <span class="cc-c0">3</span>
+                <span class="cc-c1">0</span>
+                <span class="cc-empty"></span>
+                <span class="cc-c2">1</span>
+                <span class="cc-empty"></span>
+                <span class="cc-c0"></span>
+                <span class="cc-empty"></span>
+                <span class="cc-c2"></span>
+                <span class="cc-c1">0</span>
+              </div>
+            </div>
+            <span class="stage-card-name">Color Clues</span>
+            <span class="stage-card-play">Play now <span class="play-arrow" aria-hidden="true"></span></span>
+          </a>
+
+          <a class="stage-card" href="games/stackward/" data-game="stackward" role="listitem">
             <div class="stage-card-art stackward-art">
               <span></span><span></span><span></span><span></span>
             </div>
@@ -132,18 +149,6 @@
             <span class="stage-card-play">Play now <span class="play-arrow" aria-hidden="true"></span></span>
           </a>
 
-          <a class="stage-card" href="games/pipsandpaths/" data-game="pipsandpaths" role="listitem">
-            <div class="stage-card-art pips-art">
-              <div class="die-face">
-                <span class="pip"></span><span class="pip"></span>
-                <span class="pip"></span><span class="pip"></span>
-                <span class="pip"></span><span class="pip"></span>
-              </div>
-            </div>
-            <span class="stage-card-name">Pips &amp; Paths</span>
-            <span class="stage-card-play">Play now <span class="play-arrow" aria-hidden="true"></span></span>
-          </a>
-
           <a class="stage-card" href="games/riftpop/" data-game="riftpop" role="listitem">
             <div class="stage-card-art riftpop-art">
               <span class="rp-ring"></span>
@@ -154,6 +159,7 @@
             <span class="stage-card-name">Riftpop</span>
             <span class="stage-card-play">Play now <span class="play-arrow" aria-hidden="true"></span></span>
           </a>
+
         </div>
 
         <button class="rail-nav rail-nav-prev" id="railPrev" type="button" aria-label="Scroll games left">
@@ -177,12 +183,36 @@
       </div>
 
       <div class="game-grid" id="gameGrid">
-        <a class="game-card game-card-featured" href="games/stackward/" data-game="stackward">
+
+        <!-- Color Clues — featured (spans 2 cols) -->
+        <a class="game-card game-card-featured" href="games/colorclues/" data-game="colorclues">
+          <div class="game-card-art colorclues-art">
+            <div class="cc-preview">
+              <span class="cc-c0">3</span>
+              <span class="cc-c1">0</span>
+              <span class="cc-empty"></span>
+              <span class="cc-c2">1</span>
+              <span class="cc-empty"></span>
+              <span class="cc-c0"></span>
+              <span class="cc-empty"></span>
+              <span class="cc-c2"></span>
+              <span class="cc-c1">0</span>
+            </div>
+          </div>
+          <div class="game-card-body">
+            <span class="game-tag game-tag-coral">Puzzle &middot; Logic</span>
+            <h3>Color Clues</h3>
+            <p>Three colors, eight neighbors, one answer. Number clues tell you how many surrounding squares share that color &mdash; cross them out, narrow it down, paint what remains. Pure deduction, 24 levels plus a daily challenge.</p>
+            <span class="game-card-play">Play now <span class="play-arrow" aria-hidden="true"></span></span>
+          </div>
+        </a>
+
+        <a class="game-card" href="games/stackward/" data-game="stackward">
           <div class="game-card-art stackward-art">
             <span></span><span></span><span></span><span></span>
           </div>
           <div class="game-card-body">
-            <span class="game-tag">Arcade Â· Endless</span>
+            <span class="game-tag">Arcade &middot; Endless</span>
             <h3>Stackward</h3>
             <p>Neon-arcade endless tower stacker. Perfect your drops, chase the climb, unlock upgrades as you fall.</p>
             <span class="game-card-play">Play now <span class="play-arrow" aria-hidden="true"></span></span>
@@ -198,7 +228,7 @@
             </div>
           </div>
           <div class="game-card-body">
-            <span class="game-tag game-tag-blue">Puzzle Â· Daily</span>
+            <span class="game-tag game-tag-blue">Puzzle &middot; Daily</span>
             <h3>Panes</h3>
             <p>Daily rectangle-division puzzle. Split the grid so every region matches its number.</p>
             <span class="game-card-play">Play now <span class="play-arrow" aria-hidden="true"></span></span>
@@ -214,7 +244,7 @@
             </div>
           </div>
           <div class="game-card-body">
-            <span class="game-tag game-tag-amber">Puzzle Â· Daily</span>
+            <span class="game-tag game-tag-amber">Puzzle &middot; Daily</span>
             <h3>Pips &amp; Paths</h3>
             <p>Jump die to die by their pip count and visit every cell. Daily challenges, chapters, and an archive of past puzzles.</p>
             <span class="game-card-play">Play now <span class="play-arrow" aria-hidden="true"></span></span>
@@ -229,7 +259,7 @@
             <span class="rp-bubble rp-3"></span>
           </div>
           <div class="game-card-body">
-            <span class="game-tag game-tag-teal">Arcade Â· Roguelite</span>
+            <span class="game-tag game-tag-teal">Arcade &middot; Roguelite</span>
             <h3>Riftpop</h3>
             <p>A void tears open above the board. Pop what it spits out, ride the charge meter, and mutate your run with roguelite powerups.</p>
             <span class="game-card-play">Play now <span class="play-arrow" aria-hidden="true"></span></span>
@@ -247,9 +277,9 @@
             </div>
           </div>
           <div class="game-card-body">
-            <span class="game-tag game-tag-purple">Puzzle Â· Saga</span>
+            <span class="game-tag game-tag-purple">Puzzle &middot; Saga</span>
             <h3>Wardens</h3>
-            <p>Place one Warden per row, column, and elemental domain â€” never side by side. A logic saga across three realms.</p>
+            <p>Place one Warden per row, column, and elemental domain &mdash; never side by side. A logic saga across three realms.</p>
             <span class="game-card-play">Play now <span class="play-arrow" aria-hidden="true"></span></span>
           </div>
         </a>
@@ -268,9 +298,9 @@
             </svg>
           </div>
           <div class="game-card-body">
-            <span class="game-tag game-tag-rose">Puzzle Â· Adventure</span>
+            <span class="game-tag game-tag-rose">Puzzle &middot; Adventure</span>
             <h3>ChessDoku</h3>
-            <p>Chess pieces, sudoku rules, zero casualties. Place every piece so none attacks another â€” 37 levels across seven chapters.</p>
+            <p>Chess pieces, sudoku rules, zero casualties. Place every piece so none attacks another &mdash; 37 levels across seven chapters.</p>
             <span class="game-card-play">Play now <span class="play-arrow" aria-hidden="true"></span></span>
           </div>
         </a>
@@ -303,12 +333,13 @@
             </svg>
           </div>
           <div class="game-card-body">
-            <span class="game-tag game-tag-cream">Puzzle Â· Cosy</span>
+            <span class="game-tag game-tag-cream">Puzzle &middot; Cosy</span>
             <h3>KittyDoku</h3>
-            <p>One cat per row, column and colour patch â€” and no two cats will sit side by side. Pastel, gentle, no timers, nothing to lose.</p>
+            <p>One cat per row, column and colour patch &mdash; and no two cats will sit side by side. Pastel, gentle, no timers, nothing to lose.</p>
             <span class="game-card-play">Play now <span class="play-arrow" aria-hidden="true"></span></span>
           </div>
         </a>
+
         <div class="game-card game-card-soon" aria-hidden="true">
           <div class="game-card-art soon-art">
             <span class="soon-dot"></span>
@@ -322,17 +353,14 @@
           </div>
         </div>
 
-        <!-- Add more games here as they're built, following the same pattern:
-             <a class="game-card" href="games/<name>/" data-game="<name>"> ... </a> -->
       </div>
 
-      <!-- Native in-feed ad slot, kept out of the game grid so it never looks like a game -->
       <div class="ad-slot ad-slot-infeed" id="adSlotInFeed"></div>
     </main>
 
     <section id="about" class="about-section">
       <h2>About Voidcade</h2>
-      <p>Voidcade is a small collection of original browser games, built to be fast, free, and playable anywhere with no installs or sign-ups. New games get added over time â€” check back for more.</p>
+      <p>Voidcade is a small collection of original browser games, built to be fast, free, and playable anywhere with no installs or sign-ups. New games get added over time &mdash; check back for more.</p>
     </section>
 
     <div id="adSlotBottom" class="ad-slot ad-slot-leaderboard"></div>

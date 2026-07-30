@@ -1,0 +1,135 @@
+{
+ "id": "learn",
+ "name": "Reading the Board",
+ "icon": "i-ch-learn",
+ "blurb": "Four short boards that teach the whole game.",
+ "levels": [
+  {
+   "id": "learn-1",
+   "w": 3,
+   "h": 3,
+   "sol": "011101100",
+   "given": [1, 2, 3, 4, 5, 6],
+   "nums": [4],
+   "tier": 2,
+   "stars": 1,
+   "gentle": true,
+   "outro": "That is the whole idea. A number counts its own color, and sometimes that only leaves one answer.",
+   "teach": [
+    {
+     "say": "Every square is one of three colors — <b>Coral</b>, <b>Teal</b> or <b>Butter</b>. Three squares here are still blank."
+    },
+    {
+     "say": "This square is Coral, and it carries a <b>3</b>. That means exactly <b>three</b> of the eight squares touching it are Coral too — diagonals count.",
+     "spot": [4]
+    },
+    {
+     "say": "None of its painted neighbours are Coral. And only three squares are left. So all three of them must be Coral.",
+     "spot": [0, 7, 8]
+    },
+    {
+     "say": "Pick Coral below, then paint those three squares.",
+     "spot": [0, 7, 8],
+     "tool": "fill",
+     "color": 0,
+     "need": { "paint": [0, 7, 8] }
+    }
+   ]
+  },
+  {
+   "id": "learn-2",
+   "w": 4,
+   "h": 3,
+   "sol": "101122200100",
+   "given": [0, 1, 2, 3, 4, 7, 8, 9, 10, 11],
+   "nums": [1, 9],
+   "tier": 1,
+   "stars": 1,
+   "gentle": true,
+   "outro": "Crosses are only your notes — the game never checks them and never fills anything in for you. Cornering the answer is your job.",
+   "teach": [
+    {
+     "say": "A <b>0</b> is the most useful clue on the board.",
+     "spot": [1]
+    },
+    {
+     "say": "This Coral 0 touches no Coral at all — so neither blank square can be Coral.",
+     "spot": [1, 5, 6]
+    },
+    {
+     "say": "Do not just remember it, mark it. <b>Double-tap the 0</b> and it crosses Coral off every empty square it touches.",
+     "spot": [1],
+     "need": { "chord": 1 }
+    },
+    {
+     "say": "This Teal 0 says the same thing about Teal. Double-tap it too.",
+     "spot": [9],
+     "need": { "chord": 9 }
+    },
+    {
+     "say": "Both squares have Coral and Teal crossed off now. Only <b>Butter</b> is left — so paint them in.",
+     "spot": [5, 6],
+     "tool": "fill",
+     "color": 2,
+     "need": { "paint": [5, 6] }
+    }
+   ]
+  },
+  {
+   "id": "learn-3",
+   "w": 4,
+   "h": 4,
+   "sol": "2202111000222110",
+   "given": [0, 2, 3, 6, 9, 10, 11, 12, 13, 14, 15],
+   "nums": [0, 2, 6, 9, 10, 12, 13],
+   "tier": 1,
+   "stars": 1,
+   "gentle": true,
+   "outro": "Crossing out is not a hint — it is how you get there. Rule colors out and the answers appear.",
+   "teach": [
+    {
+     "say": "You can cross a color out by hand too. Switch to <b>Cross</b> below."
+    },
+    {
+     "say": "With Cross on, pick a color and tap a square to rule that color out there.",
+     "tool": "mark",
+     "need": { "tool": "mark" }
+    },
+    {
+     "say": "Rule two colors out of a square and the third one is your answer — then paint it in yourself. The <b>0</b> in the corner is the place to start.",
+     "spot": [12],
+     "need": { "filled": 1 }
+    },
+    {
+     "say": "Now finish the board. Tap the lightbulb if you get stuck — it always has a move you could have found.",
+     "need": { "done": true }
+    }
+   ]
+  },
+  {
+   "id": "learn-4",
+   "w": 5,
+   "h": 4,
+   "sol": "11220020110102012121",
+   "given": [4, 5, 6, 7, 8, 13, 14, 15, 16, 17, 19],
+   "nums": [5, 6, 7, 8, 13, 14, 15, 19],
+   "tier": 1,
+   "stars": 2,
+   "gentle": true,
+   "outro": "You know the whole game now. Hearts come on from here — three wrong guesses and the board resets.",
+   "teach": [
+    {
+     "say": "One more. When a number is hard to read, <b>tap it</b> — the eight squares it watches light up."
+    },
+    {
+     "say": "Try it on any number.",
+     "need": { "focus": true }
+    },
+    {
+     "say": "A number fades once it has nothing left to tell you. The bright ones are the ones still worth reading.",
+     "need": { "done": true }
+    }
+   ]
+  }
+ ]
+}
