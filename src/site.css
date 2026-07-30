@@ -821,34 +821,7 @@ body {
   border-color: rgba(255,143,176,0.2);
 }
 
-/* Color Sweeper: a 3×3 mini-grid preview showing the three colours + clue numbers */
-.colorsweeper-art {
-  background: radial-gradient(circle at 50% 25%, rgba(244,99,30,0.12), transparent 60%), #14111a;
-}
 
-.cs-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(3, 1fr);
-  gap: 4px;
-  width: 80px;
-  height: 80px;
-}
-
-.cs-grid span {
-  border-radius: 5px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 900;
-  color: #fff;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.35);
-}
-
-.cs-c0 { background: #f4631e; }
-.cs-c1 { background: #2d3340; }
-.cs-c2 { background: #e8c04a; }
 
 .game-tag-cream {
   color: #ffd6a5;
