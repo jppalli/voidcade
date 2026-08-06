@@ -14,7 +14,6 @@
     "preview": "vite preview",
     "dev:stackward": "npm run dev --workspace=stackward",
     "dev:pipsandpaths": "npm run dev --workspace=pipsandpaths",
-    "dev:wardens": "npm run dev --workspace=wardens",
     "dev:chessdoku": "npm run dev --workspace=chessdoku",
     "dev:kittydoku": "npm run dev --workspace=kittydoku",
     "dev:colorclues": "npm run dev --workspace=colorclues",

@@ -805,44 +805,6 @@ body {
 .rp-2 { background: #ff4d6b; box-shadow: 0 0 12px #ff4d6b; top: 58%; left: 64%; transform: translate(-50%, -50%); }
 .rp-3 { background: #ffa502; box-shadow: 0 0 12px #ffa502; top: 66%; left: 40%; transform: translate(-50%, -50%); }
 
-/* Wardens: a small 2x2 fragment of colored domains with a warden glyph
-   sitting in one cell, hinting at the region-puzzle mechanic. */
-.wardens-art {
-  background: radial-gradient(circle at 50% 25%, rgba(181,138,255,0.12), transparent 60%), #14101f;
-}
-
-.wardens-grid {
-  position: relative;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
-  gap: 3px;
-  width: 84px;
-  height: 84px;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.wd-cell {
-  border-radius: 3px;
-}
-
-.wd-c1 { background: rgba(255,107,107,0.28); }
-.wd-c2 { background: rgba(77,208,255,0.28); }
-.wd-c3 { background: rgba(255,225,77,0.24); }
-.wd-c4 { background: rgba(181,138,255,0.32); }
-
-.wd-warden {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: #b58aff;
-  box-shadow: 0 0 10px #b58aff;
-}
-
 .game-tag-purple {
   color: #b58aff;
   background: rgba(181,138,255,0.08);

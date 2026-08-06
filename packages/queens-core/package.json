@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Shared engine for Queens/Star-Battle style logic puzzles: seeded generation of colour-region boards with exactly one solution, a backtracking solver, and connectivity guarantees. Used by Wardens and KittyDoku.",
+  "description": "Shared engine for Queens/Star-Battle style logic puzzles: seeded generation of colour-region boards with exactly one solution, a backtracking solver, and connectivity guarantees. Used by KittyDoku.",
   "main": "src/index.ts",
   "exports": {
     ".": "./src/index.ts"
