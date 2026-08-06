@@ -32,12 +32,15 @@ body {
   color: #fff;
   font-family: 'Segoe UI', Arial, sans-serif;
   line-height: 1.5;
+  /* Prevent the rail's negative margins from creating a page-level scrollbar */
+  overflow-x: hidden;
 }
 
 #site {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 .accent { color: var(--accent); }
@@ -258,8 +261,10 @@ body {
   /* Generous vertical padding: overflow-x:auto also clips vertically, so the
      tilt, float drift and offset shadows all need room inside the scroller. */
   padding: 34px clamp(20px, 5vw, 64px) 42px;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,0.22) transparent;
+  /* Hide the scrollbar entirely — the rail is navigable by swipe/drag/arrows
+     without a visible bar cluttering the hero, and the outer wrapper's
+     overflow:hidden means one can't peek through below the cards anyway. */
+  scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -276,20 +281,7 @@ body {
 }
 
 .hero-rail::-webkit-scrollbar {
-  height: 8px;
-}
-
-.hero-rail::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.hero-rail::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.18);
-  border-radius: 99px;
-}
-
-.hero-rail::-webkit-scrollbar-thumb:hover {
-  background: rgba(255,255,255,0.3);
+  display: none;
 }
 
 /* Registered so they can be smoothly transitioned. The hover lift is applied
