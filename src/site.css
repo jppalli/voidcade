@@ -865,6 +865,51 @@ body {
 .cc-c1 { background: #2b3543; } /* teal/dark */
 .cc-c2 { background: #b8921a; } /* butter */
 
+.game-tag-mint {
+  color: #7dffd4;
+  background: rgba(125,255,212,0.08);
+  border-color: rgba(125,255,212,0.24);
+}
+
+/* SplitSpell: a fragment word above, a falling letter token, a fragment word
+   below — mint (up) / rose (down) matching the in-game palette, so the card
+   telegraphs the "swipe up or down" mechanic at a glance. */
+.splitspell-art {
+  background: radial-gradient(circle at 50% 25%, rgba(125,255,212,0.1), transparent 60%), #0f1420;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ss-word {
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+.ss-word-up { color: #7dffd4; }
+.ss-word-down { color: #ff9db0; }
+
+.ss-token {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #171d33;
+  border: 2px solid rgba(255,255,255,0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 900;
+  color: #fff;
+  animation: ssTokenPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes ssTokenPulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 rgba(125,255,212,0); }
+  50% { transform: scale(1.12); box-shadow: 0 0 14px rgba(125,255,212,0.35); }
+}
+
 /* KittyDoku: pastel colour patches with a cat sitting on one — the art is
    light where every other card is dark, which suits the cosy pitch. */
 .kittydoku-art {
