@@ -19,6 +19,7 @@ const overlay = $('overlay');
 const overlayTitle = $('overlay-title');
 const overlaySub = $('overlay-sub');
 const overlayBtn = $('overlay-btn');
+const panelMark = document.querySelector('.panelMark');
 
 const topWordCard = $('topWordCard');
 const bottomWordCard = $('bottomWordCard');
@@ -26,24 +27,26 @@ const topWordEl = $('topWord');
 const bottomWordEl = $('bottomWord');
 
 const lane = $('lane');
-const fallToken = $('fallToken');
-const fallLetter = $('fallLetter');
-const arrowUp = document.querySelector('.laneArrow-up');
-const arrowDown = document.querySelector('.laneArrow-down');
+const laneTrack = $('laneTrack');
 
 const game = new Game();
+
+// The DOM node for the currently-live falling letter. Rebuilt on every new
+// spawn (tracked by game.falling.id) so the horizontal travel animation
+// always starts fresh from the correct edge.
+let tokenEl = null;
+let tokenForId = null;
 
 // ---------------------------------------------------------------- rendering
 
 /** Renders a word with its blank highlighted, one <span> per letter. */
-function renderWord(container, word, blankIndex, target) {
+function renderWord(container, word, blankIndex) {
   container.innerHTML = '';
-  const chars = word.split('');
-  chars.forEach((ch, i) => {
+  word.split('').forEach((ch, i) => {
     const span = document.createElement('span');
     span.className = 'ch';
     if (i === blankIndex) {
-      span.classList.add('blank', target === 'top' ? 'top-target' : 'bottom-target');
+      span.classList.add('blank');
       span.textContent = '_';
     } else {
       span.classList.add('filled');
@@ -57,8 +60,8 @@ function renderLives(lives, maxLives) {
   livesEl.innerHTML = Array.from({ length: maxLives }, (_, i) =>
     `<svg viewBox="0 0 24 24" width="18" height="18">
        <path d="M12 20.5s-7.5-4.6-7.5-9.6a4.4 4.4 0 0 1 7.5-3.1 4.4 4.4 0 0 1 7.5 3.1c0 5-7.5 9.6-7.5 9.6Z"
-         fill="${i < lives ? '#ff9db0' : 'none'}"
-         stroke="${i < lives ? '#ff9db0' : '#3a4160'}"
+         fill="${i < lives ? '#e2735f' : 'none'}"
+         stroke="${i < lives ? '#e2735f' : '#d8c3b2'}"
          stroke-width="1.8"/>
      </svg>`
   ).join('');
@@ -69,16 +72,43 @@ function renderAll(g) {
   bestEl.textContent = String(g.best);
   renderLives(g.lives, 3);
 
-  renderWord(topWordEl, g.topDisplay(), g.topBlankIndex(), 'top');
-  renderWord(bottomWordEl, g.bottomDisplay(), g.bottomBlankIndex(), 'bottom');
+  renderWord(topWordEl, g.topDisplay(), g.topBlankIndex());
+  renderWord(bottomWordEl, g.bottomDisplay(), g.bottomBlankIndex());
 
-  if (g.falling) {
-    fallLetter.textContent = g.falling.letter;
-    fallToken.classList.remove('hidden');
-    fallToken.classList.toggle('target-top', g.falling.target === 'top');
-    fallToken.classList.toggle('target-bottom', g.falling.target === 'bottom');
-    arrowUp.classList.toggle('active-up', g.falling.target === 'top');
-    arrowDown.classList.toggle('active-down', g.falling.target === 'bottom');
+  syncToken(g);
+}
+
+/** Creates or updates the on-screen token to match game.falling. */
+function syncToken(g) {
+  if (!g.falling) return;
+
+  if (g.falling.id !== tokenForId) {
+    // A genuinely new letter — replace the DOM node so the spawn-in
+    // animation and starting edge are correct.
+    if (tokenEl) tokenEl.remove();
+    tokenEl = document.createElement('div');
+    tokenEl.className = 'fallToken spawn-in';
+    tokenEl.textContent = g.falling.letter;
+    laneTrack.appendChild(tokenEl);
+    tokenForId = g.falling.id;
+
+    // Force layout so the browser registers the starting position before
+    // we animate `left` on the next frame.
+    const startLeft = g.falling.fromLeft ? -8 : 108;
+    tokenEl.style.left = `${startLeft}%`;
+    void tokenEl.offsetWidth;
+    requestAnimationFrame(() => tokenEl.classList.add('travelling'));
+  }
+
+  tokenEl.classList.toggle('target-up', g.falling.target === 'top');
+  tokenEl.classList.toggle('target-down', g.falling.target === 'bottom');
+}
+
+function removeLiveToken() {
+  if (tokenEl) {
+    tokenEl.remove();
+    tokenEl = null;
+    tokenForId = null;
   }
 }
 
@@ -86,19 +116,17 @@ function renderAll(g) {
 
 let rafId = null;
 let lastTime = 0;
-let laneHeight = 0;
-let tokenHalf = 28;
-
-function updateLaneMetrics() {
-  laneHeight = lane.clientHeight;
-  tokenHalf = fallToken.offsetHeight / 2 || 28;
-}
 
 function positionToken() {
-  if (!game.falling) return;
+  if (!game.falling || !tokenEl) return;
   const progress = game.fallProgress();
-  const travel = laneHeight - tokenHalf * 2;
-  fallToken.style.top = `${8 + progress * Math.max(0, travel - 16)}px`;
+  const fromLeft = game.falling.fromLeft;
+  // Travel from -8% to 108% (or the reverse), so the token fully clears the
+  // lane on both ends before despawning/resolving.
+  const start = fromLeft ? -8 : 108;
+  const end = fromLeft ? 108 : -8;
+  const left = start + (end - start) * progress;
+  tokenEl.style.left = `${left}%`;
 }
 
 function frame(now) {
@@ -130,9 +158,9 @@ function stopLoop() {
 game.onUpdate = (g) => renderAll(g);
 
 // These fire *before* game._emit() runs renderAll(), so we snapshot the
-// letter/target that's resolving right now and flash a short-lived ghost
-// token in that exact spot — otherwise the flash animation would play on
-// top of whatever letter game.onUpdate has already swapped in.
+// current token into a frozen "ghost" clone and play the resolve animation
+// on that — otherwise the animation could play on top of a letter that's
+// already been replaced by the next spawn.
 game.onWordComplete = (side, word, comboLevel) => {
   playWordComplete(comboLevel);
   const card = side === 'top' ? topWordCard : bottomWordCard;
@@ -155,48 +183,43 @@ game.onMiss = () => {
 game.onGameOver = () => {
   playGameOver();
   stopLoop();
+  removeLiveToken();
   showGameOver();
 };
 
-/**
- * Clones the currently-visible falling token into a short-lived "ghost"
- * element at the exact same spot, then plays the resolve animation on the
- * clone. This runs synchronously inside the onWordComplete/onWrongSwipe/
- * onMiss callbacks — which fire *before* the game emits its next state
- * update — so the clone always shows the letter that actually resolved,
- * never the next letter that's about to replace it on screen.
- */
 function spawnGhostToken(cls) {
-  if (fallToken.classList.contains('hidden')) return;
-  const ghost = fallToken.cloneNode(true);
-  ghost.removeAttribute('id');
-  ghost.querySelectorAll('[id]').forEach((el) => el.removeAttribute('id')); // drop #fallLetter's id too
+  if (!tokenEl) return;
+  const ghost = tokenEl.cloneNode(true);
+  ghost.classList.remove('spawn-in', 'travelling');
   ghost.classList.add('ghostToken', cls);
-  ghost.style.top = fallToken.style.top;
-  lane.appendChild(ghost);
-  setTimeout(() => ghost.remove(), 340);
+  ghost.style.left = tokenEl.style.left;
+  laneTrack.appendChild(ghost);
+  setTimeout(() => ghost.remove(), 380);
+  removeLiveToken();
 }
 
 // ---------------------------------------------------------------- overlays
 
 function showStart() {
+  panelMark.classList.remove('hidden');
   overlayTitle.textContent = 'SplitSpell';
-  overlaySub.textContent = 'Swipe up or down to send the letter to the word that needs it.';
+  overlaySub.textContent = 'Letters drift by. Swipe up or down to send each one to the word that needs it.';
   overlayBtn.textContent = 'Play';
   overlay.classList.remove('hidden');
 }
 
 function showGameOver() {
+  panelMark.classList.add('hidden');
   overlayTitle.textContent = 'Game Over';
   overlaySub.innerHTML = `
-    <span class="stats-row" style="display:flex;justify-content:center;gap:28px;margin-bottom:4px;">
-      <span style="display:flex;flex-direction:column;align-items:center;">
-        <span style="font-size:24px;font-weight:900;color:#e8ecf8;">${game.score}</span>
-        <span style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#6f7994;">Score</span>
+    <span class="stats-row">
+      <span class="item">
+        <span class="n">${game.score}</span>
+        <span class="l">Score</span>
       </span>
-      <span style="display:flex;flex-direction:column;align-items:center;">
-        <span style="font-size:24px;font-weight:900;color:#e8ecf8;">${game.best}</span>
-        <span style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#6f7994;">Best</span>
+      <span class="item">
+        <span class="n">${game.best}</span>
+        <span class="l">Best</span>
       </span>
     </span>`;
   overlayBtn.textContent = 'Play again';
@@ -206,7 +229,6 @@ function showGameOver() {
 overlayBtn.addEventListener('click', () => {
   playTap();
   overlay.classList.add('hidden');
-  updateLaneMetrics();
   game.start();
   startLoop();
 });
@@ -231,11 +253,11 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
-// Click top-half/bottom-half of the stage (desktop fallback)
-const stage = $('stage');
-stage.addEventListener('click', (e) => {
+// Click top-half/bottom-half of the board (desktop fallback)
+const board = $('board');
+board.addEventListener('click', (e) => {
   if (game.state !== 'playing') return;
-  const rect = stage.getBoundingClientRect();
+  const rect = board.getBoundingClientRect();
   const relY = e.clientY - rect.top;
   attemptSwipe(relY < rect.height / 2 ? 'up' : 'down');
 });
@@ -244,7 +266,7 @@ stage.addEventListener('click', (e) => {
 let touchStartY = null;
 let touchStartX = null;
 
-stage.addEventListener(
+board.addEventListener(
   'touchstart',
   (e) => {
     if (game.state !== 'playing') return;
@@ -254,7 +276,7 @@ stage.addEventListener(
   { passive: true }
 );
 
-stage.addEventListener(
+board.addEventListener(
   'touchend',
   (e) => {
     if (touchStartY === null || game.state !== 'playing') return;
@@ -265,10 +287,10 @@ stage.addEventListener(
     touchStartX = null;
 
     const SWIPE_THRESHOLD = 24;
-    // Ignore mostly-horizontal gestures
     if (Math.abs(dy) < SWIPE_THRESHOLD || Math.abs(dx) > Math.abs(dy)) {
-      // Treat as a tap: route by which half of the stage was touched
-      const rect = stage.getBoundingClientRect();
+      // Too small / too horizontal to be a swipe — treat as a tap, routed
+      // by which half of the board was touched.
+      const rect = board.getBoundingClientRect();
       const relY = touch.clientY - rect.top;
       attemptSwipe(relY < rect.height / 2 ? 'up' : 'down');
       return;
@@ -294,13 +316,8 @@ function toggleMute() {
 
 muteBtn.addEventListener('click', toggleMute);
 
-// ---------------------------------------------------------------- resize
-
-window.addEventListener('resize', updateLaneMetrics);
-
 // ---------------------------------------------------------------- init
 
 refreshMuteIcon();
 renderLives(3, 3);
-updateLaneMetrics();
 showStart();

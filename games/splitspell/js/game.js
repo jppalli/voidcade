@@ -17,6 +17,8 @@ import {
  * so the renderer controls the animation loop (requestAnimationFrame).
  */
 export class Game {
+  static _nextId = 0;
+
   constructor() {
     this.gen = new WordPairGenerator();
     this.score = 0;
@@ -58,6 +60,12 @@ export class Game {
       target,
       elapsedMs: 0,
       durationMs: durationForTier(this.tier),
+      // Cosmetic only — which edge the letter drifts in from. Alternating
+      // sides keeps the lane from feeling like a rigid conveyor belt.
+      fromLeft: Math.random() < 0.5,
+      // Unique per-spawn id so the renderer can detect "this is a genuinely
+      // new letter" and play a spawn-in animation exactly once.
+      id: ++Game._nextId,
     };
   }
 
