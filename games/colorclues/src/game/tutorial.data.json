@@ -46,7 +46,7 @@
    "tier": 1,
    "stars": 1,
    "gentle": true,
-   "outro": "Crosses are only your notes — the game never checks them and never fills anything in for you. Cornering the answer is your job.",
+   "outro": "Two X's on a square always leave exactly one door open. Find that square, and the color is never a guess.",
    "teach": [
     {
      "say": "A <b>0</b> is the most useful clue on the board.",
@@ -62,12 +62,20 @@
      "need": { "chord": 1 }
     },
     {
+     "say": "One X down. Each square still has <b>two</b> colors open — Teal or Butter. That is progress, not the answer yet.",
+     "spot": [5, 6]
+    },
+    {
      "say": "This Teal 0 says the same thing about Teal. Double-tap it too.",
      "spot": [9],
      "need": { "chord": 9 }
     },
     {
-     "say": "Both squares have Coral and Teal crossed off now. Only <b>Butter</b> is left — so paint them in.",
+     "say": "Now look: <b>two</b> X's on each square — Coral gone, Teal gone. Only Butter is left. That is the whole trick — corner a square with every color crossed but one.",
+     "spot": [5, 6]
+    },
+    {
+     "say": "Pick Butter below, then paint those two squares.",
      "spot": [5, 6],
      "tool": "fill",
      "color": 2,
