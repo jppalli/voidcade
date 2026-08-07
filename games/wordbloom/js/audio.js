@@ -3,7 +3,7 @@
  * game in this arcade.
  */
 
-const PREFS_KEY = 'splitspell-sound';
+const PREFS_KEY = 'wordbloom-sound';
 
 let enabled = load();
 
@@ -62,46 +62,51 @@ function guard(fn) {
   }
 }
 
-/** Correct swipe: letter lands in the right slot. */
-export function playCorrect() {
-  guard(() => tone({ freq: 560, to: 760, dur: 0.09, gain: 0.08 }));
+/** A tile is added to the current trace — a soft, pitched-by-length tick. */
+export function playPick(traceLength) {
+  guard(() => tone({ freq: 480 + traceLength * 22, dur: 0.06, gain: 0.05, type: 'triangle' }));
 }
 
-/** Wrong swipe: costs a life. */
-export function playWrong() {
+/** Trace cleared / backed out. */
+export function playRelease() {
+  guard(() => tone({ freq: 340, to: 260, dur: 0.08, gain: 0.04, type: 'triangle' }));
+}
+
+/** A required word is found. */
+export function playRequiredFound() {
+  guard(() => {
+    [523.25, 659.25, 783.99].forEach((f, i) => tone({ freq: f, start: i * 0.06, dur: 0.22, gain: 0.08 }));
+  });
+}
+
+/** A bonus word is found — a lighter, single-note sparkle. */
+export function playBonusFound() {
+  guard(() => tone({ freq: 900, to: 1200, dur: 0.14, gain: 0.06 }));
+}
+
+/** Word already found, or not a real word. */
+export function playInvalid() {
   guard(() => {
     const c = audio();
     const osc = c.createOscillator();
     const g = c.createGain();
     osc.type = 'sawtooth';
     osc.frequency.setValueAtTime(220, c.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(90, c.currentTime + 0.22);
-    g.gain.setValueAtTime(0.14, c.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.22);
+    osc.frequency.exponentialRampToValueAtTime(140, c.currentTime + 0.16);
+    g.gain.setValueAtTime(0.09, c.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.16);
     osc.connect(g);
     g.connect(c.destination);
     osc.start();
-    osc.stop(c.currentTime + 0.24);
+    osc.stop(c.currentTime + 0.18);
   });
 }
 
-/** A word completes — rising arpeggio, richer for longer words/bigger combos. */
-export function playWordComplete(comboLevel = 0) {
+/** All required words found — level complete. */
+export function playLevelComplete() {
   guard(() => {
-    const notes = [523.25, 659.25, 783.99, 1046.5];
-    const n = Math.min(notes.length, 2 + comboLevel);
-    for (let i = 0; i < n; i++) tone({ freq: notes[i], start: i * 0.07, dur: 0.3, gain: 0.08 });
-  });
-}
-
-/** A letter falls unclaimed — soft, no penalty tone, just an ambient miss cue. */
-export function playMiss() {
-  guard(() => tone({ freq: 300, to: 220, dur: 0.14, gain: 0.045, type: 'triangle' }));
-}
-
-export function playGameOver() {
-  guard(() => {
-    [420, 340, 260].forEach((f, i) => tone({ freq: f, start: i * 0.14, dur: 0.32, gain: 0.09, type: 'triangle' }));
+    [523.25, 659.25, 783.99, 1046.5].forEach((f, i) =>
+      tone({ freq: f, start: i * 0.09, dur: 0.32, gain: 0.09 }));
   });
 }
 

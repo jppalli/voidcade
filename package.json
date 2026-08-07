@@ -18,7 +18,7 @@
     "dev:kittydoku": "npm run dev --workspace=kittydoku",
     "dev:colorclues": "npm run dev --workspace=colorclues",
     "dev:riftpop": "npx --yes http-server games/riftpop -p 5187 -c-1",
-    "dev:splitspell": "npx --yes http-server games/splitspell -p 5188 -c-1",
+    "dev:wordbloom": "npx --yes http-server games/wordbloom -p 5188 -c-1",
     "dev:panes": "npx --yes http-server games/panes -p 5175 -c-1"
   },
   "dependencies": {

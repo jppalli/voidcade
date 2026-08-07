@@ -871,43 +871,77 @@ body {
   border-color: rgba(125,255,212,0.24);
 }
 
-/* SplitSpell: a fragment word above, a drifting letter token, a fragment
-   word below — cream card with teal (up) / coral (down) fragments, matching
-   the game's cosy in-game palette (same family as KittyDoku). */
-.splitspell-art {
+/* Wordbloom: the letter ring drawn as a flower — six lettered petals around a
+   gold core, on the same cream card as KittyDoku so the cosy games match. */
+.wordbloom-art {
   background: radial-gradient(circle at 50% 20%, rgba(255,248,239,0.22), transparent 62%), #f3e6d8;
-  flex-direction: column;
-  gap: 6px;
 }
 
-.ss-word {
-  font-size: 20px;
-  font-weight: 900;
-  letter-spacing: 1.5px;
-  font-family: 'Segoe UI', Arial, sans-serif;
+.wb-ring {
+  position: relative;
+  width: 108px;
+  height: 108px;
+  animation: wbTurn 22s linear infinite;
 }
 
-.ss-word-up { color: #2d7986; }
-.ss-word-down { color: #c9573f; }
-
-.ss-token {
-  width: 30px;
-  height: 30px;
+.wb-petal {
+  position: absolute;
+  width: 34px;
+  height: 34px;
+  margin: -17px 0 0 -17px;
   border-radius: 50%;
-  background: #fffdf9;
-  border: 2px solid #4a3b34;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 900;
-  color: #4a3b34;
-  animation: ssTokenBob 1.8s ease-in-out infinite;
+  color: #fffdf9;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  /* Counter-rotate so the letters stay upright while the ring turns. */
+  animation: wbTurnBack 22s linear infinite;
 }
 
-@keyframes ssTokenBob {
-  0%, 100% { transform: translateY(0) scale(1); }
-  50% { transform: translateY(-3px) scale(1.08); }
+.wb-p1 { top: 12%;  left: 50%; background: #3f97a8; }
+.wb-p2 { top: 31%;  left: 88%; background: #e2735f; }
+.wb-p3 { top: 69%;  left: 88%; background: #6fb56f; }
+.wb-p4 { top: 88%;  left: 50%; background: #9b8ad1; }
+.wb-p5 { top: 69%;  left: 12%; background: #3f97a8; }
+.wb-p6 { top: 31%;  left: 12%; background: #e2735f; }
+
+.wb-core {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 40px;
+  height: 40px;
+  margin: -20px 0 0 -20px;
+  border-radius: 50%;
+  background: #e0a638;
+  box-shadow: 0 0 0 3px rgba(255,253,249,0.6);
+}
+
+@keyframes wbTurn {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes wbTurnBack {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
+}
+
+.game-card:hover .wb-ring,
+.stage-card:hover .wb-ring {
+  animation-duration: 6s;
+}
+
+.game-card:hover .wb-petal,
+.stage-card:hover .wb-petal {
+  animation-duration: 6s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wb-ring, .wb-petal { animation: none; }
 }
 
 .game-tag-lagoon {

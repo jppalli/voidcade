@@ -1,12 +1,8 @@
 /**
- * Curated word list for SplitSpell. Hand-picked rather than pulled from a
- * giant dictionary: every word here is common, unambiguous, and has no
- * awkward letter patterns (no words that are prefixes of other words in the
- * list at the same blank position, so a partially-filled word never becomes
- * confusing about what's still needed).
+ * Curated word list for Wordbloom. Hand-picked rather than pulled from a
+ * giant dictionary: every word here is common and unambiguous.
  *
- * Organized by length since gameplay difficulty scales with word length
- * (longer word = blank survives more hits before the word completes).
+ * Organized by length for quick lookups when generating/verifying levels.
  */
 
 export const WORDS_BY_LENGTH = {

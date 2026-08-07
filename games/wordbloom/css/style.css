@@ -1,0 +1,608 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --bg: #fff8ef;
+  --bg-2: #fdeee0;
+  --card: #fffdf9;
+  --ink: #4a3b34;
+  --ink-soft: #8a776c;
+  --ink-faint: #b8a79c;
+  --line: #e8d9cc;
+  --line-strong: #d8c3b2;
+
+  --teal: #3f97a8;
+  --teal-soft: #d9eef1;
+  --coral: #e2735f;
+  --coral-soft: #fbe3dd;
+  --gold: #e0a638;
+  --gold-soft: #fbedd2;
+  --purple: #9b8ad1;
+  --green: #6fb56f;
+
+  --shadow: 0 6px 0 rgba(122, 96, 80, 0.13);
+  --shadow-lift: 0 9px 0 rgba(122, 96, 80, 0.15);
+}
+
+html, body {
+  min-height: 100%;
+}
+
+body {
+  background:
+    radial-gradient(circle at 12% 6%, rgba(63, 151, 168, 0.08), transparent 42%),
+    radial-gradient(circle at 88% 94%, rgba(226, 115, 95, 0.08), transparent 42%),
+    var(--bg);
+  color: var(--ink);
+  font-family: "Nunito", "Segoe UI", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.hidden { display: none !important; }
+
+/* ---------------- shared buttons ---------------- */
+.btn {
+  border: 2px solid var(--line-strong);
+  border-radius: 16px;
+  padding: 13px 28px;
+  font-size: 15px;
+  font-weight: 900;
+  color: #fff;
+  background: linear-gradient(135deg, var(--teal), var(--coral));
+  box-shadow: var(--shadow);
+  transition: transform 0.14s ease, box-shadow 0.14s ease;
+}
+
+.btn.big { padding: 15px 40px; font-size: 16px; }
+
+.btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift); }
+.btn:active { transform: translateY(1px); box-shadow: 0 2px 0 rgba(122, 96, 80, 0.13); }
+
+.btn.ghost {
+  background: var(--card);
+  color: var(--ink-soft);
+}
+
+.btn.ghost.iconOnly {
+  padding: 11px 14px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.iconBtn {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 2px solid var(--line-strong);
+  background: var(--card);
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.iconBtn:hover { color: var(--ink); background: var(--bg-2); }
+.iconBtn.off { color: var(--ink-faint); }
+
+/* ---------------- title screen ---------------- */
+.title {
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.titleCard {
+  text-align: center;
+  max-width: 380px;
+  width: 100%;
+}
+
+.titleBloom {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 6px;
+  filter: drop-shadow(0 4px 6px rgba(74, 59, 52, 0.16));
+  animation: bloomFloat 4s ease-in-out infinite;
+}
+
+@keyframes bloomFloat {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-6px) rotate(3deg); }
+}
+
+.titleCard h1 {
+  font-size: 34px;
+  font-weight: 900;
+  margin-bottom: 6px;
+}
+
+.titleCard h1 span { color: var(--teal); }
+
+.titleCard .tag {
+  font-size: 14px;
+  color: var(--ink-soft);
+  margin-bottom: 22px;
+  line-height: 1.5;
+}
+
+.titleProgress {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--ink-faint);
+  margin-top: 12px;
+}
+
+.titleRow {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 18px;
+}
+
+.voidcadeLink {
+  display: inline-block;
+  margin-top: 26px;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--ink-faint);
+  text-decoration: none;
+}
+
+.voidcadeLink:hover { color: var(--ink-soft); }
+
+/* ---------------- header bar (select + play) ---------------- */
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  flex-shrink: 0;
+}
+
+.barTitle {
+  flex: 1;
+  min-width: 0;
+}
+
+.barTitle h2 {
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.barTitle p {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-faint);
+}
+
+/* ---------------- level select ---------------- */
+.select .scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 14px 40px;
+}
+
+.chapterList {
+  max-width: 460px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.chapterCard {
+  background: var(--card);
+  border: 2px solid var(--line-strong);
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+
+.chapterCard.locked { opacity: 0.72; }
+
+.chapterHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.chDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+.chText {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.chName { font-size: 15px; font-weight: 900; }
+.chSub { font-size: 11.5px; color: var(--ink-faint); font-weight: 700; }
+.chLock { margin-left: auto; color: var(--ink-faint); }
+
+.levelGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(58px, 1fr));
+  gap: 8px;
+}
+
+.levelNode {
+  aspect-ratio: 1;
+  border-radius: 14px;
+  border: 2px solid var(--line-strong);
+  background: var(--bg-2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: var(--ink-faint);
+  transition: transform 0.12s ease;
+}
+
+.levelNode:not(:disabled):hover { transform: translateY(-2px); }
+
+.levelNode.open, .levelNode.next {
+  background: var(--card);
+  color: var(--ink);
+}
+
+.levelNode.next {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px var(--teal-soft);
+}
+
+.levelNode.done {
+  background: var(--gold-soft);
+  border-color: var(--gold);
+  color: var(--ink);
+}
+
+.lnNum { font-size: 15px; font-weight: 900; }
+.lnStars { display: flex; gap: 1px; }
+
+.starDot svg { fill: none; color: var(--line-strong); }
+.starDot.on svg { fill: var(--gold); color: var(--gold); }
+
+/* ---------------- play screen ---------------- */
+.play .playBody {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 4px 16px 32px;
+  max-width: 460px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.wordList {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.wordRow {
+  display: flex;
+  gap: 5px;
+}
+
+.wl-cell {
+  width: 30px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--bg-2);
+  border: 2px solid var(--line-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 900;
+  color: transparent;
+}
+
+.wl-cell.filled {
+  background: var(--teal-soft);
+  border-color: var(--teal);
+  color: var(--teal);
+  animation: wlPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) var(--d, 0s) backwards;
+}
+
+@keyframes wlPop {
+  0% { transform: scale(0.5); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.wordRow.found { animation: rowGlow 0.5s ease; }
+
+@keyframes rowGlow {
+  0% { filter: drop-shadow(0 0 0 rgba(63,151,168,0)); }
+  40% { filter: drop-shadow(0 0 8px rgba(63,151,168,0.5)); }
+  100% { filter: drop-shadow(0 0 0 rgba(63,151,168,0)); }
+}
+
+/* ---------------- the ring ---------------- */
+.ringWrap {
+  position: relative;
+  width: 260px;
+  height: 260px;
+  flex-shrink: 0;
+  touch-action: none;
+}
+
+.ringLines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.ringCenter {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 118px;
+  height: 118px;
+  border-radius: 50%;
+  background: var(--card);
+  border: 3px solid var(--line-strong);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  z-index: 2;
+}
+
+.ringCenter.flash-good { animation: ringGood 0.4s ease; }
+.ringCenter.flash-bad { animation: ringBad 0.35s ease; }
+
+@keyframes ringGood {
+  0% { box-shadow: var(--shadow); }
+  40% { box-shadow: var(--shadow), 0 0 0 8px var(--teal-soft); border-color: var(--teal); }
+  100% { box-shadow: var(--shadow); border-color: var(--line-strong); }
+}
+
+@keyframes ringBad {
+  0%, 100% { transform: translate(-50%, -50%); }
+  25% { transform: translate(calc(-50% - 4px), -50%); }
+  75% { transform: translate(calc(-50% + 4px), -50%); }
+}
+
+.ringWord {
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  text-align: center;
+  padding: 0 8px;
+  word-break: break-all;
+}
+
+.ringWord.placeholder {
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--ink-faint);
+}
+
+.ringActions {
+  display: flex;
+  gap: 6px;
+}
+
+.ringBtn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid var(--line-strong);
+  background: var(--bg-2);
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ringBtn.enter {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: #fff;
+}
+
+.ringBtn:active { transform: scale(0.92); }
+
+.ringTiles {
+  position: absolute;
+  inset: 0;
+}
+
+.ringTile {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  margin-left: -24px;
+  margin-top: -24px;
+  border-radius: 50%;
+  border: 3px solid var(--line-strong);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 19px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow);
+  z-index: 3;
+  user-select: none;
+  transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+}
+
+.ringTile.selected {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: #fff;
+  transform: scale(1.08);
+}
+
+/* ---------------- bonus panel ---------------- */
+.bonusPanel {
+  width: 100%;
+  background: var(--card);
+  border: 2px dashed var(--line-strong);
+  border-radius: 16px;
+  padding: 12px 14px;
+  min-height: 54px;
+}
+
+.bonusLabel {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 8px;
+}
+
+.bonusChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.bonusPanel.empty .bonusChips::after {
+  content: 'Any extra word you spell shows up here';
+  font-size: 12px;
+  color: var(--ink-faint);
+  font-weight: 600;
+}
+
+.bonusChip {
+  background: var(--gold-soft);
+  color: #8a6a1a;
+  border: 1px solid rgba(224, 166, 56, 0.35);
+  border-radius: 10px;
+  padding: 4px 10px;
+  font-size: 12.5px;
+  font-weight: 800;
+  animation: chipPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes chipPop {
+  0% { transform: scale(0.6); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ---------------- modal ---------------- */
+.scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(74, 59, 52, 0.35);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 50;
+  animation: scrimIn 0.18s ease;
+}
+
+.scrim.out { animation: scrimOut 0.18s ease forwards; }
+
+@keyframes scrimIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes scrimOut { from { opacity: 1; } to { opacity: 0; } }
+
+.modal {
+  background: var(--card);
+  border: 2px solid var(--line-strong);
+  border-radius: 22px;
+  padding: 28px 26px;
+  max-width: 360px;
+  width: 100%;
+  box-shadow: 0 12px 0 rgba(122, 96, 80, 0.14);
+  text-align: center;
+}
+
+.modal h2 {
+  font-size: 22px;
+  font-weight: 900;
+  margin-bottom: 10px;
+}
+
+.modal .rules {
+  text-align: left;
+  font-size: 13.5px;
+  color: var(--ink-soft);
+  line-height: 1.6;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.modal .rules h3 {
+  font-size: 13px;
+  color: var(--ink);
+  margin-top: 4px;
+}
+
+.winMark { display: flex; justify-content: center; margin-bottom: 8px; }
+
+.winStars {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+
+.winStars .starDot svg { width: 24px; height: 24px; }
+
+.winText {
+  font-size: 13.5px;
+  color: var(--ink-soft);
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.winActions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+@media (max-width: 380px) {
+  .ringWrap { width: 230px; height: 230px; }
+  .ringTile { width: 42px; height: 42px; margin-left: -21px; margin-top: -21px; font-size: 17px; }
+}
