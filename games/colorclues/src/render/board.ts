@@ -134,6 +134,26 @@ export class BoardView {
     }
   }
 
+  /** Add or remove an in-cell gesture cue. kind: 'tap' | 'doubletap' | 'none' */
+  setCellHint(i: number, kind: "tap" | "doubletap" | "none") {
+    const el = this.cells[i];
+    el.querySelector(".ftue-hint")?.remove();
+    if (kind === "none") return;
+    const hint = document.createElement("span");
+    hint.className = `ftue-hint ftue-${kind}`;
+    hint.setAttribute("aria-hidden", "true");
+    if (kind === "tap") {
+      hint.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12V6a2 2 0 1 1 4 0v6"/><path d="M13 8a2 2 0 1 1 4 0v4"/><path d="M17 10a2 2 0 1 1 4 0v4a7 7 0 0 1-14 0v-4"/></svg>`;
+    } else {
+      hint.innerHTML = `<span class="ftue-dbl">×2</span>`;
+    }
+    el.appendChild(hint);
+  }
+
+  clearCellHints() {
+    for (const el of this.cells) el.querySelector(".ftue-hint")?.remove();
+  }
+
   /** Short animations, driven by class + animationend so they can restack. */
   private pulse(i: number, className: string) {
     const el = this.cells[i];
