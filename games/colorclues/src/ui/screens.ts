@@ -642,10 +642,13 @@ export function startLevel(level: Level) {
     );
     board.el.querySelectorAll<HTMLButtonElement>(".cell").forEach((el) => {
       const i = Number(el.dataset.i);
-      if (!s || allowedCells.size === 0) {
+      const isGiven = game.cells[i]?.given;
+      // Never dim given cells — they're already locked/decorative by nature.
+      // Only dim blank cells that aren't the current step's target.
+      if (!s || allowedCells.size === 0 || isGiven) {
         el.classList.remove("ftue-cell-locked");
       } else {
-        el.classList.toggle("ftue-cell-locked", !allowedCells.has(i));
+        el.classList.toggle("ftue-cell-locked", !isGiven && !allowedCells.has(i));
       }
     });
 

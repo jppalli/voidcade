@@ -121,10 +121,10 @@ export class BoardView {
     }
     if (clue !== null && this.game.clueSatisfied(i)) el.classList.add("satisfied");
 
-    const num = el.firstElementChild as HTMLElement;
+    const num = el.querySelector<HTMLElement>(".num")!;
     num.textContent = clue !== null ? String(clue) : "";
 
-    const marks = el.lastElementChild as HTMLElement;
+    const marks = el.querySelector<HTMLElement>(".marks")!;
     if (cell.fill === EMPTY && cell.cross) {
       let html = "";
       for (let c = 0; c < 3; c++) if (has(cell.cross, c)) html += `<i class="mark c${c}">${CROSS}</i>`;
