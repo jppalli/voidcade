@@ -618,6 +618,8 @@ export function startLevel(level: Level) {
 
   function applyFtueLock(s: TeachStep | undefined) {
     screen.classList.toggle("ftue-locked", !!s);
+
+    // Lock toolbar
     screen.querySelectorAll<HTMLButtonElement>(".swatch").forEach((el) => {
       el.disabled = !!s && s.color !== undefined && Number(el.dataset.color) !== s.color;
     });
@@ -626,6 +628,38 @@ export function startLevel(level: Level) {
     });
     const hintBtn = screen.querySelector<HTMLButtonElement>("[data-hint]");
     if (hintBtn) hintBtn.disabled = !!s;
+
+    // Lock board cells that aren't the step's target.
+    // During a chord step: only the specific given (numbered) cell is tappable.
+    // During a paint step: only the spotlighted blank cells are tappable.
+    // Otherwise (or when no step): unlock everything.
+    const isChordStep = !!s && !!s.need && "chord" in s.need;
+    const isPaintStep = !!s && !!s.need && "paint" in s.need;
+    const allowedCells = new Set<number>(
+      isChordStep ? [(s!.need as { chord: number }).chord] :
+      isPaintStep ? (s!.spot ?? []) :
+      []
+    );
+    board.el.querySelectorAll<HTMLButtonElement>(".cell").forEach((el) => {
+      const i = Number(el.dataset.i);
+      if (!s || allowedCells.size === 0) {
+        el.classList.remove("ftue-cell-locked");
+      } else {
+        el.classList.toggle("ftue-cell-locked", !allowedCells.has(i));
+      }
+    });
+
+    // If a paint step specifies a color, pre-select it and pulse the swatch.
+    if (isPaintStep && s!.color !== undefined) {
+      color = s!.color;
+      syncTools();
+      const swatch = screen.querySelector<HTMLElement>(`.swatch[data-color="${s!.color}"]`);
+      if (swatch) {
+        swatch.classList.remove("ftue-pulse");
+        void (swatch as HTMLElement).offsetWidth;
+        swatch.classList.add("ftue-pulse");
+      }
+    }
   }
 
   function needMet(need: TeachNeed): boolean {
@@ -804,6 +838,7 @@ export function startLevel(level: Level) {
     observer.disconnect();
     clearTimeout(ftueTimer);
     board.clearCellHints();
+    board.el.querySelectorAll(".ftue-cell-locked").forEach(el => el.classList.remove("ftue-cell-locked"));
     if (currentPlay === handle) currentPlay = null;
   });
   currentPlay = handle;

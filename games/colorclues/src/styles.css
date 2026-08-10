@@ -774,6 +774,21 @@ h1 span { display: block; color: var(--c0); }
   opacity: 1;
   pointer-events: auto;
 }
+
+/* Board cells blocked during a specific-action step */
+.cell.ftue-cell-locked {
+  opacity: .28;
+  pointer-events: none;
+}
+
+/* Swatch pulse — draws the eye to the color the player must pick */
+.swatch.ftue-pulse .swatchInner {
+  animation: swatchPulse 0.7s ease-in-out 3;
+}
+@keyframes swatchPulse {
+  0%, 100% { transform: scale(1.16) translateY(-2px); box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px currentColor, 0 6px 14px rgb(var(--ink-rgb) / .2); }
+  50%       { transform: scale(1.32) translateY(-4px); box-shadow: 0 0 0 3px var(--bg), 0 0 0 7px currentColor, 0 8px 20px rgb(var(--ink-rgb) / .28); }
+}
 /* --------------------------------------------------------------- toolbar */
 
 .toolbar {
