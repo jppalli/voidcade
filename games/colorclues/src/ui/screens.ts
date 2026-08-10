@@ -517,7 +517,6 @@ export function startLevel(level: Level) {
         <button class="iconBtn" data-gear>${icon("i-gear")}</button>
       </header>
       <div class="boardWrap"></div>
-      ${level.teach ? `<div class="coach"><p class="coachText"></p><button class="btn coachNext" data-coach-next>Next</button></div>` : ""}
       <div class="toolbar">
         <div class="swatches">
           ${[0, 1, 2].map((c) => `
@@ -558,85 +557,146 @@ export function startLevel(level: Level) {
       el.classList.toggle("on", el.dataset.tool === tool));
     screen.classList.toggle("marking", tool === "mark");
     undoBtn.disabled = !game.canUndo;
-    applyNudges();
   };
 
-  /* ----------------------------------------------------------- the coach --
-     Tutorial boards carry a list of steps. Each one says a thing, optionally
-     rings some cells, and waits for the player to actually do it. Nothing is
-     locked out — a step that asks for the Cross tool nudges the button rather
-     than forcing it, so the player is always the one making the move. */
+  /* ----------------------------------------------------------- FTUE bubble --
+   * Tutorial boards show a small floating bubble near the target cell(s).
+   * Every other interaction is disabled until the player does what the step asks.
+   * No "Next" button, no info bar — the step disappears when the action happens.
+   */
 
   const steps: TeachStep[] = level.teach ?? [];
-  const coachEl = screen.querySelector<HTMLElement>(".coach");
-  const coachText = screen.querySelector<HTMLElement>(".coachText");
-  const coachNext = screen.querySelector<HTMLButtonElement>("[data-coach-next]");
   let stepIndex = 0;
   let lastChord: number | null = null;
   let sawFocus = false;
-  let nudgeTimer = 0;
+  let ftueTimer = 0;
+  let bubble: HTMLElement | null = null;
 
   const step = (): TeachStep | undefined => steps[stepIndex];
 
-  function applyNudges() {
-    const s = step();
-    screen.querySelectorAll(".swatch, .seg").forEach((el) => el.classList.remove("nudge"));
-    if (!s) return;
-    // Nudge even when the control is already selected — on a first board, half
-    // the lesson is where the controls live.
-    if (s.color !== undefined)
-      screen.querySelector(`.swatch[data-color="${s.color}"]`)?.classList.add("nudge");
-    if (s.tool)
-      screen.querySelector(`.seg[data-tool="${s.tool}"]`)?.classList.add("nudge");
+  /** Builds and positions a floating bubble near the first spotlighted cell. */
+  function showBubble(s: TeachStep) {
+    if (bubble) { bubble.remove(); bubble = null; }
+    bubble = document.createElement("div");
+    bubble.className = "ftue-bubble";
+    bubble.innerHTML = s.say;
+    boardWrap.appendChild(bubble);
+
+    // Position it near the first spotlighted cell, or centre if no spot.
+    const spotCells = (s.spot ?? []).map((i) =>
+      board.el.querySelector<HTMLElement>(`[data-i="${i}"]`)
+    ).filter(Boolean) as HTMLElement[];
+
+    requestAnimationFrame(() => {
+      const bwRect = boardWrap.getBoundingClientRect();
+      if (spotCells.length > 0) {
+        const cellRect = spotCells[0].getBoundingClientRect();
+        const cellCX = cellRect.left + cellRect.width / 2 - bwRect.left;
+        const cellTop = cellRect.top - bwRect.top;
+        const bh = bubble!.offsetHeight || 48;
+        const above = cellTop - bh - 12;
+        if (above > 4) {
+          bubble!.style.top = `${above}px`;
+        } else {
+          bubble!.style.top = `${cellRect.bottom - bwRect.top + 10}px`;
+        }
+        const bw = bubble!.offsetWidth || 200;
+        bubble!.style.left = `${Math.min(bwRect.width - bw - 8, Math.max(8, cellCX - bw / 2))}px`;
+      } else {
+        // No specific cell — float in the centre-top area.
+        bubble!.style.top = "12px";
+        bubble!.style.left = "50%";
+        bubble!.style.transform = "translateX(-50%)";
+      }
+    });
   }
 
-  function renderCoach() {
-    if (!coachEl || !coachText || !coachNext) { syncTools(); return; }
+  /** Lock everything except what the current step needs. */
+  function applyFtueLock() {
     const s = step();
-    coachEl.classList.toggle("hidden", !s);
+    if (!s || !steps.length) {
+      screen.classList.remove("ftue-locked");
+      screen.querySelectorAll<HTMLElement>(".swatch, .seg, .toolBtn").forEach((el) => {
+        el.removeAttribute("data-ftue-disabled");
+        (el as HTMLButtonElement).disabled = false;
+      });
+      return;
+    }
+
+    screen.classList.add("ftue-locked");
+
+    // Always allow undo and back.
+    // Enable only the color swatch(es) and tool the step needs; disable the rest.
+    const allowColor = s.color ?? null;
+    const allowTool  = s.tool ?? null;
+
+    screen.querySelectorAll<HTMLButtonElement>(".swatch").forEach((el) => {
+      const c = Number(el.dataset.color);
+      el.disabled = allowColor !== null && c !== allowColor;
+    });
+    screen.querySelectorAll<HTMLButtonElement>(".seg").forEach((el) => {
+      el.disabled = allowTool !== null && el.dataset.tool !== allowTool;
+    });
+    // Hint is blocked during tutorials.
+    const hintBtn = screen.querySelector<HTMLButtonElement>("[data-hint]");
+    if (hintBtn) hintBtn.disabled = true;
+  }
+
+  function renderFtue() {
+    const s = step();
     board.spotlight(s?.spot ?? []);
-    if (!s) { syncTools(); return; }
-    coachText.innerHTML = s.say;
-    coachNext.hidden = s.need !== undefined;
-    syncTools();
+    if (!s) {
+      if (bubble) { bubble.remove(); bubble = null; }
+      applyFtueLock();
+      return;
+    }
+    showBubble(s);
+    applyFtueLock();
+
+    // If the step has no need (info-only), auto-advance after a short read delay.
+    if (!s.need) {
+      clearTimeout(ftueTimer);
+      ftueTimer = window.setTimeout(() => {
+        stepIndex++;
+        renderFtue();
+      }, 1600);
+    }
   }
 
   function needMet(need: TeachNeed): boolean {
     if ("paint" in need) return need.paint.every((i) => game.cells[i].fill !== EMPTY);
     if ("chord" in need) return lastChord === need.chord;
-    if ("tool" in need) return tool === need.tool;
+    if ("tool"  in need) return tool === need.tool;
     if ("filled" in need) return game.filledCount >= need.filled;
     if ("focus" in need) return sawFocus;
     return game.solved;
   }
 
-  function checkTeach() {
+  function checkFtue() {
     if (!steps.length) return;
     let moved = false;
     let s = step();
     while (s && s.need && needMet(s.need)) { stepIndex++; moved = true; s = step(); }
-    if (moved) renderCoach();
+    if (moved) renderFtue();
   }
 
-  /** A wrong move on a practice board gets a word, not a lost heart. */
   function nudgeCoach(message: string) {
-    if (!coachText) return;
-    const original = coachText.innerHTML;
-    coachText.innerHTML = message;
-    coachText.classList.add("oops");
-    clearTimeout(nudgeTimer);
-    nudgeTimer = window.setTimeout(() => {
-      coachText.classList.remove("oops");
-      if (step()) coachText.innerHTML = original;
-    }, 2200);
+    // Re-use the bubble for gentle wrong-move feedback.
+    if (!bubble) return;
+    const original = bubble.innerHTML;
+    bubble.innerHTML = message;
+    bubble.classList.add("oops");
+    clearTimeout(ftueTimer);
+    ftueTimer = window.setTimeout(() => {
+      if (bubble) { bubble.classList.remove("oops"); bubble.innerHTML = original; }
+    }, 2000);
   }
 
   const board = new BoardView(game, {
     onTap: (i, alt) => act(i, alt ? (tool === "fill" ? "mark" : "fill") : tool),
     onChord: (i) => {
       const touched = game.chord(i);
-      // Nothing left to mark is a no-op, not an error — no sound, no shake.
-      if (!touched) { lastChord = i; checkTeach(); return; }
+      if (!touched) { lastChord = i; checkFtue(); return; }
       lastChord = i;
       board.refresh(touched);
       board.pop(touched);
@@ -644,7 +704,7 @@ export function startLevel(level: Level) {
       after();
     },
     onFocus: (i) => {
-      if (i !== null && game.clueAt(i) !== null) { sawFocus = true; checkTeach(); }
+      if (i !== null && game.clueAt(i) !== null) { sawFocus = true; checkFtue(); }
     },
   });
   boardWrap.appendChild(board.el);
@@ -682,7 +742,7 @@ export function startLevel(level: Level) {
 
   function after() {
     syncTools();
-    checkTeach();
+    checkFtue();
     if (game.dead) return finish(false);
     if (game.solved) return finish(true);
   }
@@ -713,10 +773,10 @@ export function startLevel(level: Level) {
   screen.querySelector("[data-gear]")?.addEventListener("click", () => { sfx.tap(); showSettings(() => showLevelSelect()); });
 
   screen.querySelectorAll<HTMLElement>(".swatch").forEach((el) =>
-    el.addEventListener("click", () => { color = Number(el.dataset.color); sfx.tap(); syncTools(); checkTeach(); }));
+    el.addEventListener("click", () => { color = Number(el.dataset.color); sfx.tap(); syncTools(); checkFtue(); }));
   screen.querySelectorAll<HTMLElement>(".seg").forEach((el) =>
-    el.addEventListener("click", () => { tool = el.dataset.tool as Tool; sfx.tap(); syncTools(); checkTeach(); }));
-  coachNext?.addEventListener("click", () => { stepIndex++; sfx.tap(); renderCoach(); });
+    el.addEventListener("click", () => { tool = el.dataset.tool as Tool; sfx.tap(); syncTools(); checkFtue(); }));
+  // coachNext removed — steps advance automatically when their need is met.
 
   undoBtn.addEventListener("click", () => {
     const touched = game.undo();
@@ -776,12 +836,13 @@ export function startLevel(level: Level) {
     window.removeEventListener("keydown", keys);
     window.removeEventListener("resize", onResize);
     observer.disconnect();
+    clearTimeout(ftueTimer);
     if (currentPlay === handle) currentPlay = null;
   });
   currentPlay = handle;
   drawHearts();
   board.refresh();
-  renderCoach();
+  renderFtue();
   board.resize();
   game.startedAt = performance.now();
 }
