@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hint Tac Toe</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>%23</text></svg>">
+  <link rel="stylesheet" href="/src/styles.css">
+</head>
+<body>
+
+  <!-- ============ SVG ICON SET ============ -->
+  <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+    <symbol id="i-reset" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></symbol>
+    <symbol id="i-sound-on" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></symbol>
+    <symbol id="i-sound-off" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></symbol>
+    <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21c1.18.54 2.03 2.03 2.03 4"/><path d="M6 2h12v7a6 6 0 0 1-12 0V2Z"/></symbol>
+    <symbol id="i-handshake" viewBox="0 0 24 24"><path d="m11 17 2 2a1 1 0 1 0 3-3"/><path d="m14 14 2.5 2.5a1 1 0 1 0 3-3l-3.88-3.88a3 3 0 0 0-4.24 0l-.88.88a1 1 0 1 1-3-3l2.81-2.81a5.79 5.79 0 0 1 7.06-.87l.47.28a2 2 0 0 0 1.42.25L21 4"/><path d="m21 3 1 11h-2"/><path d="M3 3 2 14l6.5 6.5a1 1 0 1 0 3-3"/><path d="M3 4h8"/></symbol>
+    <symbol id="i-cpu" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v2"/><path d="M15 2v2"/><path d="M9 20v2"/><path d="M15 20v2"/><path d="M2 9h2"/><path d="M2 15h2"/><path d="M20 9h2"/><path d="M20 15h2"/></symbol>
+  </svg>
+
+  <!-- ============ TITLE SCREEN ============ -->
+  <section id="screen-title" class="screen">
+    <div class="titleCard">
+      <h1 class="logo">Hint<span class="logoGlyph">#</span>Tac<span class="logoGlyph">#</span>Toe</h1>
+      <p class="tagline">Tic-tac-toe, but you have to earn every square.</p>
+      <div class="titleButtons">
+        <button class="btn primary big" id="btnPlayPvp">Play vs Friend</button>
+        <button class="btn big" id="btnPlayAi">Play vs Computer</button>
+        <button class="btn big" id="btnHowTo">How to Play</button>
+      </div>
+      <div id="titleScoreboard" class="titleScoreboard"></div>
+      <div class="titleFooter">
+        <button class="iconBtn" id="btnSoundTitle" title="Toggle sound"><svg class="icon"><use href="#i-sound-on"/></svg></button>
+      </div>
+      <a class="voidcadeLink" href="../../">← Back to Voidcade</a>
+    </div>
+  </section>
+
+  <!-- ============ GAME SCREEN ============ -->
+  <section id="screen-game" class="screen hidden">
+    <div class="gameHeader">
+      <button class="btn back" data-nav="title"><svg class="icon"><use href="#i-back"/></svg><span>Title</span></button>
+      <div class="turnBlock">
+        <div id="turnLabel" class="turnLabel"></div>
+        <div id="modeLabel" class="modeLabel"></div>
+        <div id="scoreChips" class="scoreChips"></div>
+      </div>
+      <div class="gameHeaderRight">
+        <button class="iconBtn" id="btnNewGrid" title="New grid"><svg class="icon"><use href="#i-reset"/></svg></button>
+        <button class="iconBtn" id="btnSoundGame" title="Toggle sound"><svg class="icon"><use href="#i-sound-on"/></svg></button>
+      </div>
+    </div>
+
+    <div class="gridName" id="gridName"></div>
+
+    <div class="boardGrid">
+      <div class="cornerCell"></div>
+      <div id="colHeaders" class="colHeaders"></div>
+      <div id="rowHeaders" class="rowHeaders"></div>
+      <div id="boardCells" class="boardCells"></div>
+    </div>
+
+    <div class="answerBar">
+      <div id="promptText" class="promptText">Tap an empty square to answer its clue.</div>
+      <form id="answerForm" class="answerForm hidden" autocomplete="off">
+        <input id="answerInput" class="answerInput" type="text" maxlength="40" placeholder="Type your answer…" aria-label="Your answer">
+        <button type="submit" class="btn primary" id="btnSubmit">Submit</button>
+        <button type="button" class="btn back" id="btnCancelSelect">Cancel</button>
+      </form>
+      <div id="statusLine" class="statusLine"></div>
+    </div>
+  </section>
+
+  <!-- ============ WIN / DRAW MODAL ============ -->
+  <div id="winOverlay" class="overlay hidden">
+    <div class="modal winModal">
+      <div class="winMedal" id="winMedal"><svg class="icon"><use href="#i-trophy"/></svg></div>
+      <h2 id="winTitle">Round Over</h2>
+      <p id="winText"></p>
+      <div class="modalButtons">
+        <button class="btn" id="btnWinTitle">Title</button>
+        <button class="btn primary" id="btnWinAgain">Play Again</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ HOW TO PLAY MODAL ============ -->
+  <div id="howToOverlay" class="overlay hidden">
+    <div class="modal howToModal">
+      <h2>How to Play</h2>
+      <p>It's tic-tac-toe, but every square has a price. Each <strong>row</strong> has a category, and each <strong>column</strong> has a trait. To claim a square you must answer with something that fits <em>both</em>.</p>
+      <p class="howToHint">Example: row "Wild Animal" &times; column "Can Fly" &rarr; you could answer <strong>eagle</strong>, <strong>bat</strong>, or <strong>owl</strong>.</p>
+      <ul class="howToList">
+        <li>Tap an empty square, type your answer, and submit it.</li>
+        <li>Correct answer &rarr; your mark (X or O) is placed and the turn passes.</li>
+        <li>Wrong or unrecognized answer &rarr; no mark is placed and the turn passes anyway.</li>
+        <li>Get three marks in a row, column, or diagonal to win. Fill the board with no winner and it's a draw.</li>
+        <li><strong>Play vs Computer</strong> pits you (X) against an AI (O) that always plays a smart square and always answers correctly — outsmart its board position, not its vocabulary.</li>
+      </ul>
+      <p class="howToHint">Answers are checked against a curated word list per square, so spelling matters more than trivia — plurals and minor punctuation are forgiven.</p>
+      <div class="modalButtons">
+        <button class="btn primary" id="btnHowToClose">Got it</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

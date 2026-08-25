@@ -758,6 +758,87 @@ body {
   border-color: rgba(77,221,255,0.2);
 }
 
+/* Hint Tac Toe: a partially-filled 3x3 tic-tac-toe grid, X/O in the site's
+   accent blue/orange so it echoes Panes' grid card without duplicating it. */
+.hinttactoe-art {
+  background: radial-gradient(circle at 50% 25%, rgba(125,216,255,0.1), transparent 60%), #10141f;
+}
+
+.htt-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 4px;
+  width: 84px;
+  height: 84px;
+}
+
+.htt-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.12);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.htt-cell.htt-x { color: var(--accent-blue); border-color: rgba(125,216,255,0.35); }
+.htt-cell.htt-o { color: #ff9f43; border-color: rgba(255,159,67,0.35); }
+
+/* Leapline: a 3x3 grid of small nodes with a highlighted step-path (1-2-3-4)
+   drawn as connecting lines, in the game's own indigo-night/amber palette —
+   distinct from Hint Tac Toe's grid card and from any reference game. */
+.leapline-art {
+  background: radial-gradient(circle at 50% 22%, rgba(242,184,75,0.12), transparent 60%), #0f1420;
+}
+
+.ll-preview {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 8px;
+  width: 92px;
+  height: 92px;
+}
+
+.ll-preview .ll-lines {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+}
+.ll-preview .ll-lines line {
+  stroke: #f2b84b;
+  stroke-width: 0.06;
+  stroke-linecap: round;
+  opacity: 0.55;
+}
+
+.ll-node {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.14);
+  font-size: 13px;
+  font-weight: 800;
+  color: rgba(255,255,255,0.3);
+}
+
+.ll-node.ll-node-1,
+.ll-node.ll-node-2,
+.ll-node.ll-node-3,
+.ll-node.ll-node-4 {
+  background: #1e2740;
+  border-color: #f2b84b;
+  color: #ffdb9b;
+}
+
 /* Riftpop: a torn purple ring spilling out orbs in the game's own palette
    (red/orange/blue), instead of a plain pyramid of bubbles — the rift is the
    whole point of the rebrand from "Bubble Shooter". */
