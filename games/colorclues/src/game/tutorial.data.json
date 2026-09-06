@@ -2,7 +2,7 @@
  "id": "learn",
  "name": "Reading the Board",
  "icon": "i-ch-learn",
- "blurb": "Three short boards. No reading required.",
+ "blurb": "Three short boards, one idea each.",
  "levels": [
   {
    "id": "learn-1",
@@ -16,13 +16,22 @@
    "gentle": true,
    "teach": [
     {
-     "say": "Tap the blank squares",
+     "say": "This <b>3</b> counts Coral neighbours",
+     "spot": [4]
+    },
+    {
+     "say": "These five are already Teal",
+     "spot": [1, 2, 3, 5, 6]
+    },
+    {
+     "say": "So the three blanks are Coral",
      "spot": [0, 7, 8],
      "tool": "fill",
      "color": 0,
      "need": { "paint": [0, 7, 8] }
     }
-   ]
+   ],
+   "outro": "A number counts its own color among the eight squares it touches."
   },
   {
    "id": "learn-2",
@@ -36,23 +45,35 @@
    "gentle": true,
    "teach": [
     {
-     "say": "Double-tap the <b>0</b>",
+     "say": "A <b>0</b> touches none of its own color",
+     "spot": [1, 5, 6]
+    },
+    {
+     "say": "So cross Coral off this square",
+     "spot": [5],
+     "tool": "mark",
+     "color": 0,
+     "need": { "mark": [5] }
+    },
+    {
+     "say": "Faster: double-tap the <b>0</b> to do the rest",
      "spot": [1],
      "need": { "chord": 1 }
     },
     {
-     "say": "Double-tap the <b>0</b>",
+     "say": "Same shortcut on the Teal <b>0</b>",
      "spot": [9],
      "need": { "chord": 9 }
     },
     {
-     "say": "Only one color left — paint it",
+     "say": "Two colors crossed — paint what's left",
      "spot": [5, 6],
      "tool": "fill",
      "color": 2,
      "need": { "paint": [5, 6] }
     }
-   ]
+   ],
+   "outro": "Cross two colors off a square and the third one is forced."
   },
   {
    "id": "learn-3",
@@ -66,10 +87,11 @@
    "gentle": true,
    "teach": [
     {
-     "say": "Finish the board",
+     "say": "Your turn — cross out, then paint",
      "need": { "done": true }
     }
-   ]
+   ],
+   "outro": "Elimination first, paint last. That's every board in this game."
   }
  ]
 }

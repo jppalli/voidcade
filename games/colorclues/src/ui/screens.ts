@@ -2,7 +2,7 @@ import data from "../game/levels.data.json";
 import tutorial from "../game/tutorial.data.json";
 import type { Chapter, Level, LevelData, TeachNeed, TeachStep } from "../game/types";
 import { EMPTY, Game, heartsFor, type Tool } from "../game/state";
-import { compile } from "../game/puzzle.mjs";
+import { bit, compile } from "../game/puzzle.mjs";
 import {
   dailyDone, dailyFor, dailyResult, dailyStreak, prettyDate, recordDaily,
   resetDaily, todayKey, untilTomorrow,
@@ -274,6 +274,32 @@ function journeyCard(): HTMLElement {
     </button>`);
 }
 
+/**
+ * A single, un-skippable screen shown once, right before `learn-1`: just the
+ * two physical actions a player needs before anything else makes sense —
+ * which button paints, and that Cross is a button-then-cell action, not a
+ * gesture to guess at. Everything after this teaches *why*, not *how to click*.
+ */
+function showControlsIntro(onContinue: () => void) {
+  const screen = h(`
+    <section class="screen controlsIntro">
+      <div class="controlsIntroCard">
+        <div class="controlsIntroRow">
+          <span class="controlsIntroSwatch c0"></span>
+          <p>Tap a color, then tap a square, to <b>paint</b> it.</p>
+        </div>
+        <div class="controlsIntroRow">
+          <span class="controlsIntroCross">${MARK_X}</span>
+          <p>Tap <b>Cross</b>, then tap a square, to rule a color out.</p>
+        </div>
+        <p class="controlsIntroFine">Crossing out is just a note — it never costs you anything.</p>
+        <button class="btn primary big" data-continue>Got it</button>
+      </div>
+    </section>`);
+  screen.querySelector("[data-continue]")?.addEventListener("click", () => { sfx.tap(); onContinue(); });
+  show(screen);
+}
+
 export function showTitle() {
   const cleared = clearedCount();
   const screen = h(`
@@ -304,7 +330,7 @@ export function showTitle() {
   // way when there is nothing on it yet.
   screen.querySelector("[data-play]")?.addEventListener("click", () => {
     sfx.tap();
-    if (cleared === 0) startLevel(allLevels[0]);
+    if (cleared === 0) showControlsIntro(() => startLevel(allLevels[0]));
     else showLevelSelect();
   });
   if (dailyUnlocked()) screen.querySelector(".dailySlot")?.appendChild(dailyCard());
@@ -571,6 +597,7 @@ export function startLevel(level: Level) {
   let stepIndex = 0;
   let lastChord: number | null = null;
   let sawFocus = false;
+  let chordNudged = false;
   let ftueTimer = 0;
 
   const step = (): TeachStep | undefined => steps[stepIndex];
@@ -580,7 +607,19 @@ export function startLevel(level: Level) {
   ftuePill.className = "ftue-pill hidden";
   boardWrap.appendChild(ftuePill);
 
+  // A quiet escape hatch to the full explanation, for anyone who wants more
+  // than the pill's few words. Only tutorial boards carry it.
+  if (steps.length) {
+    const helpLink = document.createElement("button");
+    helpLink.type = "button";
+    helpLink.className = "ftueHelpLink";
+    helpLink.textContent = "What's this about?";
+    helpLink.addEventListener("click", () => { sfx.tap(); showHelp(); });
+    boardWrap.appendChild(helpLink);
+  }
+
   function renderFtue() {
+    chordNudged = false;
     const s = step();
     board.clearCellHints();
     board.spotlight(s?.spot ?? []);
@@ -592,13 +631,25 @@ export function startLevel(level: Level) {
       return;
     }
 
-    // Pill: just the key phrase, max ~4 words
-    ftuePill.innerHTML = s.say;
+    // A step with no `need` is a read-this beat. It waits for a tap rather
+    // than a timer: these sentences carry the actual reasoning, and a fixed
+    // timeout either rushed a reader or stalled someone who already got it.
+    const isExplain = !s.need;
+
+    ftuePill.innerHTML = isExplain
+      ? `${s.say}<span class="ftuePillGo">tap to continue</span>`
+      : s.say;
+    ftuePill.classList.toggle("explain", isExplain);
     ftuePill.classList.remove("hidden");
 
-    // In-cell cues on each spotlighted cell
-    if (s.spot) {
-      const needChord = s.need && "chord" in s.need;
+    // The board stays fully legible during a read-this beat (it's being
+    // pointed at), but nothing on it is tappable — the only action is
+    // "continue".
+    board.el.classList.toggle("ftue-frozen", isExplain);
+
+    // In-cell gesture cues, only on steps that actually want a gesture.
+    if (s.spot && s.need) {
+      const needChord = "chord" in s.need;
       for (const i of s.spot) {
         // Only put cue on given cells (numbered) for chord, blank cells for tap/paint
         const isGiven = game.cells[i]?.given;
@@ -608,13 +659,14 @@ export function startLevel(level: Level) {
     }
 
     applyFtueLock(s);
-
-    // Auto-advance read-only steps after a pause
-    if (!s.need) {
-      clearTimeout(ftueTimer);
-      ftueTimer = window.setTimeout(() => { stepIndex++; renderFtue(); }, 1400);
-    }
   }
+
+  // Tapping anywhere over the board advances a read-this beat. The board
+  // itself is frozen during those, so the click lands here.
+  boardWrap.addEventListener("click", () => {
+    const s = step();
+    if (s && !s.need) { sfx.tap(); stepIndex++; renderFtue(); }
+  });
 
   function applyFtueLock(s: TeachStep | undefined) {
     screen.classList.toggle("ftue-locked", !!s);
@@ -626,18 +678,22 @@ export function startLevel(level: Level) {
     screen.querySelectorAll<HTMLButtonElement>(".seg").forEach((el) => {
       el.disabled = !!s && s.tool !== undefined && el.dataset.tool !== s.tool;
     });
+    // A `done` step is free play — the board the player finishes alone is
+    // exactly where a hint is most wanted, so it stays available there.
+    const isFreePlay = !!s && !!s.need && "done" in s.need;
     const hintBtn = screen.querySelector<HTMLButtonElement>("[data-hint]");
-    if (hintBtn) hintBtn.disabled = !!s;
+    if (hintBtn) hintBtn.disabled = !!s && !isFreePlay;
 
     // Lock board cells that aren't the step's target.
     // During a chord step: only the specific given (numbered) cell is tappable.
-    // During a paint step: only the spotlighted blank cells are tappable.
+    // During a paint or mark step: only the spotlighted blank cells are tappable.
     // Otherwise (or when no step): unlock everything.
     const isChordStep = !!s && !!s.need && "chord" in s.need;
     const isPaintStep = !!s && !!s.need && "paint" in s.need;
+    const isMarkStep = !!s && !!s.need && "mark" in s.need;
     const allowedCells = new Set<number>(
       isChordStep ? [(s!.need as { chord: number }).chord] :
-      isPaintStep ? (s!.spot ?? []) :
+      isPaintStep || isMarkStep ? (s!.spot ?? []) :
       []
     );
     board.el.querySelectorAll<HTMLButtonElement>(".cell").forEach((el) => {
@@ -652,10 +708,16 @@ export function startLevel(level: Level) {
       }
     });
 
-    // If a paint step specifies a color, pre-select it and pulse the swatch.
-    if (isPaintStep && s!.color !== undefined) {
+    // A step names the tool/color it wants — pre-select both so the player
+    // never has to guess which button to press before the cue makes sense.
+    let toolOrColorChanged = false;
+    if (s?.tool !== undefined && tool !== s.tool) { tool = s.tool; toolOrColorChanged = true; }
+    if ((isPaintStep || isMarkStep) && s!.color !== undefined && color !== s!.color) {
       color = s!.color;
-      syncTools();
+      toolOrColorChanged = true;
+    }
+    if (toolOrColorChanged) syncTools();
+    if ((isPaintStep || isMarkStep) && s!.color !== undefined) {
       const swatch = screen.querySelector<HTMLElement>(`.swatch[data-color="${s!.color}"]`);
       if (swatch) {
         swatch.classList.remove("ftue-pulse");
@@ -668,6 +730,12 @@ export function startLevel(level: Level) {
   function needMet(need: TeachNeed): boolean {
     if ("paint"  in need) return need.paint.every((i) => game.cells[i].fill !== EMPTY);
     if ("chord"  in need) return lastChord === need.chord;
+    if ("mark"   in need) {
+      const s = step();
+      const c = s?.color;
+      if (c === undefined) return need.mark.every((i) => game.cells[i].cross !== 0);
+      return need.mark.every((i) => (game.cells[i].cross & bit(c)) !== 0);
+    }
     if ("tool"   in need) return tool === need.tool;
     if ("filled" in need) return game.filledCount >= need.filled;
     if ("focus"  in need) return sawFocus;
@@ -708,6 +776,14 @@ export function startLevel(level: Level) {
     },
     onFocus: (i) => {
       if (i !== null && game.clueAt(i) !== null) { sawFocus = true; checkFtue(); }
+      // A single tap on a chord step's target: the player found the right
+      // cell but not yet the right gesture. Nudge once rather than staying
+      // silent — the badge alone ("×2") is easy to misread as "this is a 2".
+      const s = step();
+      if (i !== null && s?.need && "chord" in s.need && i === s.need.chord && !chordNudged) {
+        chordNudged = true;
+        board.pulseHint(i);
+      }
     },
   });
   boardWrap.appendChild(board.el);
@@ -841,6 +917,7 @@ export function startLevel(level: Level) {
     observer.disconnect();
     clearTimeout(ftueTimer);
     board.clearCellHints();
+    board.el.classList.remove("ftue-frozen");
     board.el.querySelectorAll(".ftue-cell-locked").forEach(el => el.classList.remove("ftue-cell-locked"));
     if (currentPlay === handle) currentPlay = null;
   });

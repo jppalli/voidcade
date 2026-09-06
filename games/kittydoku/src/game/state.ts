@@ -1,7 +1,7 @@
 import { generatePuzzle, type Position, type PuzzleBoard } from '@arcade/queens-core';
 import type { LevelRef } from './levels';
 
-export type CellMark = 'empty' | 'wrong' | 'cat';
+export type CellMark = 'empty' | 'paw' | 'wrong' | 'cat';
 
 export const MAX_LIVES = 3;
 
@@ -46,14 +46,27 @@ export class Game {
     return this.livesLost >= MAX_LIVES;
   }
 
-  /** Tap a cell: places a cat if correct, marks as wrong and costs a life if incorrect.
-   *  Returns what happened: 'correct' | 'wrong' | 'already-filled' */
-  tap(row: number, col: number): 'correct' | 'wrong' | 'already-filled' {
-    if (this.marks[row][col] !== 'empty') return 'already-filled';
+  /**
+   * Tap a cell — two-stage like Queens/Star Battle:
+   *  1st tap on an empty cell: leaves a free paw mark ("no cat here yet"),
+   *     no life cost, no correctness check.
+   *  2nd tap on a paw-marked cell: actually attempts to place a cat —
+   *     correct if it's a real solution cell, otherwise costs a life.
+   *  Tapping a resolved cell (cat/wrong) does nothing.
+   *  Returns what happened: 'paw-marked' | 'correct' | 'wrong' | 'already-filled' */
+  tap(row: number, col: number): 'paw-marked' | 'correct' | 'wrong' | 'already-filled' {
+    const current = this.marks[row][col];
+    if (current === 'cat' || current === 'wrong') return 'already-filled';
 
     this.history.push({ marks: this.marks.map((r) => r.slice()), livesLost: this.livesLost });
     if (this.history.length > 200) this.history.shift();
 
+    if (current === 'empty') {
+      this.marks[row][col] = 'paw';
+      return 'paw-marked';
+    }
+
+    // current === 'paw' — this tap commits to placing a cat here.
     if (this.isSolutionCell(row, col)) {
       this.marks[row][col] = 'cat';
       return 'correct';

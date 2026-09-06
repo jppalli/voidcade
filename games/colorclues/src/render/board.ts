@@ -127,10 +127,15 @@ export class BoardView {
     const marks = el.querySelector<HTMLElement>(".marks")!;
     if (cell.fill === EMPTY && cell.cross) {
       let html = "";
-      for (let c = 0; c < 3; c++) if (has(cell.cross, c)) html += `<i class="mark c${c}">${CROSS}</i>`;
+      let count = 0;
+      for (let c = 0; c < 3; c++) if (has(cell.cross, c)) { html += `<i class="mark c${c}">${CROSS}</i>`; count++; }
       marks.innerHTML = html;
+      // 3 marks side by side need to be noticeably smaller than 1 or 2, or
+      // the third one runs past the edge of the cell.
+      marks.dataset.count = String(count);
     } else if (marks.childElementCount) {
       marks.innerHTML = "";
+      delete marks.dataset.count;
     }
   }
 
@@ -152,6 +157,16 @@ export class BoardView {
 
   clearCellHints() {
     for (const el of this.cells) el.querySelector(".ftue-hint")?.remove();
+  }
+
+  /** A single tap landed on a cell that wanted a double-tap — flash its
+   *  gesture badge so the miss is visible, instead of doing nothing at all. */
+  pulseHint(i: number) {
+    const hint = this.cells[i]?.querySelector<HTMLElement>(".ftue-hint");
+    if (!hint) return;
+    hint.classList.remove("ftue-miss");
+    void hint.offsetWidth;
+    hint.classList.add("ftue-miss");
   }
 
   /** Short animations, driven by class + animationend so they can restack. */

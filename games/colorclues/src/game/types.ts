@@ -2,9 +2,12 @@
 export type TeachNeed =
   | { paint: number[] }
   | { chord: number }
+  /** Cross the step's `color` off these cells by hand (Cross tool, not chord). */
+  | { mark: number[] }
   | { tool: "fill" | "mark" }
   | { filled: number }
   | { focus: true }
+  /** Free play until the board is solved. Leaves every control enabled. */
   | { done: true };
 
 export interface TeachStep {
@@ -16,7 +19,7 @@ export interface TeachStep {
   tool?: "fill" | "mark";
   /** Nudge a color swatch. */
   color?: number;
-  /** Omit for a step the player just reads and dismisses. */
+  /** Omit for a step the player just reads, then taps to continue. */
   need?: TeachNeed;
 }
 

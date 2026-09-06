@@ -1,6 +1,7 @@
 import {
   playCat,
   playLift,
+  playPaw,
   playTap,
   playUnhappy,
   playWin,
@@ -155,6 +156,12 @@ function renderBoard() {
           el.innerHTML = `<span class="wrongWrap">${deadCatSvg(catPx)}</span>`;
           el.classList.add('wrong-cell');
         }
+      } else if (mark === 'paw') {
+        if (!el.querySelector('.pawWrap')) {
+          el.classList.remove('wrong-cell');
+          const tone = pastel(g.regionAt(r, c));
+          el.innerHTML = `<span class="pawWrap">${pawSvg(tone.ink, Math.round(catPx * 0.55))}</span>`;
+        }
       } else {
         if (el.innerHTML !== '') {
           el.innerHTML = '';
@@ -182,12 +189,15 @@ function renderBoard() {
 function onCellClick(r: number, c: number) {
   const g = game;
   if (!g || winPending) return;
-  if (g.marks[r][c] !== 'empty') return; // already resolved
+  const mark = g.marks[r][c];
+  if (mark === 'cat' || mark === 'wrong') return; // already resolved
 
   const result = g.tap(r, c);
   renderBoard();
 
-  if (result === 'correct') {
+  if (result === 'paw-marked') {
+    playPaw();
+  } else if (result === 'correct') {
     playCat();
     if (g.isSolved()) finishLevel();
   } else if (result === 'wrong') {

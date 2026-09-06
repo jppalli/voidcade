@@ -385,6 +385,20 @@ button {
   z-index: 2;
 }
 
+/* Paw mark: a free first-tap note ("no cat here yet"), lighter and
+   quicker than the cat/wrong states since it's meant to feel undo-able —
+   a second tap on the same cell commits to actually placing a cat. */
+.cell .pawWrap {
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0.55;
+  animation: pawIn 0.22s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+@keyframes pawIn {
+  from { transform: scale(0.5) rotate(-10deg); opacity: 0; }
+  to   { transform: scale(1)   rotate(0deg);   opacity: 0.55; }
+}
+
 .tipBar {
   width: 100%;
   max-width: 520px;

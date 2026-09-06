@@ -157,6 +157,68 @@ body {
 
 .titleCard { position: relative; z-index: 1; text-align: center; padding: 24px; }
 
+/* -------------------------------------------------------- controls intro */
+
+/* One un-skippable screen, shown once before learn-1: just the two physical
+   actions, no deduction. Plain and calm on purpose — this is not a puzzle. */
+.controlsIntro {
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+}
+.controlsIntroCard {
+  width: min(360px, 88vw);
+  text-align: center;
+}
+.controlsIntroRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  text-align: left;
+  background: var(--panel);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px 18px;
+  margin-bottom: 14px;
+}
+.controlsIntroRow p {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.4;
+  color: var(--ink);
+}
+.controlsIntroRow b { color: var(--c1-deep); }
+.controlsIntroSwatch {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--c0);
+}
+.controlsIntroCross {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--soft);
+  display: grid;
+  place-items: center;
+}
+.controlsIntroCross svg {
+  width: 22px;
+  height: 22px;
+  stroke: var(--ink);
+  stroke-width: 2.4;
+  fill: none;
+}
+.controlsIntroFine {
+  margin: 0 0 16px;
+  font-size: .82rem;
+  line-height: 1.4;
+  color: var(--ink-soft);
+}
+.controlsIntroCard .btn { width: 100%; margin-top: 6px; }
+
 /* The stack arrives after the logo has landed, one piece at a time. The grid is
    excluded because its tiles animate individually. */
 .titleCard > *:not(.logoGrid) { animation: riseIn .55s ease .3s backwards; }
@@ -470,11 +532,18 @@ h1 span { display: block; color: var(--c0); }
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4%;
+  gap: 2%;
   pointer-events: none;
 }
-.mark { display: grid; place-items: center; }
+.mark { display: grid; place-items: center; flex: none; }
+/* 1 or 2 marks stay large and easy to read; 3 side by side must shrink to
+   fit the cell — at the old fixed 42% each, a third mark ran outside it. */
 .mark .icon { width: calc(var(--cell, 40px) * .42); height: calc(var(--cell, 40px) * .42); stroke-width: 3.4; }
+.marks[data-count="3"] .mark .icon {
+  width: calc(var(--cell, 40px) * .28);
+  height: calc(var(--cell, 40px) * .28);
+  stroke-width: 3;
+}
 .mark.c0 { color: var(--c0); }
 .mark.c1 { color: var(--c1); }
 .mark.c2 { color: var(--c2-deep); }
@@ -692,7 +761,8 @@ h1 span { display: block; color: var(--c0); }
  * In-cell gesture cues + a minimal pill label. No text panels.
  */
 
-/* Tiny pill pinned to the top of the boardWrap */
+/* Label pinned to the top of the boardWrap. It wraps: these lines carry the
+   reasoning, and a single no-wrap line ran off the side of a phone. */
 .ftue-pill {
   position: absolute;
   top: 10px;
@@ -700,12 +770,15 @@ h1 span { display: block; color: var(--c0); }
   transform: translateX(-50%);
   z-index: 10;
   padding: 7px 16px;
+  max-width: min(92%, 330px);
   background: var(--c1);
   color: var(--on-c1);
-  border-radius: 999px;
+  border-radius: 18px;
   font-size: .82rem;
   font-weight: 800;
-  white-space: nowrap;
+  line-height: 1.32;
+  text-align: center;
+  text-wrap: balance;
   pointer-events: none;
   box-shadow: 0 4px 14px rgb(var(--ink-rgb) / .18);
   animation: pillIn .22s cubic-bezier(.2, 1.3, .5, 1);
@@ -713,6 +786,21 @@ h1 span { display: block; color: var(--c0); }
 .ftue-pill b { color: var(--c2); }
 .ftue-pill.hidden { display: none; }
 .ftue-pill.oops { background: var(--c0); }
+
+/* Read-this beats advance on a tap, so they say so. */
+.ftuePillGo {
+  display: block;
+  margin-top: 3px;
+  font-size: .66rem;
+  font-weight: 700;
+  letter-spacing: .3px;
+  opacity: .75;
+  text-transform: lowercase;
+}
+
+/* Read-this beat: the board stays fully legible (it is being pointed at)
+   but nothing on it is tappable — the only move is "continue". */
+.board.ftue-frozen { pointer-events: none; }
 @keyframes pillIn {
   from { opacity: 0; transform: translateX(-50%) scale(.88); }
 }
@@ -753,6 +841,36 @@ h1 span { display: block; color: var(--c0); }
   0%, 100% { transform: scale(1);    opacity: 1; }
   50%       { transform: scale(1.2); opacity: .8; }
 }
+
+/* A single tap landed where a double-tap was wanted — one quick shake on
+   the badge itself, so the miss is visible without a wrong-move penalty. */
+.ftue-hint.ftue-miss {
+  animation: hintMiss .32s ease;
+}
+@keyframes hintMiss {
+  20%, 60% { transform: translateX(-3px); }
+  40%, 80% { transform: translateX(3px); }
+}
+
+/* Quiet escape hatch to the full How to Play modal, for anyone who wants
+   more than the pill's few words. Sits just under the pill, out of the way. */
+.ftueHelpLink {
+  position: absolute;
+  top: 46px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  background: none;
+  border: none;
+  padding: 4px 10px;
+  font-size: .72rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+  text-decoration: underline;
+  text-decoration-color: rgb(var(--ink-rgb) / .35);
+  cursor: pointer;
+}
+.ftueHelpLink:active { opacity: .6; }
 
 .hearts.practice {
   font-size: .74rem;
