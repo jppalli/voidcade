@@ -50,11 +50,12 @@ export class Game {
    * Tap a cell — two-stage like Queens/Star Battle:
    *  1st tap on an empty cell: leaves a free paw mark ("no cat here yet"),
    *     no life cost, no correctness check.
-   *  2nd tap on a paw-marked cell: actually attempts to place a cat —
-   *     correct if it's a real solution cell, otherwise costs a life.
+   *  2nd tap on a paw-marked cell: places a cat when correct; otherwise it
+   *     removes the paw for free so annotations are always safe to change.
    *  Tapping a resolved cell (cat/wrong) does nothing.
-   *  Returns what happened: 'paw-marked' | 'correct' | 'wrong' | 'already-filled' */
-  tap(row: number, col: number): 'paw-marked' | 'correct' | 'wrong' | 'already-filled' {
+   *  Returns what happened: 'paw-marked' | 'paw-removed' | 'correct' |
+   *  'wrong' | 'already-filled' */
+  tap(row: number, col: number): 'paw-marked' | 'paw-removed' | 'correct' | 'wrong' | 'already-filled' {
     const current = this.marks[row][col];
     if (current === 'cat' || current === 'wrong') return 'already-filled';
 
@@ -66,15 +67,15 @@ export class Game {
       return 'paw-marked';
     }
 
-    // current === 'paw' — this tap commits to placing a cat here.
+    // A correct second tap places a cat; an incorrect one simply removes
+    // the annotation. Paw edits never cost a life.
     if (this.isSolutionCell(row, col)) {
       this.marks[row][col] = 'cat';
       return 'correct';
-    } else {
-      this.marks[row][col] = 'wrong';
-      this.livesLost++;
-      return 'wrong';
     }
+
+    this.marks[row][col] = 'empty';
+    return 'paw-removed';
   }
 
   get canUndo(): boolean { return this.history.length > 0; }

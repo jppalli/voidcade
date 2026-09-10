@@ -1267,3 +1267,118 @@ body {
   font-size: 12px;
   border-top: 1px solid var(--border);
 }
+
+/* Pampa Turbo: original low-poly sunset racer preview. */
+.pampa-turbo-art {
+  background: linear-gradient(180deg, #52c7ef 0%, #f8a363 57%, #79ad55 58%, #447b3d 100%);
+}
+
+.pt-scene {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  transform-origin: center bottom;
+}
+
+.pt-sun {
+  position: absolute;
+  top: 12%;
+  right: 18%;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #ffe36d;
+  box-shadow: 0 0 22px rgba(255,227,109,0.62);
+}
+
+.pt-mountain {
+  position: absolute;
+  bottom: 40%;
+  width: 0;
+  height: 0;
+  border-left: 58px solid transparent;
+  border-right: 58px solid transparent;
+  border-bottom: 48px solid #755b91;
+  opacity: 0.82;
+}
+.pt-mountain-left { left: -18px; }
+.pt-mountain-right { right: -28px; transform: scale(.78); }
+
+.pt-road {
+  position: absolute;
+  left: 50%;
+  bottom: -2px;
+  width: 82%;
+  height: 68%;
+  transform: translateX(-50%);
+  clip-path: polygon(44% 0, 56% 0, 100% 100%, 0 100%);
+  background: #363642;
+}
+
+.pt-road::before,
+.pt-road::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(165deg, transparent 0 12px, #fff1d3 12px 18px, #ef555f 18px 25px);
+  clip-path: polygon(0 0, 8% 0, 8% 100%, 0 100%);
+}
+.pt-road::after { transform: scaleX(-1); }
+
+.pt-lane {
+  position: absolute;
+  left: calc(50% - 2px);
+  bottom: 0;
+  width: 4px;
+  height: 58%;
+  transform-origin: top;
+  background: repeating-linear-gradient(to bottom, #ffe9a7 0 14px, transparent 14px 27px);
+}
+
+.pt-car {
+  position: absolute;
+  left: 50%;
+  bottom: 12%;
+  width: 58px;
+  height: 28px;
+  transform: translateX(-50%) skewX(-4deg);
+  border: 3px solid #10101b;
+  border-radius: 8px 8px 5px 5px;
+  background: #55c9ef;
+  box-shadow: -19px 17px 0 -13px #10101b, 19px 17px 0 -13px #10101b;
+}
+.pt-car::before {
+  content: "";
+  position: absolute;
+  left: 10px;
+  top: -14px;
+  width: 32px;
+  height: 16px;
+  border: 3px solid #10101b;
+  border-bottom: 0;
+  border-radius: 7px 7px 0 0;
+  background: #b9efff;
+}
+.pt-car i {
+  position: absolute;
+  left: 25px;
+  top: -13px;
+  width: 6px;
+  height: 39px;
+  background: #fff4d6;
+}
+.pt-car b {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  bottom: 3px;
+  height: 4px;
+  border-radius: 4px;
+  background: #ff5f62;
+}
+
+.game-tag-pampa {
+  color: #ff9b67;
+  background: rgba(255,155,103,0.09);
+  border-color: rgba(255,155,103,0.28);
+}

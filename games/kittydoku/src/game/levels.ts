@@ -34,7 +34,7 @@ export const CHAPTERS: ChapterDef[] = [
       { size: 4, singletons: 2, tip: 'Every colour patch needs exactly one cat. A patch of a single square is an easy first cat.' },
       { size: 4, singletons: 2, tip: 'One cat per row and one per column, too. No sharing lines.' },
       { size: 4, singletons: 1, tip: 'Cats will not sit next to each other — not even corner to corner.' },
-      { size: 5, singletons: 2, tip: 'Tap once to leave a paw mark for "no cat here". Tap again to place a cat.' },
+      { size: 5, singletons: 2, tip: 'Tap once to leave a paw. Tap that paw again to remove it — or reveal a cat when the square is correct.' },
       { size: 5, singletons: 2, tip: 'A patch squeezed inside one row must keep its cat in that row.' },
       { size: 5, singletons: 1 },
     ],

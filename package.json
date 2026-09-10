@@ -19,6 +19,7 @@
     "dev:colorclues": "npm run dev --workspace=colorclues",
     "dev:hinttactoe": "npm run dev --workspace=hinttactoe",
     "dev:leapline": "npm run dev --workspace=leapline",
+    "dev:pampa-turbo": "npm run dev --workspace=pampa-turbo",
     "dev:riftpop": "npx --yes http-server games/riftpop -p 5187 -c-1",
     "dev:wordbloom": "npx --yes http-server games/wordbloom -p 5188 -c-1",
     "dev:panes": "npx --yes http-server games/panes -p 5175 -c-1"

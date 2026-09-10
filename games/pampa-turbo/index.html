@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <meta name="theme-color" content="#100b2d" />
+    <meta name="description" content="Pampa Turbo: una carrera arcade argentina original, rápida y absurda." />
+    <title>Pampa Turbo — Arcade rutero</title>
+    <link rel="stylesheet" href="./src/styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <div id="canvas-host" aria-hidden="true"></div>
+      <a class="icon-button back-button" href="../../" aria-label="Volver a Voidcade" title="Volver a Voidcade">←</a>
+      <button class="icon-button sound-button" id="sound-button" type="button" aria-label="Silenciar sonido" title="Sonido">♪</button>
+
+      <main id="ui-layer">
+        <section class="screen start-screen" id="start-screen">
+          <p class="eyebrow">Un arcade rutero original</p>
+          <h1>PAMPA<br /><span>TURBO</span></h1>
+          <p class="tagline">Franquito “El Misil” tiene una misión crítica:<br />llegar al asado antes que la provoleta.</p>
+          <div class="pilot-card">
+            <div class="pilot-avatar" aria-hidden="true"><span><i></i></span></div>
+            <div>
+              <strong>FRANQUITO “EL MISIL”</strong>
+              <small>Auto 79 · Club Atlético Apuro</small>
+              <em>“Si entra el termo, entra el auto.”</em>
+            </div>
+          </div>
+          <button class="primary-button" id="start-button" type="button">ARRANCAR</button>
+          <p class="controls-copy"><b>← → / A D</b> para doblar · <b>↑ / W</b> para acelerar<br /><b>Espacio</b> para tomar mate turbo</p>
+        </section>
+
+        <section class="hud hidden" id="hud" aria-label="Estado de carrera">
+          <div class="hud-stat"><span>VELOCIDAD</span><strong><b id="speed-value">0</b> km/h</strong></div>
+          <div class="hud-stat hud-time"><span>ASADO EN</span><strong id="time-value">60.0</strong></div>
+          <div class="hud-stat"><span>PUNTOS</span><strong id="score-value">0</strong></div>
+          <div class="mate-meter"><span>MATE TURBO</span><div><i id="mate-fill"></i></div></div>
+          <div class="message" id="message" aria-live="polite"></div>
+        </section>
+
+        <button class="pause-button hidden" id="pause-button" type="button" aria-label="Pausar">Ⅱ</button>
+
+        <section class="screen compact-screen hidden" id="pause-screen">
+          <p class="eyebrow">Parada técnica</p>
+          <h2>PAUSA</h2>
+          <button class="primary-button" id="resume-button" type="button">SEGUIR</button>
+        </section>
+
+        <section class="screen compact-screen hidden" id="result-screen">
+          <p class="eyebrow" id="result-eyebrow">Fin de la ruta</p>
+          <h2 id="result-title">¡LLEGASTE!</h2>
+          <p class="result-copy" id="result-copy"></p>
+          <div class="result-stats">
+            <div><span>Puntos</span><strong id="result-score">0</strong></div>
+            <div><span>Mejor</span><strong id="best-score">0</strong></div>
+          </div>
+          <button class="primary-button" id="retry-button" type="button">OTRA VUELTA</button>
+        </section>
+
+        <div class="touch-controls hidden" id="touch-controls" aria-label="Controles táctiles">
+          <div class="touch-steering">
+            <button data-control="left" type="button" aria-label="Doblar a la izquierda">←</button>
+            <button data-control="right" type="button" aria-label="Doblar a la derecha">→</button>
+          </div>
+          <div class="touch-pedals">
+            <button class="mate-button" data-control="boost" type="button" aria-label="Mate turbo">🧉</button>
+            <button class="gas-button" data-control="accelerate" type="button" aria-label="Acelerar">ACELERAR</button>
+          </div>
+        </div>
+      </main>
+    </div>
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>

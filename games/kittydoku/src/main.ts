@@ -197,6 +197,8 @@ function onCellClick(r: number, c: number) {
 
   if (result === 'paw-marked') {
     playPaw();
+  } else if (result === 'paw-removed') {
+    playLift();
   } else if (result === 'correct') {
     playCat();
     if (g.isSolved()) finishLevel();
