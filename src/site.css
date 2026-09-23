@@ -1268,9 +1268,12 @@ body {
   border-top: 1px solid var(--border);
 }
 
-/* Pampa Turbo: original low-poly sunset racer preview. */
+/* Pampa Turbo: original low-poly sunset racer preview, built from layered
+   CSS shapes — sky, sun, drifting clouds, a two-tone mountain range, a
+   perspective road with a vanishing point, roadside palms, and a chunky
+   little rally car with a cast shadow and a highlight sweep. */
 .pampa-turbo-art {
-  background: linear-gradient(180deg, #52c7ef 0%, #f8a363 57%, #79ad55 58%, #447b3d 100%);
+  background: #2c1f45;
 }
 
 .pt-scene {
@@ -1280,102 +1283,208 @@ body {
   transform-origin: center bottom;
 }
 
+.pt-sky {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, #4c2f6b 0%, #a6478f 38%, #f0784f 62%, #ffb454 74%, #ffd27a 82%);
+}
+
 .pt-sun {
   position: absolute;
-  top: 12%;
-  right: 18%;
-  width: 42px;
-  height: 42px;
+  top: 30%;
+  left: 50%;
+  width: 46px;
+  height: 46px;
+  transform: translate(-50%, -50%);
   border-radius: 50%;
-  background: #ffe36d;
-  box-shadow: 0 0 22px rgba(255,227,109,0.62);
+  background: radial-gradient(circle at 35% 30%, #fff3c4, #ffd257 55%, #ff9d4d 100%);
+  box-shadow: 0 0 30px rgba(255, 190, 90, 0.65), 0 0 60px rgba(255, 130, 90, 0.35);
 }
+
+.pt-cloud {
+  position: absolute;
+  border-radius: 999px;
+  background: rgba(255, 235, 210, 0.5);
+  filter: blur(0.3px);
+}
+.pt-cloud-1 { top: 20%; left: 12%; width: 34px; height: 8px; }
+.pt-cloud-2 { top: 30%; left: 68%; width: 26px; height: 6px; background: rgba(255, 235, 210, 0.35); }
 
 .pt-mountain {
   position: absolute;
-  bottom: 40%;
+  bottom: 42%;
   width: 0;
   height: 0;
-  border-left: 58px solid transparent;
-  border-right: 58px solid transparent;
-  border-bottom: 48px solid #755b91;
-  opacity: 0.82;
+  border-left: 60px solid transparent;
+  border-right: 60px solid transparent;
 }
-.pt-mountain-left { left: -18px; }
-.pt-mountain-right { right: -28px; transform: scale(.78); }
+.pt-mountain-back-l {
+  left: -22px;
+  border-bottom: 58px solid #6b3f74;
+  opacity: 0.55;
+  transform: scale(0.9);
+}
+.pt-mountain-back-r {
+  right: -30px;
+  border-bottom: 50px solid #6b3f74;
+  opacity: 0.5;
+  transform: scale(0.75);
+}
+.pt-mountain-left {
+  left: -18px;
+  border-bottom: 46px solid #47285a;
+  opacity: 0.92;
+}
+.pt-mountain-right {
+  right: -26px;
+  border-bottom: 38px solid #3d2350;
+  opacity: 0.92;
+  transform: scale(0.82);
+}
+
+.pt-ground {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 42%;
+  background: linear-gradient(180deg, #79b95a 0%, #4c8f42 55%, #2f6b39 100%);
+}
 
 .pt-road {
   position: absolute;
   left: 50%;
   bottom: -2px;
-  width: 82%;
-  height: 68%;
+  width: 4%;
+  height: 42%;
   transform: translateX(-50%);
-  clip-path: polygon(44% 0, 56% 0, 100% 100%, 0 100%);
-  background: #363642;
+  clip-path: polygon(50% 0, 50% 0, 100% 100%, 0 100%);
+  background: linear-gradient(180deg, #4a4a5c 0%, #33333f 100%);
 }
 
-.pt-road::before,
-.pt-road::after {
+.pt-road::before {
   content: "";
   position: absolute;
-  inset: 0;
-  background: repeating-linear-gradient(165deg, transparent 0 12px, #fff1d3 12px 18px, #ef555f 18px 25px);
-  clip-path: polygon(0 0, 8% 0, 8% 100%, 0 100%);
-}
-.pt-road::after { transform: scaleX(-1); }
-
-.pt-lane {
-  position: absolute;
-  left: calc(50% - 2px);
+  left: 50%;
   bottom: 0;
-  width: 4px;
-  height: 58%;
-  transform-origin: top;
-  background: repeating-linear-gradient(to bottom, #ffe9a7 0 14px, transparent 14px 27px);
+  width: 6px;
+  height: 82%;
+  transform: translateX(-50%);
+  background: repeating-linear-gradient(to bottom, #ffe9a7 0 10px, transparent 10px 20px);
+  clip-path: polygon(38% 0, 62% 0, 100% 100%, 0% 100%);
 }
+
+.pt-rumble {
+  position: absolute;
+  bottom: -2px;
+  width: 5%;
+  height: 42%;
+  background: repeating-linear-gradient(160deg, #fff1d3 0 10px, #ef555f 10px 20px);
+}
+.pt-rumble-l { left: calc(50% - 2%); clip-path: polygon(96% 0, 100% 0, 45% 100%, 30% 100%); }
+.pt-rumble-r { left: calc(50% + 2%); clip-path: polygon(0 0, 4% 0, 70% 100%, 55% 100%); }
+
+.pt-lane { display: none; }
+
+.pt-palm {
+  position: absolute;
+  bottom: 20%;
+  width: 4px;
+  height: 26px;
+  background: #2f6b39;
+  border-radius: 2px;
+  transform-origin: bottom center;
+}
+.pt-palm::before {
+  content: "";
+  position: absolute;
+  top: -10px;
+  left: -9px;
+  width: 22px;
+  height: 14px;
+  background: #3a7a3f;
+  border-radius: 50% 50% 50% 0;
+}
+.pt-palm-l { left: 22%; transform: rotate(-8deg) scale(0.9); }
+.pt-palm-r { left: 76%; transform: rotate(8deg) scale(1.15); bottom: 17%; }
 
 .pt-car {
   position: absolute;
   left: 50%;
-  bottom: 12%;
-  width: 58px;
-  height: 28px;
-  transform: translateX(-50%) skewX(-4deg);
-  border: 3px solid #10101b;
-  border-radius: 8px 8px 5px 5px;
-  background: #55c9ef;
-  box-shadow: -19px 17px 0 -13px #10101b, 19px 17px 0 -13px #10101b;
+  bottom: 15%;
+  width: 60px;
+  height: 26px;
+  transform: translateX(-50%);
+  z-index: 2;
 }
+
 .pt-car::before {
+  /* body */
   content: "";
   position: absolute;
-  left: 10px;
-  top: -14px;
-  width: 32px;
-  height: 16px;
-  border: 3px solid #10101b;
-  border-bottom: 0;
-  border-radius: 7px 7px 0 0;
-  background: #b9efff;
+  inset: 0;
+  border: 2.5px solid #14101f;
+  border-radius: 6px 10px 4px 4px;
+  background: linear-gradient(155deg, #7de3ff 0%, #3aa8e0 55%, #2a86bd 100%);
 }
+
+.pt-car::after {
+  /* cast shadow, grounding the car on the road */
+  content: "";
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  bottom: -5px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(10, 6, 20, 0.45);
+  filter: blur(1.5px);
+}
+
 .pt-car i {
+  /* cabin/windshield */
   position: absolute;
-  left: 25px;
-  top: -13px;
-  width: 6px;
-  height: 39px;
-  background: #fff4d6;
+  left: 13px;
+  top: -12px;
+  width: 26px;
+  height: 14px;
+  border: 2.5px solid #14101f;
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  background: linear-gradient(155deg, #eafcff, #b9efff 65%);
 }
+
 .pt-car b {
+  /* racing stripe */
   position: absolute;
-  left: 4px;
-  right: 4px;
-  bottom: 3px;
+  left: 6px;
+  right: 6px;
+  bottom: 4px;
   height: 4px;
   border-radius: 4px;
   background: #ff5f62;
 }
+
+.pt-car u {
+  /* wheels */
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: -3px;
+  height: 6px;
+}
+.pt-car u::before,
+.pt-car u::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  width: 10px;
+  height: 6px;
+  border-radius: 3px;
+  background: #14101f;
+}
+.pt-car u::before { left: 0; }
+.pt-car u::after { right: 0; }
 
 .game-tag-pampa {
   color: #ff9b67;
