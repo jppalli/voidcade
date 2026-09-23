@@ -56,6 +56,11 @@ button { -webkit-tap-highlight-color: transparent; }
 .icon-button:hover { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 var(--ink); }
 .back-button { left: max(14px, env(safe-area-inset-left)); }
 .sound-button { right: max(14px, env(safe-area-inset-right)); }
+.lang-button {
+  right: max(66px, calc(env(safe-area-inset-right) + 52px));
+  font-size: 13px;
+  letter-spacing: 0.08em;
+}
 
 .screen {
   position: absolute;

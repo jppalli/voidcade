@@ -1,6 +1,15 @@
 import * as THREE from 'three';
 import type { EngineAudio } from '../audio/EngineAudio';
 import type { InputController } from './InputController';
+import type { Dictionary, Lang } from '../i18n';
+import {
+  cityFlavor,
+  cityName,
+  finishSignLines,
+  forkSignLines,
+  FORK_CITIES,
+  WAYPOINT_CITIES,
+} from './route';
 
 const ROAD_SEGMENTS = 46;
 const SEGMENT_LENGTH = 12;
@@ -8,8 +17,8 @@ const CAR_Z = 6;
 const RACE_TIME = 68;
 const FORK_START_DISTANCE = 740;
 const ROUTE_CHOICE_DISTANCE = 900;
-const FORK_END_DISTANCE = 1120;
-const FORK_SPREAD = 10.5;
+const FORK_END_DISTANCE = 1160;
+const FORK_SPREAD = 15.5;
 const FORK_SEGMENTS = Math.ceil((FORK_END_DISTANCE - FORK_START_DISTANCE) / SEGMENT_LENGTH) + 1;
 const FINISH_DISTANCE = 2400;
 const LANES = [-4.4, 0, 4.4] as const;
@@ -59,17 +68,72 @@ interface ForkRoadSegment {
   distance: number;
 }
 
+interface TrackSign {
+  group: THREE.Group;
+  distance: number;
+}
+
 type GameState = 'menu' | 'playing' | 'paused' | 'ended';
+
+/** Out Run-style layered horizon: a sky gradient band above a distant
+ * ground band, both painted on canvases and mapped onto huge cylinders
+ * that stay centered on the camera, so the "horizon" always sits at a
+ * fixed screen height no matter how the road curves or climbs. */
+class SkyBand {
+  readonly group = new THREE.Group();
+  private readonly skyMaterial: THREE.MeshBasicMaterial;
+  private readonly skyTexture: THREE.CanvasTexture;
+  private readonly skyCanvas: HTMLCanvasElement;
+  private readonly skyContext: CanvasRenderingContext2D;
+
+  constructor() {
+    this.skyCanvas = document.createElement('canvas');
+    this.skyCanvas.width = 4;
+    this.skyCanvas.height = 256;
+    const context = this.skyCanvas.getContext('2d');
+    if (!context) throw new Error('Canvas 2D unavailable');
+    this.skyContext = context;
+    this.skyTexture = new THREE.CanvasTexture(this.skyCanvas);
+    this.skyTexture.colorSpace = THREE.SRGBColorSpace;
+    this.skyMaterial = new THREE.MeshBasicMaterial({
+      map: this.skyTexture,
+      side: THREE.BackSide,
+      depthWrite: false,
+      fog: false,
+    });
+    const sky = new THREE.Mesh(new THREE.SphereGeometry(480, 24, 16, 0, Math.PI * 2, 0, Math.PI / 1.7), this.skyMaterial);
+    this.group.add(sky);
+    this.paint(['#5a3a86', '#c15a8f', '#f0855a', '#ffcf7a']);
+  }
+
+  /** Repaints the vertical sky gradient from a top-to-bottom stop list. */
+  paint(stops: string[]): void {
+    const gradient = this.skyContext.createLinearGradient(0, 0, 0, this.skyCanvas.height);
+    stops.forEach((color, index) => gradient.addColorStop(index / (stops.length - 1), color));
+    this.skyContext.fillStyle = gradient;
+    this.skyContext.fillRect(0, 0, this.skyCanvas.width, this.skyCanvas.height);
+    this.skyTexture.needsUpdate = true;
+  }
+
+  follow(position: THREE.Vector3): void {
+    this.group.position.set(position.x, 0, position.z);
+  }
+}
 
 export class PampaTurbo {
   private readonly scene = new THREE.Scene();
-  private readonly camera = new THREE.PerspectiveCamera(58, 1, 0.1, 700);
+  private readonly camera = new THREE.PerspectiveCamera(60, 1, 0.1, 700);
   private readonly renderer: THREE.WebGLRenderer;
+  private readonly skyBand: SkyBand;
   private readonly roadSegments: THREE.Group[] = [];
   private readonly forkRoadSegments: ForkRoadSegment[] = [];
   private readonly traffic: TrafficVehicle[] = [];
   private readonly pickups: MatePickup[] = [];
+  private readonly waypointSigns: TrackSign[] = [];
   private readonly player: THREE.Group;
+  private readonly driverHead: THREE.Group;
+  private readonly passengerHead: THREE.Group;
+  private forkArch: THREE.Group = new THREE.Group();
   private readonly branchSign: THREE.Group;
   private readonly finishSign: THREE.Group;
   private lastFrameTime = performance.now();
@@ -82,16 +146,24 @@ export class PampaTurbo {
   private score = 0;
   private timeLeft = RACE_TIME;
   private branch: -1 | 0 | 1 = 0;
-  private route = 'por decidir';
+  private route: string;
   private collisionCooldown = 0;
   private messageDistance = 0;
+  private dictionary: Dictionary;
+  private lang: Lang;
 
   constructor(
     private readonly host: HTMLElement,
     private readonly input: InputController,
     private readonly audio: EngineAudio,
     private readonly callbacks: GameCallbacks,
+    dictionary: Dictionary,
+    lang: Lang,
   ) {
+    this.dictionary = dictionary;
+    this.lang = lang;
+    this.route = dictionary.routePending;
+
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -101,23 +173,40 @@ export class PampaTurbo {
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.host.appendChild(this.renderer.domElement);
 
-    this.scene.background = new THREE.Color(0x45b9f2);
-    this.scene.fog = new THREE.Fog(0xf6a776, 145, 550);
-    this.camera.position.set(0, 4.8, 12.5);
-    this.camera.lookAt(0, 1.1, -28);
+    this.scene.fog = new THREE.Fog(0xf0855a, 150, 560);
+    // Out Run-style chase camera: mounted low and close behind the car so
+    // the driver/passenger heads and the car's rear deck are visible in
+    // frame, with a steep-enough angle to still read the road ahead.
+    this.camera.position.set(0, 2.55, CAR_Z + 4.6);
+    this.camera.lookAt(0, 1.5, -30);
+
+    this.skyBand = new SkyBand();
+    this.scene.add(this.skyBand.group);
 
     this.createEnvironment();
     this.createRoad();
     this.createForkRoad();
-    this.player = this.createPlayerCar();
+    this.createForkArch();
+    const { car, driverHead, passengerHead } = this.createPlayerCar();
+    this.player = car;
+    this.driverHead = driverHead;
+    this.passengerHead = passengerHead;
     this.scene.add(this.player);
     this.createTraffic();
     this.createPickups();
     this.traffic.forEach((vehicle) => { vehicle.group.visible = false; });
     this.pickups.forEach((pickup) => { pickup.group.visible = false; });
-    this.branchSign = this.createSign('SIERRAS  ←', '→  COSTA');
-    this.finishSign = this.createSign('ASADO', 'META');
+
+    this.forkArch.visible = false;
+    this.branchSign = this.createSign(...forkSignLines(this.lang));
+    this.finishSign = this.createSign(...finishSignLines(this.lang));
     this.scene.add(this.branchSign, this.finishSign);
+
+    WAYPOINT_CITIES.forEach((waypoint) => {
+      const sign = this.createSign(cityName(waypoint, this.lang), this.lang === 'en' ? 'AHEAD' : 'ADELANTE');
+      this.scene.add(sign);
+      this.waypointSigns.push({ group: sign, distance: waypoint.distance });
+    });
 
     window.addEventListener('resize', this.resize);
     this.resize();
@@ -127,6 +216,22 @@ export class PampaTurbo {
   get isPlaying(): boolean { return this.state === 'playing'; }
   get isPaused(): boolean { return this.state === 'paused'; }
 
+  /** Swaps the active language: rebuilds every canvas-rendered road sign
+   * and resets the pending route label so mid-run language switches (from
+   * the pause screen) show up correctly on the next fork/finish. */
+  setLanguage(dictionary: Dictionary, lang: Lang): void {
+    this.dictionary = dictionary;
+    this.lang = lang;
+    this.repaintSign(this.branchSign, ...forkSignLines(lang));
+    this.repaintSign(this.finishSign, ...finishSignLines(lang));
+    this.waypointSigns.forEach((sign, index) => {
+      const waypoint = WAYPOINT_CITIES[index];
+      this.repaintSign(sign.group, cityName(waypoint, lang), lang === 'en' ? 'AHEAD' : 'ADELANTE');
+    });
+    if (this.branch === 0) this.route = dictionary.routePending;
+    else this.route = dictionary.routeName(cityName(FORK_CITIES[this.branch === -1 ? 0 : 1], lang));
+  }
+
   start(): void {
     this.speed = 0;
     this.distance = 0;
@@ -135,7 +240,7 @@ export class PampaTurbo {
     this.score = 0;
     this.timeLeft = RACE_TIME;
     this.branch = 0;
-    this.route = 'por decidir';
+    this.route = this.dictionary.routePending;
     this.collisionCooldown = 0;
     this.messageDistance = 0;
     this.state = 'playing';
@@ -143,7 +248,7 @@ export class PampaTurbo {
     this.resetTraffic();
     this.resetPickups();
     this.lastFrameTime = performance.now();
-    this.callbacks.onMessage('¡El asado no espera! Pisalo, Franquito.');
+    this.callbacks.onMessage(this.dictionary.startMessage);
   }
 
   pause(): void {
@@ -162,7 +267,7 @@ export class PampaTurbo {
     const width = this.host.clientWidth || window.innerWidth;
     const height = this.host.clientHeight || window.innerHeight;
     this.camera.aspect = width / Math.max(height, 1);
-    this.camera.fov = width < 700 ? 66 : 58;
+    this.camera.fov = width < 700 ? 68 : 60;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(width, height, false);
   };
@@ -177,9 +282,13 @@ export class PampaTurbo {
     else if (this.state === 'menu') {
       this.previewDistance += dt * 11;
       this.updateRoad(this.previewDistance);
-      this.updateTrackObject(this.branchSign, FORK_START_DISTANCE - 52, this.previewDistance);
+      this.updateTrackObject(this.branchSign, FORK_START_DISTANCE - 60, this.previewDistance);
       this.updateTrackObject(this.finishSign, FINISH_DISTANCE, this.previewDistance);
+      this.waypointSigns.forEach((sign) => this.updateTrackObject(sign.group, sign.distance, this.previewDistance));
+      this.updateForkArch(this.previewDistance);
       this.player.rotation.y = Math.sin(performance.now() * 0.0007) * 0.03;
+      this.updateCamera(dt, 0, false);
+      this.skyBand.follow(this.camera.position);
     }
 
     this.renderer.render(this.scene, this.camera);
@@ -209,7 +318,7 @@ export class PampaTurbo {
     const steer = Number(controls.right) - Number(controls.left);
     const steeringPower = (6.5 + this.speed * 0.055) * (0.35 + this.speed / 82);
     this.playerOffset += steer * steeringPower * dt;
-    this.playerOffset = THREE.MathUtils.clamp(this.playerOffset, -11.2, 11.2);
+    this.playerOffset = THREE.MathUtils.clamp(this.playerOffset, -16.2, 16.2);
     if (onGrass && Math.abs(steer) < 0.1) this.playerOffset *= Math.pow(0.992, dt * 60);
 
     this.distance += this.speed * dt;
@@ -223,26 +332,33 @@ export class PampaTurbo {
       this.branch = selectedBranch;
       this.playerOffset -= selectedCenter;
       this.player.position.x = this.playerOffset;
-      this.route = this.branch < 0 ? 'de las Sierras' : 'de la Costa';
+      const city = FORK_CITIES[selectedBranch === -1 ? 0 : 1];
+      const name = cityName(city, this.lang);
+      this.route = this.dictionary.routeName(name);
       this.score += 500;
       this.audio.routeChoice();
-      this.callbacks.onMessage(this.branch < 0 ? '¡Sierras! Curvas, cabras y cero señal.' : '¡Costa! Viento de frente y peinado de costado.');
+      this.callbacks.onMessage(this.dictionary.forkChosen(name, cityFlavor(city, this.lang)));
     }
 
     if (this.messageDistance < 1 && this.distance > 620) {
       this.messageDistance = 1;
-      this.callbacks.onMessage('En la bifurcación: izquierda Sierras, derecha Costa.');
+      const [cityA, cityB] = FORK_CITIES;
+      this.callbacks.onMessage(this.dictionary.forkWarning(cityName(cityA, this.lang), cityName(cityB, this.lang)));
     } else if (this.messageDistance < 2 && this.distance > 1750) {
       this.messageDistance = 2;
-      this.callbacks.onMessage('¡Ya se huele la provoleta! Último esfuerzo.');
+      this.callbacks.onMessage(this.dictionary.finishStretch);
     }
 
     this.updateRoad(this.distance);
     this.updateTraffic(dt);
     this.updatePickups(dt);
-    this.updateTrackObject(this.branchSign, FORK_START_DISTANCE - 52, this.distance);
+    this.updateTrackObject(this.branchSign, FORK_START_DISTANCE - 60, this.distance);
     this.updateTrackObject(this.finishSign, FINISH_DISTANCE, this.distance);
+    this.waypointSigns.forEach((sign) => this.updateTrackObject(sign.group, sign.distance, this.distance));
+    this.updateForkArch(this.distance);
     this.updatePlayer(dt, steer, onGrass, boosting);
+    this.updateCamera(dt, steer, boosting);
+    this.skyBand.follow(this.camera.position);
     this.audio.update(this.speed / 82, true, boosting);
     this.callbacks.onHud({
       speedKph: this.speed * 3.6,
@@ -274,9 +390,25 @@ export class PampaTurbo {
     this.player.rotation.z = THREE.MathUtils.damp(this.player.rotation.z, -steer * 0.08, 9, dt);
     this.player.scale.z = THREE.MathUtils.damp(this.player.scale.z, boosting ? 1.07 : 1, 8, dt);
 
-    this.camera.position.x = THREE.MathUtils.damp(this.camera.position.x, this.playerOffset * 0.36, 5, dt);
-    this.camera.position.y = THREE.MathUtils.damp(this.camera.position.y, boosting ? 4.45 : 4.8, 4, dt);
-    this.camera.lookAt(this.playerOffset * 0.48, 1.05, -28);
+    // Driver bobs and leans into the turn; passenger reacts a beat later
+    // and leans the opposite way when the tractor gets close, selling the
+    // "co-pilot along for the ride" feel from the chase-cam framing.
+    const bob = Math.sin(performance.now() * 0.01) * 0.02;
+    this.driverHead.rotation.z = THREE.MathUtils.damp(this.driverHead.rotation.z, -steer * 0.22, 7, dt);
+    this.driverHead.position.y = 1.62 + bob;
+    this.passengerHead.rotation.z = THREE.MathUtils.damp(this.passengerHead.rotation.z, -steer * 0.14, 5, dt);
+    this.passengerHead.position.y = 1.6 + Math.sin(performance.now() * 0.011 + 1.4) * 0.022;
+  }
+
+  private updateCamera(dt: number, steer: number, boosting: boolean): void {
+    const followX = THREE.MathUtils.damp(this.camera.position.x, this.playerOffset * 0.82, 6, dt);
+    const followY = THREE.MathUtils.damp(this.camera.position.y, boosting ? 2.3 : 2.55, 4, dt);
+    const followZ = THREE.MathUtils.damp(this.camera.position.z, this.player.position.z + (boosting ? 4.1 : 4.6), 6, dt);
+    this.camera.position.set(followX, followY, followZ);
+    // A little roll + horizontal kick on steering, echoing Out Run's cabin
+    // camera swaying with the car instead of staying perfectly rigid.
+    this.camera.rotation.z = THREE.MathUtils.damp(this.camera.rotation.z, -steer * 0.02, 6, dt);
+    this.camera.lookAt(this.playerOffset * 0.9, 1.55, this.player.position.z - 34);
   }
 
   private updateRoad(progress: number): void {
@@ -314,6 +446,18 @@ export class PampaTurbo {
     });
   }
 
+  private updateForkArch(progress: number): void {
+    const archDistance = FORK_START_DISTANCE - 6;
+    const ahead = archDistance - progress;
+    this.forkArch.visible = ahead > -20 && ahead < 420;
+    this.forkArch.position.set(
+      this.curveAt(archDistance) - this.curveAt(progress),
+      this.heightAt(archDistance) - this.heightAt(progress),
+      CAR_Z - ahead,
+    );
+    this.forkArch.rotation.y = -Math.atan2(this.curveAt(archDistance + 5) - this.curveAt(archDistance - 5), 10);
+  }
+
   private updateTraffic(dt: number): void {
     const baseCurve = this.curveAt(this.distance);
     const baseHeight = this.heightAt(this.distance);
@@ -342,14 +486,15 @@ export class PampaTurbo {
         this.host.classList.remove('impact');
         void this.host.offsetWidth;
         this.host.classList.add('impact');
-        this.callbacks.onMessage(index % 3 === 0 ? '¡Ese tractor pidió DRS tarde!' : 'Toquecito técnico. La pintura era opcional.');
+        const messages = this.dictionary.collisionMessages;
+        this.callbacks.onMessage(messages[index % messages.length]);
       }
 
       if (vehicle.previousAhead >= -4 && ahead < -4 && !vehicle.collided) {
         const gap = Math.abs(this.playerOffset - vehicleX);
         const bonus = gap < 3.4 ? 420 : 160;
         this.score += bonus;
-        if (gap < 3.4) this.callbacks.onMessage('¡Finito como cortar salame! +420');
+        if (gap < 3.4) this.callbacks.onMessage(this.dictionary.overtakeMessage);
       }
       vehicle.previousAhead = ahead;
 
@@ -375,7 +520,7 @@ export class PampaTurbo {
         this.mate = Math.min(100, this.mate + 36);
         this.score += 300;
         this.audio.pickup();
-        this.callbacks.onMessage('¡Mate recargado! Ahora sí, papá. +300');
+        this.callbacks.onMessage(this.dictionary.pickupMessage);
         this.respawnPickup(pickup, 340 + Math.random() * 420);
       } else if (ahead < -22) {
         this.respawnPickup(pickup, 300 + Math.random() * 420);
@@ -399,7 +544,7 @@ export class PampaTurbo {
   }
 
   private forkOffsetAt(distance: number): number {
-    const progress = THREE.MathUtils.clamp((distance - FORK_START_DISTANCE) / 190, 0, 1);
+    const progress = THREE.MathUtils.clamp((distance - FORK_START_DISTANCE) / 230, 0, 1);
     const smoothProgress = progress * progress * (3 - 2 * progress);
     return smoothProgress * FORK_SPREAD;
   }
@@ -583,6 +728,53 @@ export class PampaTurbo {
     });
   }
 
+  /** A wide overhead gateway straddling both lanes right before the fork
+   * opens, like the road-spanning signs on real Argentine highways —
+   * makes the fork read as a real decision point instead of a paint job. */
+  private createForkArch(): THREE.Group {
+    const group = new THREE.Group();
+    const postMaterial = new THREE.MeshLambertMaterial({ color: 0x2a2a38, flatShading: true });
+    const beamMaterial = new THREE.MeshLambertMaterial({ color: 0xe94952, flatShading: true });
+
+    [-14.5, 14.5].forEach((x) => {
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.6, 9.5, 0.6), postMaterial);
+      post.position.set(x, 4.75, 0);
+      post.castShadow = true;
+      group.add(post);
+    });
+
+    const beam = new THREE.Mesh(new THREE.BoxGeometry(30, 0.9, 0.9), beamMaterial);
+    beam.position.set(0, 9.1, 0);
+    group.add(beam);
+
+    const [leftLine, rightLine] = forkSignLines(this.lang);
+    const canvas = document.createElement('canvas');
+    canvas.width = 1024;
+    canvas.height = 192;
+    const context = canvas.getContext('2d');
+    if (context) {
+      context.fillStyle = '#fff4d6';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.fillStyle = '#100b2d';
+      context.font = '900 76px Arial';
+      context.textAlign = 'center';
+      context.textBaseline = 'middle';
+      context.fillText(`${leftLine}     ${rightLine}`, canvas.width / 2, canvas.height / 2);
+    }
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    const board = new THREE.Mesh(
+      new THREE.PlaneGeometry(21, 3.6),
+      new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide }),
+    );
+    board.position.set(0, 7.1, 0);
+    group.add(board);
+
+    this.forkArch = group;
+    this.scene.add(group);
+    return group;
+  }
+
   private createCactus(): THREE.Group {
     const group = new THREE.Group();
     const material = new THREE.MeshLambertMaterial({ color: 0x267c4b, flatShading: true });
@@ -595,42 +787,39 @@ export class PampaTurbo {
     return group;
   }
 
-  private createPlayerCar(): THREE.Group {
+  /** Builds the player car with an Out Run-style open cockpit: the body
+   * is cut low behind the windshield so the driver's head+helmet and a
+   * co-pilot's head are both visible from the chase camera, riding side
+   * by side like the classic Ferrari Testarossa convertible framing. */
+  private createPlayerCar(): { car: THREE.Group; driverHead: THREE.Group; passengerHead: THREE.Group } {
     const car = this.createVehicle(0x55c9ef, false);
     const creamMaterial = new THREE.MeshBasicMaterial({ color: 0xfff4d6 });
     const coralMaterial = new THREE.MeshBasicMaterial({ color: 0xff5f62 });
-    const helmetMaterial = new THREE.MeshLambertMaterial({ color: 0x63cdef, flatShading: true });
-    const visorMaterial = new THREE.MeshLambertMaterial({ color: 0x24243a, flatShading: true });
-    const gloveMaterial = new THREE.MeshLambertMaterial({ color: 0xfff4d6, flatShading: true });
+    const seatMaterial = new THREE.MeshLambertMaterial({ color: 0x2a2438, flatShading: true });
 
     const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.07, 4.55), creamMaterial);
     stripe.position.set(0, 0.88, 0);
     car.add(stripe);
 
-    const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.34, 12, 9), helmetMaterial);
-    helmet.position.set(0, 1.62, 0.25);
-    helmet.castShadow = true;
-    car.add(helmet);
+    // Low cockpit rim replaces the old boxy cabin roof, keeping the
+    // windshield but leaving the heads exposed above it.
+    const cockpitRim = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.42, 1.5), seatMaterial);
+    cockpitRim.position.set(0, 1.0, 0.2);
+    car.add(cockpitRim);
 
-    const helmetStripe = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.08, 0.65), creamMaterial);
-    helmetStripe.position.set(0, 1.91, 0.25);
-    car.add(helmetStripe);
+    const windshield = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.5, 0.08), new THREE.MeshLambertMaterial({ color: 0xb7efff, flatShading: true, transparent: true, opacity: 0.75 }));
+    windshield.position.set(0, 1.28, -0.42);
+    windshield.rotation.x = -0.32;
+    car.add(windshield);
 
-    const visor = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.14, 0.08), visorMaterial);
-    visor.position.set(0, 1.65, -0.045);
-    visor.rotation.x = -0.12;
-    car.add(visor);
+    const driverHead = this.createHead(0x63cdef, coralMaterial, creamMaterial);
+    driverHead.group.position.set(-0.42, 1.62, 0.32);
+    car.add(driverHead.group);
 
-    const scarf = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.1, 0.7), coralMaterial);
-    scarf.position.set(0.18, 1.48, 0.62);
-    scarf.rotation.y = -0.22;
-    car.add(scarf);
-
-    [-0.35, 0.35].forEach((x) => {
-      const glove = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 6), gloveMaterial);
-      glove.position.set(x, 1.32, -0.24);
-      car.add(glove);
-    });
+    const passengerHead = this.createHead(0xffce4b, coralMaterial, creamMaterial);
+    passengerHead.group.position.set(0.42, 1.6, 0.34);
+    passengerHead.group.rotation.y = 0.12;
+    car.add(passengerHead.group);
 
     const numberCanvas = document.createElement('canvas');
     numberCanvas.width = 128;
@@ -658,7 +847,45 @@ export class PampaTurbo {
 
     car.position.set(0, 0.52, CAR_Z);
     car.scale.setScalar(1.06);
-    return car;
+    return { car, driverHead: driverHead.group, passengerHead: passengerHead.group };
+  }
+
+  /** A helmeted head built from primitives: sphere helmet, stripe, dark
+   * visor, and a chin scarf — reused for both driver and passenger with
+   * different helmet colors so they read as two distinct characters. */
+  private createHead(
+    helmetColor: number,
+    scarfMaterial: THREE.MeshBasicMaterial,
+    stripeMaterial: THREE.MeshBasicMaterial,
+  ): { group: THREE.Group } {
+    const group = new THREE.Group();
+    const helmetMaterial = new THREE.MeshLambertMaterial({ color: helmetColor, flatShading: true });
+    const visorMaterial = new THREE.MeshLambertMaterial({ color: 0x24243a, flatShading: true });
+    const gloveMaterial = new THREE.MeshLambertMaterial({ color: 0xfff4d6, flatShading: true });
+
+    const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.32, 12, 9), helmetMaterial);
+    helmet.castShadow = true;
+    group.add(helmet);
+
+    const helmetStripe = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.07, 0.6), stripeMaterial);
+    helmetStripe.position.set(0, 0.28, 0);
+    group.add(helmetStripe);
+
+    const visor = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.13, 0.07), visorMaterial);
+    visor.position.set(0, 0.03, -0.28);
+    visor.rotation.x = -0.12;
+    group.add(visor);
+
+    const scarf = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.09, 0.6), scarfMaterial);
+    scarf.position.set(0.05, -0.14, 0.34);
+    scarf.rotation.y = -0.2;
+    group.add(scarf);
+
+    const glove = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), gloveMaterial);
+    glove.position.set(0, -0.3, -0.5);
+    group.add(glove);
+
+    return { group };
   }
 
   private createVehicle(color: number, tractor: boolean): THREE.Group {
@@ -779,8 +1006,28 @@ export class PampaTurbo {
     const canvas = document.createElement('canvas');
     canvas.width = 768;
     canvas.height = 256;
+    this.paintSignCanvas(canvas, topLine, bottomLine);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    const board = new THREE.Mesh(new THREE.PlaneGeometry(9.8, 3.25), new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide }));
+    board.position.y = 5.4;
+    board.userData.canvas = canvas;
+    board.userData.texture = texture;
+    const poleMaterial = new THREE.MeshLambertMaterial({ color: 0x20202d });
+    [-4.1, 4.1].forEach((x) => {
+      const pole = new THREE.Mesh(new THREE.BoxGeometry(0.22, 5.1, 0.22), poleMaterial);
+      pole.position.set(x, 2.55, 0.15);
+      group.add(pole);
+    });
+    group.add(board);
+    return group;
+  }
+
+  private paintSignCanvas(canvas: HTMLCanvasElement, topLine: string, bottomLine: string): void {
     const context = canvas.getContext('2d');
     if (!context) throw new Error('Canvas 2D unavailable');
+    context.clearRect(0, 0, canvas.width, canvas.height);
     context.fillStyle = '#fff4d6';
     context.fillRect(0, 0, canvas.width, canvas.height);
     context.strokeStyle = '#100b2d';
@@ -794,18 +1041,16 @@ export class PampaTurbo {
     context.fillStyle = '#e94952';
     context.font = '900 62px Arial';
     context.fillText(bottomLine, canvas.width / 2, 174);
+  }
 
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.colorSpace = THREE.SRGBColorSpace;
-    const board = new THREE.Mesh(new THREE.PlaneGeometry(9.8, 3.25), new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide }));
-    board.position.y = 5.4;
-    const poleMaterial = new THREE.MeshLambertMaterial({ color: 0x20202d });
-    [-4.1, 4.1].forEach((x) => {
-      const pole = new THREE.Mesh(new THREE.BoxGeometry(0.22, 5.1, 0.22), poleMaterial);
-      pole.position.set(x, 2.55, 0.15);
-      group.add(pole);
-    });
-    group.add(board);
-    return group;
+  /** Repaints an existing sign's canvas texture in place (used when the
+   * player swaps language mid-session) instead of rebuilding the mesh. */
+  private repaintSign(signGroup: THREE.Group, topLine: string, bottomLine: string): void {
+    const board = signGroup.children.find((child) => child.userData.canvas) as THREE.Mesh | undefined;
+    if (!board) return;
+    const canvas = board.userData.canvas as HTMLCanvasElement;
+    const texture = board.userData.texture as THREE.CanvasTexture;
+    this.paintSignCanvas(canvas, topLine, bottomLine);
+    texture.needsUpdate = true;
   }
 }
