@@ -122,7 +122,7 @@ class SkyBand {
 
 export class PampaTurbo {
   private readonly scene = new THREE.Scene();
-  private readonly camera = new THREE.PerspectiveCamera(60, 1, 0.1, 700);
+  private readonly camera = new THREE.PerspectiveCamera(76, 1, 0.1, 900);
   private readonly renderer: THREE.WebGLRenderer;
   private readonly skyBand: SkyBand;
   private readonly roadSegments: THREE.Group[] = [];
@@ -173,12 +173,12 @@ export class PampaTurbo {
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.host.appendChild(this.renderer.domElement);
 
-    this.scene.fog = new THREE.Fog(0xf0855a, 150, 560);
-    // Out Run-style chase camera: mounted low and close behind the car so
-    // the driver/passenger heads and the car's rear deck are visible in
-    // frame, with a steep-enough angle to still read the road ahead.
-    this.camera.position.set(0, 2.55, CAR_Z + 4.6);
-    this.camera.lookAt(0, 1.5, -30);
+    this.scene.fog = new THREE.Fog(0xf0855a, 180, 680);
+    // Out Run-style low camera: sits just above the road surface, very close
+    // behind the car, FOV wide and lookAt aimed at a far horizon — this is
+    // what creates the classic "road rushing under you" feeling.
+    this.camera.position.set(0, 1.15, CAR_Z + 3.2);
+    this.camera.lookAt(0, 1.0, -120);
 
     this.skyBand = new SkyBand();
     this.scene.add(this.skyBand.group);
@@ -267,7 +267,7 @@ export class PampaTurbo {
     const width = this.host.clientWidth || window.innerWidth;
     const height = this.host.clientHeight || window.innerHeight;
     this.camera.aspect = width / Math.max(height, 1);
-    this.camera.fov = width < 700 ? 68 : 60;
+    this.camera.fov = width < 700 ? 82 : 76;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(width, height, false);
   };
@@ -385,7 +385,7 @@ export class PampaTurbo {
 
   private updatePlayer(dt: number, steer: number, onGrass: boolean, boosting: boolean): void {
     this.player.position.x = THREE.MathUtils.damp(this.player.position.x, this.playerOffset, 11, dt);
-    this.player.position.y = 0.52 + Math.sin(performance.now() * (onGrass ? 0.025 : 0.009)) * (onGrass ? 0.08 : 0.025);
+    this.player.position.y = 0.52 + Math.sin(performance.now() * (onGrass ? 0.025 : 0.009)) * (onGrass ? 0.05 : 0.015);
     this.player.rotation.y = THREE.MathUtils.damp(this.player.rotation.y, -steer * 0.16, 9, dt);
     this.player.rotation.z = THREE.MathUtils.damp(this.player.rotation.z, -steer * 0.08, 9, dt);
     this.player.scale.z = THREE.MathUtils.damp(this.player.scale.z, boosting ? 1.07 : 1, 8, dt);
@@ -401,14 +401,27 @@ export class PampaTurbo {
   }
 
   private updateCamera(dt: number, steer: number, boosting: boolean): void {
-    const followX = THREE.MathUtils.damp(this.camera.position.x, this.playerOffset * 0.82, 6, dt);
-    const followY = THREE.MathUtils.damp(this.camera.position.y, boosting ? 2.3 : 2.55, 4, dt);
-    const followZ = THREE.MathUtils.damp(this.camera.position.z, this.player.position.z + (boosting ? 4.1 : 4.6), 6, dt);
+    // Out Run framing: camera stays very low (y ≈ 1.1) and close behind the
+    // car, with the lookAt point far ahead so the road appears to rush beneath
+    // you rather than the car floating above it.  Lateral follow is subtle —
+    // the camera drifts toward the curve but less than the car moves, which
+    // stretches the perspective through corners exactly like the original.
+    const targetX = this.playerOffset * 0.35;
+    const targetY = boosting ? 0.95 : 1.15;
+    const targetZ = this.player.position.z + (boosting ? 2.8 : 3.2);
+
+    const followX = THREE.MathUtils.damp(this.camera.position.x, targetX, 5, dt);
+    const followY = THREE.MathUtils.damp(this.camera.position.y, targetY, 4, dt);
+    const followZ = THREE.MathUtils.damp(this.camera.position.z, targetZ, 7, dt);
     this.camera.position.set(followX, followY, followZ);
-    // A little roll + horizontal kick on steering, echoing Out Run's cabin
-    // camera swaying with the car instead of staying perfectly rigid.
-    this.camera.rotation.z = THREE.MathUtils.damp(this.camera.rotation.z, -steer * 0.02, 6, dt);
-    this.camera.lookAt(this.playerOffset * 0.9, 1.55, this.player.position.z - 34);
+
+    // Very slight roll on steering — just enough to feel body lean without
+    // being nauseating (Out Run uses ~2–3° roll in corners).
+    this.camera.rotation.z = THREE.MathUtils.damp(this.camera.rotation.z, -steer * 0.025, 6, dt);
+
+    // Horizon follows the road curve but stays at eye level (y = 1.0),
+    // looking far ahead so the vanishing point is always near center-screen.
+    this.camera.lookAt(this.playerOffset * 0.6, 1.0, this.player.position.z - 110);
   }
 
   private updateRoad(progress: number): void {
@@ -845,7 +858,7 @@ export class PampaTurbo {
     numberPlate.position.set(0, 0.72, 2.16);
     car.add(numberPlate);
 
-    car.position.set(0, 0.52, CAR_Z);
+    car.position.set(0, 0.52, CAR_Z - 0.5);
     car.scale.setScalar(1.06);
     return { car, driverHead: driverHead.group, passengerHead: passengerHead.group };
   }
