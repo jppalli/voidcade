@@ -122,7 +122,7 @@ class SkyBand {
 
 export class PampaTurbo {
   private readonly scene = new THREE.Scene();
-  private readonly camera = new THREE.PerspectiveCamera(52, 1, 0.1, 900);
+  private readonly camera = new THREE.PerspectiveCamera(55, 1, 0.1, 900);
   private readonly renderer: THREE.WebGLRenderer;
   private readonly skyBand: SkyBand;
   private readonly roadSegments: THREE.Group[] = [];
@@ -173,15 +173,13 @@ export class PampaTurbo {
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.host.appendChild(this.renderer.domElement);
 
-    this.scene.fog = new THREE.Fog(0xf0855a, 220, 800);
-    // Reproduce Out Run's exact framing from the screenshot:
-    // - Camera sits below the car's hood line (y ≈ 0.35), almost on the road
-    // - Looks upward toward a horizon in the top-third of the frame (lookAt y = 4.5)
-    // - FOV ~52° — narrow enough that road edges stay nearly parallel, not flared
-    // This combination pushes the horizon high, makes the road fill the bottom
-    // half, and keeps the car large in the lower center — exactly like the original.
-    this.camera.position.set(0, 0.35, CAR_Z + 1.8);
-    this.camera.lookAt(0, 4.5, -80);
+    this.scene.fog = new THREE.Fog(0xf0855a, 200, 700);
+    // Out Run framing from reference image:
+    // Camera sits slightly above and BEHIND the car (y=2.2, z=car+4),
+    // looks toward a vanishing point slightly above road level (lookAt y=1.6).
+    // FOV 55° keeps the road edges nearly parallel, horizon sits at ~60% height.
+    this.camera.position.set(0, 2.2, CAR_Z + 4.0);
+    this.camera.lookAt(0, 1.6, -60);
 
     this.skyBand = new SkyBand();
     this.scene.add(this.skyBand.group);
@@ -270,7 +268,7 @@ export class PampaTurbo {
     const width = this.host.clientWidth || window.innerWidth;
     const height = this.host.clientHeight || window.innerHeight;
     this.camera.aspect = width / Math.max(height, 1);
-    this.camera.fov = width < 700 ? 58 : 52;
+    this.camera.fov = width < 700 ? 62 : 55;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(width, height, false);
   };
@@ -404,27 +402,22 @@ export class PampaTurbo {
   }
 
   private updateCamera(dt: number, steer: number, boosting: boolean): void {
-    // Match Out Run screenshot framing:
-    // Camera below hood (y ≈ 0.3), very close (z ≈ car + 1.8), narrow FOV,
-    // lookAt Y HIGH (≈ 4) so horizon sits in the top 30% of screen.
-    // Lateral follow is minimal (×0.25) so the road appears to bank into curves
-    // rather than the whole world sliding sideways.
-    const targetY = boosting ? 0.25 : 0.35;
-    const targetZ = this.player.position.z + (boosting ? 1.5 : 1.8);
-    const targetX = this.playerOffset * 0.25;
+    // Reference framing: camera behind and above the car (y≈2.2),
+    // car fills the lower-center third, horizon at ~60% screen height.
+    // Lateral follow is gentle — drifts with the road, not 1:1 with the car.
+    const targetY = boosting ? 1.9 : 2.2;
+    const targetZ = this.player.position.z + (boosting ? 3.6 : 4.0);
+    const targetX = this.playerOffset * 0.28;
 
     const followX = THREE.MathUtils.damp(this.camera.position.x, targetX, 4, dt);
     const followY = THREE.MathUtils.damp(this.camera.position.y, targetY, 4, dt);
-    const followZ = THREE.MathUtils.damp(this.camera.position.z, targetZ, 8, dt);
+    const followZ = THREE.MathUtils.damp(this.camera.position.z, targetZ, 7, dt);
     this.camera.position.set(followX, followY, followZ);
 
-    // Tiny roll on steering (Out Run uses ~2°)
     this.camera.rotation.z = THREE.MathUtils.damp(this.camera.rotation.z, -steer * 0.018, 5, dt);
 
-    // lookAt Y stays high (4.0–4.5) so the horizon is always in the top third.
-    // The Z target is far so the vanishing point converges naturally.
-    const lookY = boosting ? 3.8 : 4.2;
-    this.camera.lookAt(this.playerOffset * 0.35, lookY, this.player.position.z - 80);
+    // lookAt Y = 1.6 puts the horizon clearly above center, like the original.
+    this.camera.lookAt(this.playerOffset * 0.32, 1.6, this.player.position.z - 65);
   }
 
   private updateRoad(progress: number): void {
@@ -861,8 +854,8 @@ export class PampaTurbo {
     numberPlate.position.set(0, 0.72, 2.16);
     car.add(numberPlate);
 
-    car.position.set(0, 0.52, CAR_Z - 2.0);
-    car.scale.setScalar(1.45);
+    car.position.set(0, 0.52, CAR_Z);
+    car.scale.setScalar(1.06);
     return { car, driverHead: driverHead.group, passengerHead: passengerHead.group };
   }
 
