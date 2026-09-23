@@ -174,12 +174,11 @@ export class PampaTurbo {
     this.host.appendChild(this.renderer.domElement);
 
     this.scene.fog = new THREE.Fog(0xf0855a, 200, 700);
-    // Out Run framing from reference image:
-    // Camera sits slightly above and BEHIND the car (y=2.2, z=car+4),
-    // looks toward a vanishing point slightly above road level (lookAt y=1.6).
-    // FOV 55° keeps the road edges nearly parallel, horizon sits at ~60% height.
-    this.camera.position.set(0, 2.2, CAR_Z + 4.0);
-    this.camera.lookAt(0, 1.6, -60);
+    // Out Run reference: camera is well behind the car, high enough to see
+    // the full car body + both helmets, road stretches far to the horizon.
+    // The car appears roughly 25% of screen width — not filling the frame.
+    this.camera.position.set(0, 3.8, CAR_Z + 11.5);
+    this.camera.lookAt(0, 1.4, -50);
 
     this.skyBand = new SkyBand();
     this.scene.add(this.skyBand.group);
@@ -402,11 +401,9 @@ export class PampaTurbo {
   }
 
   private updateCamera(dt: number, steer: number, boosting: boolean): void {
-    // Reference framing: camera behind and above the car (y≈2.2),
-    // car fills the lower-center third, horizon at ~60% screen height.
-    // Lateral follow is gentle — drifts with the road, not 1:1 with the car.
-    const targetY = boosting ? 1.9 : 2.2;
-    const targetZ = this.player.position.z + (boosting ? 3.6 : 4.0);
+    // Pulled back to match Out Run reference: car visible in full, road ahead wide open.
+    const targetY = boosting ? 3.4 : 3.8;
+    const targetZ = this.player.position.z + (boosting ? 10.5 : 11.5);
     const targetX = this.playerOffset * 0.28;
 
     const followX = THREE.MathUtils.damp(this.camera.position.x, targetX, 4, dt);
@@ -415,9 +412,7 @@ export class PampaTurbo {
     this.camera.position.set(followX, followY, followZ);
 
     this.camera.rotation.z = THREE.MathUtils.damp(this.camera.rotation.z, -steer * 0.018, 5, dt);
-
-    // lookAt Y = 1.6 puts the horizon clearly above center, like the original.
-    this.camera.lookAt(this.playerOffset * 0.32, 1.6, this.player.position.z - 65);
+    this.camera.lookAt(this.playerOffset * 0.32, 1.4, this.player.position.z - 65);
   }
 
   private updateRoad(progress: number): void {
