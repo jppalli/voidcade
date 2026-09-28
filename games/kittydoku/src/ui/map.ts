@@ -95,6 +95,26 @@ const CHAPTER_SCENES: string[] = [
   </svg>`,
 ];
 
+// ---------------------------------------------------------------- testing unlock
+
+/** Track clicks on locked levels for testing purposes */
+const lockedLevelClicks = new Map<number, number>();
+
+function handleLockedLevelClick(levelIndex: number, onPick: (index: number) => void): void {
+  const currentClicks = lockedLevelClicks.get(levelIndex) || 0;
+  const newClicks = currentClicks + 1;
+  
+  if (newClicks >= 5) {
+    // Reset the counter and unlock the level for testing
+    lockedLevelClicks.delete(levelIndex);
+    console.log(`🐱 Testing mode: Level ${levelIndex} unlocked after 5 clicks`);
+    onPick(levelIndex);
+  } else {
+    lockedLevelClicks.set(levelIndex, newClicks);
+    console.log(`🐾 Testing: ${newClicks}/5 clicks on locked level ${levelIndex}`);
+  }
+}
+
 // ---------------------------------------------------------------- public API
 
 export function renderMap(
@@ -260,9 +280,10 @@ export function renderMap(
       }
       node.addEventListener('click', () => onPick(ref.index));
     } else {
-      // locked
+      // locked - but allow clicking for testing unlock
       node.innerHTML = `<svg class="icon lockIcon" style="width:16px;height:16px"><use href="#i-lock"/></svg>`;
-      node.disabled = true;
+      node.disabled = false;
+      node.addEventListener('click', () => handleLockedLevelClick(ref.index, onPick));
     }
 
     nodesHost.appendChild(node);
