@@ -67,15 +67,16 @@ export class Game {
       return 'paw-marked';
     }
 
-    // A correct second tap places a cat; an incorrect one simply removes
-    // the annotation. Paw edits never cost a life.
+    // A correct second tap places a cat; an incorrect one marks it wrong
+    // and costs a life.
     if (this.isSolutionCell(row, col)) {
       this.marks[row][col] = 'cat';
       return 'correct';
     }
 
-    this.marks[row][col] = 'empty';
-    return 'paw-removed';
+    this.marks[row][col] = 'wrong';
+    this.livesLost++;
+    return 'wrong';
   }
 
   get canUndo(): boolean { return this.history.length > 0; }
