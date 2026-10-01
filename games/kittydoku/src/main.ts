@@ -1,6 +1,9 @@
 import {
   playCat,
+  playHeartLost,
+  playHint,
   playLift,
+  playOutOfLives,
   playPaw,
   playTap,
   playUnhappy,
@@ -27,6 +30,11 @@ const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getEleme
 let progress: Progress = loadProgress();
 let game: Game | null = null;
 let winPending = false;
+/** Hearts currently drawn in #livesRow, so the row is only rebuilt when the
+ *  count changes (a rebuild would cut a heart-loss animation short). */
+let renderedLives = -1;
+/** Pending timers of the win celebration, cleared when a level starts. */
+let winTimers: number[] = [];
 
 // ---------------------------------------------------------------- screens
 
@@ -81,6 +89,8 @@ function startLevel(index: number) {
   winPending = false;
   press = null;
   lastTap = null;
+  renderedLives = -1;
+  clearCelebration();
 
   $('gameChapter').textContent = ref.chapter.name;
   $('gameLevelNum').textContent = `Level ${ref.levelInChapter + 1} · ${ref.size}×${ref.size}`;
@@ -111,7 +121,7 @@ function buildBoard(ref: LevelRef) {
       cell.dataset.r = String(r);
       cell.dataset.c = String(c);
       cell.style.setProperty('--cell', tone.fill);
-      // Stagger the idle wiggle so cats aren't all in sync
+      // Stagger idle breathing and blinks so cats aren't all in sync
       cell.style.setProperty('--cat-delay', `${((r * ref.size + c) * 0.31) % 2.8}s`);
       cell.setAttribute('aria-label', `Row ${r + 1}, column ${c + 1}`);
 
@@ -142,11 +152,21 @@ function cellEl(r: number, c: number): HTMLElement | null {
   return $('board').querySelector<HTMLElement>(`[data-r="${r}"][data-c="${c}"]`);
 }
 
-function renderBoard() {
+function heartSvg(full: boolean, cls = ''): string {
+  return `<svg${cls ? ` class="${cls}"` : ''} viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+    <path d="M12 20.5s-7.5-4.6-7.5-9.6a4.4 4.4 0 0 1 7.5-3.1 4.4 4.4 0 0 1 7.5 3.1c0 5-7.5 9.6-7.5 9.6Z"
+      fill="${full ? '#e7908c' : 'none'}"
+      stroke="${full ? '#e7908c' : '#d4bfb7'}"
+      stroke-width="1.8"/>
+  </svg>`;
+}
+
+/** `lostHeart` is the index of the heart that was just lost, if any: it gets
+ *  a pop-and-drop animation on top of its empty outline. */
+function renderBoard(lostHeart?: number) {
   const g = game!;
   const size = g.size;
-  // Scale mascot to ~72% of the cell for a big cosy feel
-  const catPx = Math.max(24, Math.round(270 / size));
+  // SVG sizes are nominal; CSS scales cats, dead cats and paws to the cell.
 
   for (let r = 0; r < size; r++) {
     for (let c = 0; c < size; c++) {
@@ -157,18 +177,18 @@ function renderBoard() {
       if (mark === 'cat') {
         if (!el.querySelector('.catWrap')) {
           el.classList.remove('wrong-cell');
-          el.innerHTML = `<span class="catWrap">${mascotSvg(catPx)}</span>`;
+          el.innerHTML = `<span class="catWrap">${mascotSvg(100, pastel(g.regionAt(r, c)).coat)}</span>`;
         }
       } else if (mark === 'wrong') {
         if (!el.querySelector('.wrongWrap')) {
-          el.innerHTML = `<span class="wrongWrap">${deadCatSvg(catPx)}</span>`;
+          el.innerHTML = `<span class="wrongWrap">${deadCatSvg(100)}</span>`;
           el.classList.add('wrong-cell');
         }
       } else if (mark === 'paw') {
         if (!el.querySelector('.pawWrap')) {
           el.classList.remove('wrong-cell');
           const tone = pastel(g.regionAt(r, c));
-          el.innerHTML = `<span class="pawWrap">${pawSvg(tone.ink, Math.round(catPx * 0.55))}</span>`;
+          el.innerHTML = `<span class="pawWrap">${pawSvg(tone.ink, 24)}</span>`;
         }
       } else {
         if (el.innerHTML !== '') {
@@ -179,17 +199,15 @@ function renderBoard() {
     }
   }
 
-  // Hearts HUD — rendered in the header, updated after every tap
-  $('livesRow').innerHTML = Array.from({ length: MAX_LIVES }, (_, i) =>
-    `<span class="heart ${i < g.livesRemaining ? 'full' : 'empty'}">
-      <svg viewBox="0 0 24 24" width="24" height="24">
-        <path d="M12 20.5s-7.5-4.6-7.5-9.6a4.4 4.4 0 0 1 7.5-3.1 4.4 4.4 0 0 1 7.5 3.1c0 5-7.5 9.6-7.5 9.6Z"
-          fill="${i < g.livesRemaining ? '#e7908c' : 'none'}"
-          stroke="${i < g.livesRemaining ? '#e7908c' : '#d4bfb7'}"
-          stroke-width="1.8"/>
-      </svg>
-    </span>`
-  ).join('');
+  // Hearts HUD in the header. Only rebuilt when the count changes.
+  if (lostHeart !== undefined || g.livesRemaining !== renderedLives) {
+    renderedLives = g.livesRemaining;
+    $('livesRow').innerHTML = Array.from({ length: MAX_LIVES }, (_, i) =>
+      i === lostHeart
+        ? `<span class="heart empty losing">${heartSvg(false)}${heartSvg(true, 'heartGhost')}</span>`
+        : `<span class="heart ${i < g.livesRemaining ? 'full' : 'empty'}">${heartSvg(i < g.livesRemaining)}</span>`
+    ).join('');
+  }
 
   ($('btnUndo') as HTMLButtonElement).disabled = !g.canUndo;
 }
@@ -216,6 +234,8 @@ let press: {
   id: number; r: number; c: number;
   sx: number; sy: number; x: number; y: number;
   dragging: boolean; painted: boolean;
+  /** Paws painted so far in this stroke (drives the rising paw pitch). */
+  strokeCells: number;
 } | null = null;
 /** Last single tap, so a fast second tap on the same cell becomes a cat. */
 let lastTap: { r: number; c: number; time: number } | null = null;
@@ -237,18 +257,34 @@ function keyTogglePaw(r: number, c: number) {
   togglePaw(r, c);
 }
 
+/** Gentle sideways shake on a cell (a wrong cat). */
+function shakeCell(r: number, c: number) {
+  const el = cellEl(r, c);
+  if (!el) return;
+  el.classList.remove('shake');
+  void el.offsetWidth; // restart the animation if it's already running
+  el.classList.add('shake');
+  setTimeout(() => el.classList.remove('shake'), 320);
+}
+
 function placeCat(r: number, c: number, recordUndo: boolean) {
   const g = game;
   if (!g || winPending) return;
   const result = g.placeCat(r, c, recordUndo);
   if (result === 'already-filled') return;
-  renderBoard();
 
   if (result === 'correct') {
-    playCat();
+    renderBoard();
+    playCat(g.correctCount());
     if (g.isSolved()) finishLevel();
   } else {
+    // livesRemaining now equals the index of the heart just lost.
+    renderBoard(g.livesRemaining);
+    shakeCell(r, c);
     playUnhappy();
+    // On the last heart the fail modal plays its own sigh; skip the heart
+    // sound so the two don't overlap.
+    if (!g.outOfLives) playHeartLost();
     if (g.outOfLives) {
       winPending = true;
       setTimeout(showFailModal, 480);
@@ -283,7 +319,7 @@ function paintPaw(r: number, c: number) {
   if (!press || !game) return;
   if (game.markPaw(r, c, !press.painted)) {
     press.painted = true; // whole stroke = one undo step
-    playPaw();
+    playPaw(press.strokeCells++); // pitch climbs per cell, resets per stroke
     renderBoard();
   }
 }
@@ -298,7 +334,7 @@ function wireBoardInput() {
     press = {
       id: e.pointerId, ...cell,
       sx: e.clientX, sy: e.clientY, x: e.clientX, y: e.clientY,
-      dragging: false, painted: false,
+      dragging: false, painted: false, strokeCells: 0,
     };
     board.setPointerCapture(e.pointerId);
   });
@@ -345,13 +381,76 @@ function wireBoardInput() {
 }
 
 function showFailModal() {
+  playOutOfLives();
   $('failOverlay').classList.remove('hidden');
+}
+
+// ---------------------------------------------------------------- win moment
+//
+//  0.00s  last cat lands (its bell is the last note of the board's tune);
+//         paws fade out
+//  0.20s  cats hop in a diagonal wave, one jingle note per hop
+//  0.55s  paw-print confetti bursts from the board
+//  1.45s  win modal opens; confetti is cleaned up just after
+
+const WIN_WAVE_START = 0.2; // s
+const WIN_WAVE_SPAN = 0.6; // s from first hop to last hop
+const WIN_CONFETTI_MS = 550;
+const WIN_MODAL_MS = 1450;
+const CONFETTI_TINTS = ['#ffb38a', '#b9a3f0', '#8fd6a8', '#8fc8f5', '#ff9db0', '#f5d76e'];
+
+function clearCelebration() {
+  winTimers.forEach((t) => clearTimeout(t));
+  winTimers = [];
+  $('board').classList.remove('celebrate');
+  document.querySelectorAll('.confetti').forEach((n) => n.remove());
+}
+
+/** Starts the on-board wave; returns its timing for the jingle. */
+function celebrateBoard(g: Game): { step: number; count: number } {
+  const cats = g.board.solution
+    .slice()
+    .sort((a, b) => a.row + a.col - (b.row + b.col) || a.row - b.row);
+  const count = cats.length;
+  const step = count > 1 ? Math.min(0.12, WIN_WAVE_SPAN / (count - 1)) : 0;
+  cats.forEach((p, i) =>
+    cellEl(p.row, p.col)?.style.setProperty('--d', `${(WIN_WAVE_START + i * step).toFixed(3)}s`)
+  );
+  $('board').classList.add('celebrate');
+  winTimers.push(window.setTimeout(burstConfetti, WIN_CONFETTI_MS));
+  return { step, count };
+}
+
+/** Pastel paw prints flying out from the middle of the board. */
+function burstConfetti() {
+  const wrap = $('board').parentElement;
+  if (!wrap) return;
+  const w = wrap.clientWidth;
+  const host = document.createElement('div');
+  host.className = 'confetti';
+  host.setAttribute('aria-hidden', 'true');
+  host.innerHTML = Array.from({ length: 18 }, (_, i) => {
+    const angle = i * 2.39996; // golden angle spreads them evenly
+    const dist = w * (0.24 + ((i * 7) % 5) * 0.05);
+    const dx = Math.round(Math.cos(angle) * dist);
+    const dy = Math.round(Math.sin(angle) * dist * 0.85 + w * 0.06); // a little gravity
+    const size = 16 + ((i * 5) % 12);
+    const rot = ((i * 53) % 120) - 60;
+    const delay = ((i % 4) * 0.04).toFixed(2);
+    return `<span style="--dx:${dx}px;--dy:${dy}px;--rot:${rot}deg;margin:${-size / 2}px 0 0 ${-size / 2}px;animation-delay:${delay}s">
+      ${pawSvg(CONFETTI_TINTS[i % CONFETTI_TINTS.length], size)}
+    </span>`;
+  }).join('');
+  wrap.appendChild(host);
+  winTimers.push(window.setTimeout(() => host.remove(), 1200));
 }
 
 function finishLevel() {
   const g = game!;
-  winPending = true;
-  playWin();
+  winPending = true; // blocks all board input until the next level starts
+  clearCelebration();
+  const { step, count } = celebrateBoard(g);
+  playWin(WIN_WAVE_START, step, count);
 
   progress = recordWin(progress, g.ref.index, !g.usedHint, TOTAL_LEVELS);
   saveProgress(progress);
@@ -366,7 +465,12 @@ function finishLevel() {
       : 'Every cat has a spot of its own.';
   ($('btnWinNext') as HTMLButtonElement).classList.toggle('hidden', isLast);
 
-  setTimeout(() => $('winOverlay').classList.remove('hidden'), 520);
+  winTimers.push(window.setTimeout(() => {
+    // Skip if the player has left this board during the celebration.
+    if (game === g && !$('screen-game').classList.contains('hidden')) {
+      $('winOverlay').classList.remove('hidden');
+    }
+  }, WIN_MODAL_MS));
 }
 
 // ---------------------------------------------------------------- how to play
@@ -387,7 +491,7 @@ function renderDemoBoard() {
       const tone = pastel(regions[r][c]);
       const key = `${r},${c}`;
       const inner = cats.has(key)
-        ? mascotSvg(26)
+        ? mascotSvg(26, tone.coat)
         : blocked.has(key)
           ? `<span class="no">${pawSvg(tone.ink, 14)}</span>`
           : '';
@@ -458,7 +562,7 @@ function init() {
     lastTap = null;
     const spot = game.hint();
     if (!spot) return;
-    playCat(); renderBoard();
+    playHint(); renderBoard();
     const el = cellEl(spot.row, spot.col);
     if (el) { el.classList.add('hintGlow'); setTimeout(() => el.classList.remove('hintGlow'), 2300); }
     if (game.isSolved()) finishLevel();

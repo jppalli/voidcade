@@ -9,9 +9,13 @@ export class Game {
   readonly ref: LevelRef;
   readonly board: PuzzleBoard;
   marks: CellMark[][];
+  /** Hearts lost this attempt. Only ever goes up: Undo and Reset restore
+   *  marks but never give a heart back. A fresh Game (start, re-enter or
+   *  "Try again") is the only way to refill. */
   livesLost = 0;
   usedHint = false;
-  private history: Array<{ marks: CellMark[][]; livesLost: number }> = [];
+  /** Undo snapshots hold marks only, so a lost heart stays lost. */
+  private history: CellMark[][][] = [];
 
   constructor(ref: LevelRef) {
     this.ref = ref;
@@ -47,7 +51,7 @@ export class Game {
   }
 
   private pushHistory() {
-    this.history.push({ marks: this.marks.map((r) => r.slice()), livesLost: this.livesLost });
+    this.history.push(this.marks.map((r) => r.slice()));
     if (this.history.length > 200) this.history.shift();
   }
 
@@ -91,25 +95,24 @@ export class Game {
 
   get canUndo(): boolean { return this.history.length > 0; }
 
+  /** Restores the previous marks (it can lift a dead-cat mark) but keeps
+   *  `livesLost` as it is. */
   undo() {
     const prev = this.history.pop();
-    if (prev) {
-      this.marks = prev.marks;
-      this.livesLost = prev.livesLost;
-    }
+    if (prev) this.marks = prev;
   }
 
+  /** Clears the board (undoable). Lost hearts stay lost. */
   reset() {
-    this.history.push({ marks: this.marks.map((r) => r.slice()), livesLost: this.livesLost });
+    this.pushHistory();
     this.marks = Game.emptyMarks(this.size);
-    this.livesLost = 0;
   }
 
   /** Hint: places one correct cat for free, marks as hinted. */
   hint(): Position | null {
     const target = this.board.solution.find((p) => this.marks[p.row][p.col] !== 'cat');
     if (!target) return null;
-    this.history.push({ marks: this.marks.map((r) => r.slice()), livesLost: this.livesLost });
+    this.pushHistory();
     this.marks[target.row][target.col] = 'cat';
     this.usedHint = true;
     return target;

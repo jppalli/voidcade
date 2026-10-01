@@ -332,16 +332,45 @@ button {
   align-items: center;
 }
 
+.heart { position: relative; display: block; }
 .heart svg { display: block; }
-.heart.empty svg path { fill: none !important; stroke: #d4bfb7 !important; }
+.heart.empty svg:not(.heartGhost) path { fill: none !important; stroke: #d4bfb7 !important; }
 
-/* Correct cat: pops in with a spring, then bounces and tilts happily.
-   --cat-delay is set per cell in JS so they're all out of phase. */
-.cell .catWrap {
-  display: flex; align-items: center; justify-content: center;
-  animation: catPop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1),
-             catWiggle 2.8s ease-in-out var(--cat-delay, 0s) infinite;
+/* The heart just lost: a full heart pops, tips and drops away while the
+   empty outline fades in underneath. */
+.heart.losing .heartGhost {
+  position: absolute; inset: 0;
+  animation: heartLose 0.75s cubic-bezier(0.4, 0, 0.6, 1) forwards;
 }
+.heart.losing > svg:first-child { animation: fadeIn 0.4s ease 0.35s both; }
+
+@keyframes heartLose {
+  0%   { transform: scale(1); opacity: 1; }
+  25%  { transform: scale(1.28); opacity: 1; }
+  55%  { transform: translateY(3px) rotate(-14deg) scale(0.95); opacity: 0.85; }
+  100% { transform: translateY(14px) rotate(-22deg) scale(0.6); opacity: 0; }
+}
+
+/* Cats, dead cats and paws scale with the cell, not a fixed pixel size. */
+.cell .catWrap, .cell .wrongWrap, .cell .pawWrap {
+  position: absolute;
+  display: flex; align-items: center; justify-content: center;
+}
+.cell .catWrap, .cell .wrongWrap { inset: 13%; }
+.cell .pawWrap { inset: 29.5%; }
+.cell .catWrap svg, .cell .wrongWrap svg, .cell .pawWrap svg { width: 100%; height: 100%; }
+
+/* Correct cat: the wrapper pops in with a spring (once); the inner svg
+   breathes slowly and the eyes blink now and then. Pop and breathing sit on
+   different elements so neither overrides the other's transform.
+   --cat-delay is set per cell in JS so they're all out of phase. */
+.cell .catWrap { animation: catPop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.cell .catWrap svg {
+  transform-origin: 50% 85%;
+  animation: catBreathe 4s ease-in-out calc(var(--cat-delay, 0s) * -1.4) infinite;
+}
+.cell .catWrap .eyesClosed { animation: blinkClosed 7s linear calc(var(--cat-delay, 0s) * -2.5) infinite; }
+.cell .catWrap .eyesOpen   { animation: blinkOpen   7s linear calc(var(--cat-delay, 0s) * -2.5) infinite; }
 
 @keyframes catPop {
   from { transform: scale(0.3) translateY(10px) rotate(-15deg); opacity: 0; }
@@ -349,22 +378,28 @@ button {
   to   { transform: scale(1) translateY(0) rotate(0deg); opacity: 1; }
 }
 
-@keyframes catWiggle {
-  0%   { transform: scale(1)    rotate(0deg)    translateY(0px); }
-  15%  { transform: scale(1.06) rotate(6deg)    translateY(-3px); }
-  30%  { transform: scale(1.04) rotate(-4deg)   translateY(-2px); }
-  45%  { transform: scale(1.07) rotate(5deg)    translateY(-4px); }
-  60%  { transform: scale(1.02) rotate(-2deg)   translateY(-1px); }
-  100% { transform: scale(1)    rotate(0deg)    translateY(0px); }
+@keyframes catBreathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.025); }
 }
 
-/* Ghost cat: floats in tilted, then drifts up and fades in a loop */
-.cell .wrongWrap {
-  display: flex; align-items: center; justify-content: center;
-  opacity: 0.72;
-  animation: ghostIn 0.45s cubic-bezier(0.34, 1.2, 0.64, 1),
-             ghostDrift 3s ease-in-out var(--cat-delay, 0s) infinite;
+/* Content closed eyes most of the time; open for ~250ms once per cycle. */
+@keyframes blinkClosed {
+  0%, 92%, 95.6%, 100% { opacity: 1; }
+  92.1%, 95.5%         { opacity: 0; }
 }
+@keyframes blinkOpen {
+  0%, 92%, 95.6%, 100% { opacity: 0; }
+  92.1%, 95.5%         { opacity: 1; }
+}
+
+/* Ghost cat: floats in tilted (wrapper), sways a little and settles still
+   (inner svg). */
+.cell .wrongWrap {
+  opacity: 0.72;
+  animation: ghostIn 0.45s cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+.cell .wrongWrap svg { animation: ghostDrift 2.6s ease-in-out 0.45s 2; }
 
 @keyframes ghostIn {
   from { transform: scale(0.5) rotate(-25deg) translateY(8px); opacity: 0; }
@@ -372,10 +407,59 @@ button {
 }
 
 @keyframes ghostDrift {
-  0%   { transform: translateY(0px)  rotate(-2deg) scale(0.97); opacity: 0.72; }
-  35%  { transform: translateY(-5px) rotate(1deg)  scale(1.02); opacity: 0.55; }
-  70%  { transform: translateY(-2px) rotate(-3deg) scale(0.98); opacity: 0.68; }
-  100% { transform: translateY(0px)  rotate(-2deg) scale(0.97); opacity: 0.72; }
+  0%, 100% { transform: none; }
+  40%      { transform: translateY(-2px) rotate(1.5deg); }
+  75%      { transform: translateY(-1px) rotate(-1deg); }
+}
+
+/* Wrong cat: a gentle sideways shake of the cell. */
+.cell.shake { animation: cellShake 0.25s ease-in-out; }
+
+@keyframes cellShake {
+  0%, 100% { transform: none; }
+  20% { transform: translateX(-4px); }
+  45% { transform: translateX(4px); }
+  70% { transform: translateX(-2.5px); }
+  88% { transform: translateX(1.5px); }
+}
+
+/* Win moment: paws fade out, then cats hop in a wave (--d per cell). */
+.board.celebrate .cell .pawWrap { animation: pawOut 0.35s ease forwards; }
+.board.celebrate .cell .catWrap svg { animation: winHop 0.5s ease-in-out var(--d, 0s) both; }
+
+@keyframes pawOut {
+  from { opacity: 0.55; transform: scale(1); }
+  to   { opacity: 0;    transform: scale(0.7); }
+}
+
+@keyframes winHop {
+  0%   { transform: none; }
+  30%  { transform: translateY(-16%) scale(1.07) rotate(-6deg); }
+  55%  { transform: translateY(0) scale(1.06, 0.94); }
+  75%  { transform: translateY(-5%) rotate(4deg); }
+  100% { transform: none; }
+}
+
+/* Paw-print confetti burst over the board. */
+.confetti {
+  position: absolute; inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: 20px;
+  z-index: 5;
+}
+.confetti span {
+  position: absolute; left: 50%; top: 50%;
+  opacity: 0;
+  animation: confettiBurst 0.9s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+}
+.confetti svg { display: block; }
+
+@keyframes confettiBurst {
+  0%   { transform: translate(0, 0) scale(0.3) rotate(0deg); opacity: 0; }
+  12%  { opacity: 0.95; }
+  70%  { opacity: 0.9; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(1) rotate(var(--rot)); opacity: 0; }
 }
 
 /* Wrong cell: faint soft outline */
@@ -389,7 +473,6 @@ button {
    cat/wrong states since it's meant to feel undo-able — a slow second tap
    clears it; a double-tap commits to placing a cat. */
 .cell .pawWrap {
-  display: flex; align-items: center; justify-content: center;
   opacity: 0.55;
   animation: pawIn 0.22s cubic-bezier(0.34, 1.4, 0.64, 1);
 }
@@ -581,4 +664,37 @@ button {
   .levelRow { gap: 9px; }
   .controls .btn span { display: none; }
   .controls .btn { padding: 12px 4px; }
+}
+
+/* Reduced motion: no looping animation; pops, shake, heart loss, the win
+   wave and confetti become simple fades. */
+@media (prefers-reduced-motion: reduce) {
+  .titleFloat span,
+  .mapNode.next,
+  .cell .catWrap svg,
+  .cell .catWrap .eyesClosed,
+  .cell .catWrap .eyesOpen,
+  .cell .wrongWrap svg,
+  .winCat svg { animation: none; }
+
+  .screen.entering, .modal { animation: fadeIn 0.2s ease; }
+  .cell .catWrap { animation: fadeIn 0.25s ease; }
+  .cell .wrongWrap { animation: rmFadeGhost 0.3s ease; }
+  .cell .pawWrap { animation: rmFadePaw 0.2s ease; }
+  .cell.shake { animation: rmDip 0.3s ease; }
+  .heart.losing .heartGhost { animation: rmFadeOut 0.5s ease forwards; }
+  .board.celebrate .cell .pawWrap { animation: rmFadePawOut 0.35s ease forwards; }
+  .board.celebrate .cell .catWrap svg { animation: rmDip 0.5s ease var(--d, 0s) both; }
+  .confetti span {
+    transform: translate(var(--dx), var(--dy));
+    animation-name: rmConfetti;
+    animation-timing-function: ease;
+  }
+
+  @keyframes rmFadeGhost  { from { opacity: 0; } to { opacity: 0.72; } }
+  @keyframes rmFadePaw    { from { opacity: 0; } to { opacity: 0.55; } }
+  @keyframes rmFadePawOut { from { opacity: 0.55; } to { opacity: 0; } }
+  @keyframes rmFadeOut    { from { opacity: 1; } to { opacity: 0; } }
+  @keyframes rmDip        { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+  @keyframes rmConfetti   { 0%, 100% { opacity: 0; } 35%, 65% { opacity: 0.8; } }
 }
