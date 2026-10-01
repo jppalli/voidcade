@@ -115,7 +115,11 @@ const PENTA = [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66, 1318.51, 15
 
 /** The cat tune's scale, voiced two octaves down for the pad. */
 const MUSIC_PENTA = PENTA.map((f) => f / 4);
-const MUSIC_BASE_GAIN = 0.16; // background, not foreground — well under the SFX
+// This is the pad's own bus level, the same role `bus.gain.value` plays for
+// SFX — the per-voice gains in scheduleChord() are already the "soft" knob,
+// so this should sit near unity rather than attenuating a second time
+// (that double attenuation is what made the loop inaudible).
+const MUSIC_BASE_GAIN = 0.9;
 const CHORD_MIN_S = 7; // a couple of bars at ~65 BPM
 const CHORD_MAX_S = 13;
 const SCHEDULE_AHEAD_S = 2; // keep this much chord-time queued up
