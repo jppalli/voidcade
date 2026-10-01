@@ -79,6 +79,8 @@ function startLevel(index: number) {
   if (!ref) return;
   game = new Game(ref);
   winPending = false;
+  press = null;
+  lastTap = null;
 
   $('gameChapter').textContent = ref.chapter.name;
   $('gameLevelNum').textContent = `Level ${ref.levelInChapter + 1} · ${ref.size}×${ref.size}`;
@@ -124,7 +126,13 @@ function buildBoard(ref: LevelRef) {
       edges.push('inset -1px 0 0 0 rgba(74,59,52,0.16)');
       cell.style.boxShadow = edges.join(', ');
 
-      cell.addEventListener('click', () => onCellClick(r, c));
+      // Pointer taps/drags are handled on the board (see wireBoardInput).
+      // A click with detail 0 is keyboard (Enter/Space) or assistive-tech
+      // activation: toggle the paw. "C" places a cat on the focused cell.
+      cell.addEventListener('click', (e) => { if (e.detail === 0) keyTogglePaw(r, c); });
+      cell.addEventListener('keydown', (e) => {
+        if (e.key === 'c' || e.key === 'C') { e.preventDefault(); placeCat(r, c, true); }
+      });
       board.appendChild(cell);
     }
   }
@@ -186,29 +194,154 @@ function renderBoard() {
   ($('btnUndo') as HTMLButtonElement).disabled = !g.canUndo;
 }
 
-function onCellClick(r: number, c: number) {
+// ---------------------------------------------------------------- board input
+//
+//  tap empty cell      -> paw (free, applied immediately, no waiting)
+//  tap paw             -> clears it (free), however fast the taps come
+//  double-tap empty    -> places a cat (wrong = dead cat, -1 heart); the first
+//                         tap still applies a paw instantly and the second
+//                         converts it, undoing as one action. Clearing a paw
+//                         never arms a double-tap.
+//  hold + drag         -> paints paws on empty cells only (free); never a tap.
+//                         Needs DRAG_SLOP_PX of movement first.
+
+/** Max gap between two taps on the same cell to count as a double-tap. */
+const DOUBLE_TAP_MS = 300;
+/** Movement (px) from pointerdown before a press can become a drag, so a
+ *  jittery tap near a cell border still counts as a tap. */
+const DRAG_SLOP_PX = 8;
+
+/** Pointer currently held on the board. */
+let press: {
+  id: number; r: number; c: number;
+  sx: number; sy: number; x: number; y: number;
+  dragging: boolean; painted: boolean;
+} | null = null;
+/** Last single tap, so a fast second tap on the same cell becomes a cat. */
+let lastTap: { r: number; c: number; time: number } | null = null;
+
+/** Empty -> paw, paw -> empty. Returns null on a resolved (cat/dead) cell. */
+function togglePaw(r: number, c: number): 'paw' | 'cleared' | null {
+  const g = game!;
+  let result: 'paw' | 'cleared';
+  if (g.markPaw(r, c)) { playPaw(); result = 'paw'; }
+  else if (g.clearPaw(r, c)) { playLift(); result = 'cleared'; }
+  else return null;
+  renderBoard();
+  return result;
+}
+
+function keyTogglePaw(r: number, c: number) {
+  if (!game || winPending) return;
+  lastTap = null;
+  togglePaw(r, c);
+}
+
+function placeCat(r: number, c: number, recordUndo: boolean) {
   const g = game;
   if (!g || winPending) return;
-  const mark = g.marks[r][c];
-  if (mark === 'cat' || mark === 'wrong') return; // already resolved
-
-  const result = g.tap(r, c);
+  const result = g.placeCat(r, c, recordUndo);
+  if (result === 'already-filled') return;
   renderBoard();
 
-  if (result === 'paw-marked') {
-    playPaw();
-  } else if (result === 'paw-removed') {
-    playLift();
-  } else if (result === 'correct') {
+  if (result === 'correct') {
     playCat();
     if (g.isSolved()) finishLevel();
-  } else if (result === 'wrong') {
+  } else {
     playUnhappy();
     if (g.outOfLives) {
       winPending = true;
       setTimeout(showFailModal, 480);
     }
   }
+}
+
+function onTap(r: number, c: number) {
+  if (!game || winPending) return;
+  const now = performance.now();
+  const prev = lastTap;
+  lastTap = null;
+
+  if (prev && prev.r === r && prev.c === c && now - prev.time <= DOUBLE_TAP_MS) {
+    // The first tap already pushed an undo step holding the pre-tap state;
+    // fold the cat into it.
+    placeCat(r, c, false);
+    return;
+  }
+  // Only a tap that put a paw on an empty cell arms a double-tap. Clearing a
+  // paw leaves lastTap null, so a fast follow-up tap is a fresh single tap.
+  if (togglePaw(r, c) === 'paw') lastTap = { r, c, time: now };
+}
+
+function cellAtPoint(x: number, y: number): { r: number; c: number } | null {
+  const el = document.elementFromPoint(x, y)?.closest<HTMLElement>('#board .cell');
+  return el ? { r: Number(el.dataset.r), c: Number(el.dataset.c) } : null;
+}
+
+/** Drag paint: add a paw if the cell is empty; never clears or touches cats. */
+function paintPaw(r: number, c: number) {
+  if (!press || !game) return;
+  if (game.markPaw(r, c, !press.painted)) {
+    press.painted = true; // whole stroke = one undo step
+    playPaw();
+    renderBoard();
+  }
+}
+
+function wireBoardInput() {
+  const board = $('board');
+
+  board.addEventListener('pointerdown', (e) => {
+    if (!e.isPrimary || e.button !== 0 || !game || winPending) return;
+    const cell = cellAtPoint(e.clientX, e.clientY);
+    if (!cell) return;
+    press = {
+      id: e.pointerId, ...cell,
+      sx: e.clientX, sy: e.clientY, x: e.clientX, y: e.clientY,
+      dragging: false, painted: false,
+    };
+    board.setPointerCapture(e.pointerId);
+  });
+
+  board.addEventListener('pointermove', (e) => {
+    if (!press || e.pointerId !== press.id || !game || winPending) return;
+    // Still within tap slop: not a drag yet.
+    if (!press.dragging && Math.hypot(e.clientX - press.sx, e.clientY - press.sy) < DRAG_SLOP_PX) return;
+    // Sample along the segment so fast swipes don't skip cells.
+    const dx = e.clientX - press.x;
+    const dy = e.clientY - press.y;
+    const steps = Math.max(1, Math.ceil(Math.hypot(dx, dy) / 8));
+    for (let i = 1; i <= steps; i++) {
+      const cell = cellAtPoint(press.x + (dx * i) / steps, press.y + (dy * i) / steps);
+      if (!cell) continue;
+      if (!press.dragging) {
+        if (cell.r === press.r && cell.c === press.c) continue;
+        // Left the starting cell: this is a drag, not a tap.
+        press.dragging = true;
+        lastTap = null;
+        paintPaw(press.r, press.c);
+      }
+      paintPaw(cell.r, cell.c);
+    }
+    press.x = e.clientX;
+    press.y = e.clientY;
+  });
+
+  board.addEventListener('pointerup', (e) => {
+    if (!press || e.pointerId !== press.id) return;
+    const { r, c, sx, sy, dragging } = press;
+    press = null;
+    if (dragging) return;
+    // A release within the slop is a tap on the start cell, even if the
+    // finger wobbled over a border.
+    if (Math.hypot(e.clientX - sx, e.clientY - sy) < DRAG_SLOP_PX) { onTap(r, c); return; }
+    const cell = cellAtPoint(e.clientX, e.clientY);
+    if (cell && cell.r === r && cell.c === c) onTap(r, c);
+  });
+
+  board.addEventListener('pointercancel', (e) => {
+    if (press && e.pointerId === press.id) press = null;
+  });
 }
 
 function showFailModal() {
@@ -309,16 +442,20 @@ function init() {
   $('btnHowToClose').addEventListener('click', () => { playTap(); $('howToOverlay').classList.add('hidden'); });
 
   // Board controls
+  wireBoardInput();
   $('btnUndo').addEventListener('click', () => {
     if (!game || winPending) return;
+    lastTap = null;
     game.undo(); playLift(); renderBoard();
   });
   $('btnReset').addEventListener('click', () => {
     if (!game || winPending) return;
+    lastTap = null;
     game.reset(); playLift(); renderBoard();
   });
   $('btnHint').addEventListener('click', () => {
     if (!game || winPending) return;
+    lastTap = null;
     const spot = game.hint();
     if (!spot) return;
     playCat(); renderBoard();

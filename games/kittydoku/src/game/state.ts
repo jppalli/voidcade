@@ -46,29 +46,39 @@ export class Game {
     return this.livesLost >= MAX_LIVES;
   }
 
-  /**
-   * Tap a cell — two-stage like Queens/Star Battle:
-   *  1st tap on an empty cell: leaves a free paw mark ("no cat here yet"),
-   *     no life cost, no correctness check.
-   *  2nd tap on a paw-marked cell: places a cat when correct; otherwise it
-   *     removes the paw for free so annotations are always safe to change.
-   *  Tapping a resolved cell (cat/wrong) does nothing.
-   *  Returns what happened: 'paw-marked' | 'paw-removed' | 'correct' |
-   *  'wrong' | 'already-filled' */
-  tap(row: number, col: number): 'paw-marked' | 'paw-removed' | 'correct' | 'wrong' | 'already-filled' {
-    const current = this.marks[row][col];
-    if (current === 'cat' || current === 'wrong') return 'already-filled';
-
+  private pushHistory() {
     this.history.push({ marks: this.marks.map((r) => r.slice()), livesLost: this.livesLost });
     if (this.history.length > 200) this.history.shift();
+  }
 
-    if (current === 'empty') {
-      this.marks[row][col] = 'paw';
-      return 'paw-marked';
-    }
+  /** Free paw mark ("no cat here yet") on an empty cell. Never costs a life.
+   *  `recordUndo: false` folds the change into the previous undo step (used
+   *  so one drag stroke undoes as a single action). Returns false if the
+   *  cell wasn't empty. */
+  markPaw(row: number, col: number, recordUndo = true): boolean {
+    if (this.marks[row][col] !== 'empty') return false;
+    if (recordUndo) this.pushHistory();
+    this.marks[row][col] = 'paw';
+    return true;
+  }
 
-    // A correct second tap places a cat; an incorrect one marks it wrong
-    // and costs a life.
+  /** Clears a paw back to empty. Free, no other side effects. */
+  clearPaw(row: number, col: number): boolean {
+    if (this.marks[row][col] !== 'paw') return false;
+    this.pushHistory();
+    this.marks[row][col] = 'empty';
+    return true;
+  }
+
+  /** Commit a cat on an empty or paw cell: correct places a cat, wrong
+   *  leaves a dead-cat mark and costs a life. This is the only way to lose
+   *  a life. `recordUndo: false` folds it into the previous undo step (a
+   *  double-tap undoes as one action back to the state before its first tap). */
+  placeCat(row: number, col: number, recordUndo = true): 'correct' | 'wrong' | 'already-filled' {
+    const current = this.marks[row][col];
+    if (current === 'cat' || current === 'wrong') return 'already-filled';
+    if (recordUndo) this.pushHistory();
+
     if (this.isSolutionCell(row, col)) {
       this.marks[row][col] = 'cat';
       return 'correct';

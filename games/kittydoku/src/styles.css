@@ -385,9 +385,9 @@ button {
   z-index: 2;
 }
 
-/* Paw mark: a free first-tap note ("no cat here yet"), lighter and
-   quicker than the cat/wrong states since it's meant to feel undo-able —
-   a second tap on the same cell commits to actually placing a cat. */
+/* Paw mark: a free note ("no cat here yet"), lighter and quicker than the
+   cat/wrong states since it's meant to feel undo-able — a slow second tap
+   clears it; a double-tap commits to placing a cat. */
 .cell .pawWrap {
   display: flex; align-items: center; justify-content: center;
   opacity: 0.55;
@@ -446,12 +446,19 @@ button {
   border-radius: 20px;
   overflow: hidden;
   box-shadow: 0 8px 0 rgba(122, 96, 80, 0.18);
+  /* No double-tap zoom; cells go further (none) so drag-painting paws
+     doesn't scroll the page. No text selection / callout on hold. */
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .cell {
   position: relative;
   border: none;
   padding: 0;
+  touch-action: none;
   display: flex;
   align-items: center;
   justify-content: center;
