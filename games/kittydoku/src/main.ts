@@ -926,9 +926,26 @@ function init() {
     lastTap = null;
     game.undo(); playLift(); renderBoard();
   });
+  // Start over: first tap arms it ("Sure?"), a second tap within 3s clears
+  // the board. Still undoable, and lost hearts stay lost as before.
+  let resetArmed: number | null = null;
+  const disarmReset = () => {
+    if (resetArmed !== null) clearTimeout(resetArmed);
+    resetArmed = null;
+    $('btnReset').classList.remove('armed');
+    $('btnReset').setAttribute('aria-label', 'Start over');
+  };
   $('btnReset').addEventListener('click', () => {
     if (!game || winPending) return;
     lastTap = null;
+    if (resetArmed === null) {
+      playTap();
+      $('btnReset').classList.add('armed');
+      $('btnReset').setAttribute('aria-label', 'Tap again to clear the board');
+      resetArmed = window.setTimeout(disarmReset, 3000);
+      return;
+    }
+    disarmReset();
     game.reset(); playLift(); renderBoard();
   });
   $('btnHint').addEventListener('click', onHintPressed);

@@ -829,19 +829,18 @@ button {
 @media (max-height: 680px) {
   #screen-game { padding: 10px 14px 12px; }
   #screen-game .gameHeader { margin-bottom: 8px; }
-  #screen-game .helpText { display: none; }
   .controls { margin-top: 10px; }
-  .controls .btn { padding: 9px 8px; }
+  .controls .btn { height: 44px; }
+  .controls .ctlIcon { flex-basis: 44px; }
 }
 @media (max-height: 460px) {
-  .controls .btn span { display: none; }
+  .controls .btn span:not(.resetSure) { display: none; }
 }
 
 /* Night worlds (Rooftop Moon, Lantern Festival): light text on the dark sky.
    Buttons and the board keep their own cream cards, so they need nothing. */
 #screen-game.night .gameChapter  { color: rgba(255, 246, 230, 0.78); }
 #screen-game.night .gameLevelNum { color: #fff6e6; }
-#screen-game.night .helpText     { color: rgba(255, 246, 230, 0.62); }
 #screen-game.night .heart.empty svg path { stroke: rgba(255, 246, 230, 0.45) !important; }
 #screen-game.night .board { box-shadow: 0 8px 0 rgba(0, 0, 0, 0.3); }
 
@@ -1411,14 +1410,29 @@ button {
 .controls {
   flex-shrink: 0;
   width: 100%;
-  max-width: 520px;
+  max-width: 420px;
   display: flex;
+  justify-content: center;
   gap: 10px;
-  margin-top: 14px;
+  margin-top: 16px;
 }
 
-.controls .btn { flex: 1; padding: 12px 8px; font-size: 13px; display: flex;
-  align-items: center; justify-content: center; gap: 7px; position: relative; }
+.controls .btn { flex: 1; padding: 0 12px; height: 50px; border-radius: 18px; font-size: 15px; font-weight: 900;
+  display: flex; align-items: center; justify-content: center; gap: 8px; position: relative; }
+.controls .btn .icon { width: 21px; height: 21px; }
+.controls .btn:disabled { opacity: 0.45; cursor: default; }
+
+/* Hint: the warm, inviting one. */
+.controls .hintBtn { background: #fff3c4; border-color: #f0c64a; color: #6b4a00; box-shadow: 0 5px 0 #e2b23a; }
+.controls .hintBtn .icon { color: #c98a00; }
+.controls .hintBtn:hover { box-shadow: 0 7px 0 #e2b23a; }
+.controls .hintBtn:active { box-shadow: 0 2px 0 #e2b23a; }
+
+/* Start over: small icon; first tap widens it to "Sure?". */
+.controls .ctlIcon { flex: 0 0 50px; padding: 0; color: var(--ink-soft); transition: flex-basis 0.2s ease, background 0.2s ease; }
+.controls .ctlIcon .resetSure { display: none; }
+.controls .ctlIcon.armed { flex-basis: 104px; gap: 6px; background: var(--rose); border-color: var(--rose-deep); color: var(--on-rose); }
+.controls .ctlIcon.armed .resetSure { display: inline; font-size: 14px; }
 
 /* Free hints left today, or a video icon once they've run out. */
 .hintBadge {
@@ -1485,17 +1499,6 @@ button {
 
 /* The Arena paused the game: freeze every animation until it resumes. */
 body.paused *, body.paused *::before, body.paused *::after { animation-play-state: paused !important; }
-
-.helpText {
-  flex-shrink: 0;
-  margin-top: 12px;
-  max-width: 460px;
-  text-align: center;
-  font-size: 12.5px;
-  color: var(--ink-faint);
-  font-weight: 600;
-  line-height: 1.5;
-}
 
 /* ---------------- modals ---------------- */
 .overlay {
@@ -1804,8 +1807,7 @@ body.paused *, body.paused *::before, body.paused *::after { animation-play-stat
 
 @media (max-width: 420px) {
   .levelRow { gap: 9px; }
-  .controls .btn span { display: none; }
-  .controls .btn { padding: 12px 4px; }
+
 }
 
 /* Reduced motion: no looping animation; pops, shake, heart loss, the win

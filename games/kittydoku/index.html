@@ -111,13 +111,13 @@
       <div class="board" id="board"></div>
     </div>
 
+    <!-- Undo and Hint are the everyday buttons; Start over is a small icon
+         that asks for a second tap, so a stray tap can't wipe the board. -->
     <div class="controls">
-      <button class="btn" id="btnUndo"><svg class="icon"><use href="#i-undo"/></svg><span>Undo</span></button>
-      <button class="btn" id="btnReset"><svg class="icon"><use href="#i-reset"/></svg><span>Reset</span></button>
-      <button class="btn" id="btnHint"><svg class="icon"><use href="#i-hint"/></svg><span>Hint</span><b class="hintBadge" id="hintBadge" aria-hidden="true"></b></button>
+      <button class="btn ctlBtn" id="btnUndo"><svg class="icon"><use href="#i-undo"/></svg><span>Undo</span></button>
+      <button class="btn ctlBtn hintBtn" id="btnHint"><svg class="icon"><use href="#i-hint"/></svg><span>Hint</span><b class="hintBadge" id="hintBadge" aria-hidden="true"></b></button>
+      <button class="btn ctlBtn ctlIcon" id="btnReset" title="Start over" aria-label="Start over"><svg class="icon"><use href="#i-reset"/></svg><span class="resetSure">Sure?</span></button>
     </div>
-
-    <p class="helpText">Tap for a paw, or drag to paint paws. Tap a paw again to clear it. Double-tap an empty square to place a cat — a wrong cat costs a heart.</p>
   </section>
 
   <!-- ============ tutorial coach: dim + spotlight, a paw acting out the gesture, a short caption ============ -->
