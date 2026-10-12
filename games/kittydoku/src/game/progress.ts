@@ -4,7 +4,7 @@ const STORAGE_KEY = 'kittydoku-progress-v1';
 
 export interface LevelResult {
   solved: boolean;
-  /** solved without asking for a hint */
+  /** Purrfect: solved with no hints and no hearts lost */
   clean: boolean;
 }
 
@@ -103,7 +103,7 @@ export function recordWin(p: Progress, index: number, clean: boolean, totalLevel
   const prev = p.results[index];
   const results = {
     ...p.results,
-    // Never downgrade a clean solve to a hinted one on a replay.
+    // Never take a Purrfect away on a less tidy replay.
     [index]: { solved: true, clean: prev?.clean || clean },
   };
   return {

@@ -747,7 +747,7 @@ function finishLevel() {
   const { step, count } = celebrateBoard(g);
   playWin(WIN_WAVE_START, step, count);
 
-  progress = recordWin(progress, g.ref.index, !g.usedHint, TOTAL_LEVELS);
+  progress = recordWin(progress, g.ref.index, g.isPurrfect, TOTAL_LEVELS);
   saveProgress(progress);
 
   endActiveLevel();
@@ -757,8 +757,9 @@ function finishLevel() {
   if (solvedCount(progress) >= TOTAL_LEVELS) platform.gameEnd();
 
   const isLast = g.ref.index >= TOTAL_LEVELS - 1;
-  const purrfect = !g.usedHint;
-  const flawless = g.livesLost === 0;
+  const purrfect = g.isPurrfect;
+  const noHints = !g.usedHint;
+  const flawless = g.livesLost === 0 && !g.revived;
   $('winModal').classList.toggle('purrfect', purrfect);
   $('winCat').innerHTML = mascotSvg(96, worldCoat(g.ref.chapterIndex));
   $('winMedal').innerHTML = purrfect ? medalSvg(34) : '';
@@ -769,15 +770,15 @@ function finishLevel() {
     .map((ch, i) => `<span aria-hidden="true" style="animation-delay:${(0.15 + i * 0.045).toFixed(3)}s">${ch === ' ' ? '&nbsp;' : ch}</span>`)
     .join('');
   const chips: string[] = [];
-  if (purrfect) chips.push(`<span class="winChip gold">${medalSvg(14)}No hints</span>`);
-  if (flawless) chips.push(`<span class="winChip">${heartSvg(true)}No hearts lost</span>`);
+  if (noHints) chips.push(`<span class="winChip${purrfect ? ' gold' : ''}">${medalSvg(14)}No hints</span>`);
+  if (flawless) chips.push(`<span class="winChip${purrfect ? ' gold' : ''}">${heartSvg(true)}No hearts lost</span>`);
   $('winChips').innerHTML = chips.join('');
   $('winText').textContent = isLast
     ? 'Every cat in the game has found its spot. Thanks for playing!'
-    : purrfect && flawless
+    : purrfect
       ? 'Not a single slip. The cats are very impressed.'
-      : purrfect
-        ? 'Solved all on your own!'
+      : noHints
+        ? 'Solved all on your own! Keep every heart for a Purrfect.'
         : 'Every cat has a spot of its own.';
   ($('btnWinNext') as HTMLButtonElement).classList.toggle('hidden', isLast);
 

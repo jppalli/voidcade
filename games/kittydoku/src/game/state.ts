@@ -100,6 +100,11 @@ export class Game {
     this.marks = this.marks.map((row) => row.map((m) => (m === 'wrong' ? 'paw' : m)));
   }
 
+  /** Purrfect = a flawless solve: no hints, no hearts lost, no revive. */
+  get isPurrfect(): boolean {
+    return !this.usedHint && !this.revived && this.livesLost === 0;
+  }
+
   get canUndo(): boolean { return this.history.length > 0; }
 
   /** Restores the previous marks (it can lift a dead-cat mark) but keeps

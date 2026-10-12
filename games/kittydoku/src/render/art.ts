@@ -272,7 +272,7 @@ export function pastel(index: number): Pastel {
 
 /**
  * "Purrfect" medal: a gold coin with a star, hung on two pink ribbon tails.
- * Marks levels solved without a hint (map nodes, header stats). Flat fills
+ * Marks Purrfect levels: no hints, no hearts lost (map nodes, header stats). Flat fills
  * only (no gradient ids), so it can repeat freely on one page.
  */
 export function medalSvg(size = 24): string {

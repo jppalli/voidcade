@@ -280,7 +280,7 @@ export function renderMap(
     node.setAttribute(
       'aria-label',
       `${ref.chapter.name}, level ${num}, ${ref.size} by ${ref.size}` +
-        (done ? (clean ? ', solved without hints' : ', solved') : unlocked ? '' : ', locked')
+        (done ? (clean ? ', purrfect' : ', solved') : unlocked ? '' : ', locked')
     );
 
     if (stateClass === 'done') {
@@ -288,7 +288,7 @@ export function renderMap(
       node.innerHTML = `
         <span class="mnCat">${mascotSvg(60, w.coat)}</span>
         <span class="mnBadge">${num}</span>
-        ${clean ? `<span class="mnMedal" title="Purrfect: no hints used">${medalSvg(24)}</span>` : ''}
+        ${clean ? `<span class="mnMedal" title="Purrfect: no hints, no hearts lost">${medalSvg(24)}</span>` : ''}
       `;
       node.addEventListener('click', () => onPick(ref.index));
     } else if (stateClass === 'next' || stateClass === 'open') {
@@ -314,7 +314,7 @@ export function renderMap(
     <span class="statPill" title="Levels solved" aria-label="${solved} of ${TOTAL_LEVELS} levels solved">
       <span class="spIcon">${mascotSvg(22)}</span><b>${solved}</b><span class="spOf">/ ${TOTAL_LEVELS}</span>
     </span>
-    <span class="statPill gold" title="Purrfect: solved without a hint" aria-label="${clean} purrfect, solved without a hint">
+    <span class="statPill gold" title="Purrfect: no hints, no hearts lost" aria-label="${clean} purrfect, solved with no hints and no hearts lost">
       <span class="spIcon">${medalSvg(16)}</span><b>${clean}</b><span class="spOf">purrfect</span>
     </span>`;
 }
