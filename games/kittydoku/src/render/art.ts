@@ -202,55 +202,39 @@ export function mascotSvg(size = 100, coat: Coat = DEFAULT_COAT): string {
 </svg>`;
 }
 
+/** Coat for the angel cat: pale lavender-white, soft grey lines. */
+const ANGEL_COAT: Coat = {
+  name: 'angel', body: '#f6f3fb', innerEar: '#ebe3f6', blush: '#f2c8d4', line: '#988fac',
+  outline: '#cfc6e0', mouth: '#988fac', nose: '#e6b9c8',
+};
+
+/** One feathered wing (left side); the right one is mirrored. */
+const WING =
+  'M33 58 C21 44 7 46 4 58 C9 57 13 59 14 62 C8 63 5 68 7 73 C12 70 16 71 18 74 ' +
+  'C14 77 15 82 19 85 C25 80 31 71 33 58 Z';
+
 /**
- * "Oops" ghost cat — greyscale version of the mascot, tilted, X eyes,
- * tongue out, little stars. Grey palette reads as "eliminated" without
- * being creepy or dark.
+ * Wrong guess: the same soft mascot, now a little angel. Pale coat, peaceful
+ * closed eyes, a halo and small feathered wings. The board draws it see-through
+ * (see .wrongWrap) so it reads as "not here" without being sad or scary.
  */
 export function deadCatSvg(size = 100): string {
+  const face = mascotSvg(74, ANGEL_COAT).replace('<svg ', '<svg x="13" y="22" ');
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="${size}" height="${size}" aria-hidden="true">
-  <g transform="rotate(-14, 50, 57)">
-    <!-- outer ears, grey -->
-    <path d="M25 42 L28 13 Q28.5 8 33 11 L55 25 Z" fill="#c4bfc8"/>
-    <path d="M75 42 L72 13 Q71.5 8 67 11 L45 25 Z" fill="#c4bfc8"/>
-    <!-- head, grey -->
-    <ellipse cx="50" cy="57" rx="32" ry="29" fill="#c4bfc8"/>
-    <!-- inner ears, lighter grey -->
-    <path d="M30.5 36 L32.5 18 L46 27 Z" fill="#e2dfe5"/>
-    <path d="M69.5 36 L67.5 18 L54 27 Z" fill="#e2dfe5"/>
-    <!-- blush, very faint -->
-    <ellipse cx="33" cy="62" rx="5.5" ry="3.4" fill="#b0a8b4" opacity="0.45"/>
-    <ellipse cx="67" cy="62" rx="5.5" ry="3.4" fill="#b0a8b4" opacity="0.45"/>
-    <!-- whiskers -->
-    <g fill="none" stroke="#7d7684" stroke-width="2.4" stroke-linecap="round" opacity="0.8">
-      <line x1="22" y1="60" x2="6"  y2="57"/>
-      <line x1="22" y1="67" x2="7"  y2="69"/>
-      <line x1="78" y1="60" x2="94" y2="57"/>
-      <line x1="78" y1="67" x2="93" y2="69"/>
+  <g transform="rotate(-7 50 58)">
+    <g fill="#ffffff" stroke="#d6cee6" stroke-width="2" stroke-linejoin="round">
+      <path d="${WING}"/>
+      <path d="${WING}" transform="translate(100 0) scale(-1 1)"/>
     </g>
-    <!-- X eyes -->
-    <g fill="none" stroke="#f5f3f7" stroke-width="3.6" stroke-linecap="round">
-      <line x1="30" y1="51" x2="38" y2="59"/>
-      <line x1="38" y1="51" x2="30" y2="59"/>
-      <line x1="62" y1="51" x2="70" y2="59"/>
-      <line x1="70" y1="51" x2="62" y2="59"/>
+    <g fill="none" stroke="#e4dcef" stroke-width="1.4" stroke-linecap="round">
+      <path d="M26 58 C19 54 13 55 10 59 M27 66 C21 64 15 66 13 69"/>
+      <path d="M74 58 C81 54 87 55 90 59 M73 66 C79 64 85 66 87 69"/>
     </g>
-    <!-- tongue out, pale pink -->
-    <ellipse cx="50" cy="72" rx="5.5" ry="4" fill="#e8c8cc"/>
-    <path d="M44.5 69 Q50 74 55.5 69" fill="#e8c8cc" stroke="none"/>
-    <!-- tiny impact stars (on the background, so drawn in a darker grey) -->
-    <g fill="none" stroke="#8d8693" stroke-width="2.2" stroke-linecap="round">
-      <line x1="14" y1="36" x2="14" y2="28"/>
-      <line x1="10" y1="32" x2="18" y2="32"/>
-      <line x1="11" y1="29" x2="17" y2="35"/>
-      <line x1="17" y1="29" x2="11" y2="35"/>
-    </g>
-    <g fill="none" stroke="#8d8693" stroke-width="2.2" stroke-linecap="round">
-      <line x1="83" y1="28" x2="83" y2="20"/>
-      <line x1="79" y1="24" x2="87" y2="24"/>
-      <line x1="80" y1="21" x2="86" y2="27"/>
-      <line x1="86" y1="21" x2="80" y2="27"/>
-    </g>
+    ${face}
+    <ellipse cx="50" cy="15" rx="17" ry="4.6" fill="none" stroke="#fff3c4" stroke-width="6" opacity="0.7"/>
+    <ellipse cx="50" cy="15" rx="17" ry="4.6" fill="none" stroke="#e9cf7a" stroke-width="2.6"/>
+    <path d="M86 24 l1.6 3.6 3.6 1.6 -3.6 1.6 -1.6 3.6 -1.6 -3.6 -3.6 -1.6 3.6 -1.6 Z" fill="#e9cf7a"/>
+    <path d="M14 26 l1.1 2.5 2.5 1.1 -2.5 1.1 -1.1 2.5 -1.1 -2.5 -2.5 -1.1 2.5 -1.1 Z" fill="#cfc6e0"/>
   </g>
 </svg>`;
 }

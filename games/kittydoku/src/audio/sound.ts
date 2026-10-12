@@ -1,6 +1,12 @@
-// Gentle procedural WebAudio SFX — no audio files. Everything here is kept
-// soft and short: this is a calm game, so sounds confirm actions rather than
-// celebrate them loudly.
+// Procedural WebAudio sound for KittyDoku: no audio files.
+//
+// Signal chain:  voices ─┬─> dry ──────────────┐
+//                        └─> reverb send ─> room ┴─> warmth EQ ─> glue compressor ─> out
+//
+// Every sound is built from a few soft "instruments" (a music-box pluck, a
+// glassy FM bell, a felt-tip tap, a warm pad) that share one small room
+// reverb, so effects and music sit in the same space and sound like one
+// piece. Everything stays in C major pentatonic to keep it gentle.
 
 import { getItem, setItem } from '../platform/storage';
 
@@ -20,10 +26,8 @@ export function soundEnabled(): boolean {
 export function setSoundEnabled(on: boolean) {
   enabled = on;
   setItem(PREFS_KEY, on ? 'on' : 'off');
-  // Music follows the same single on/off toggle as the SFX: stop it the
-  // moment sound is switched off, and let it fade back in if switched on
-  // again (only if the context already exists — otherwise it'll start
-  // itself on the next sound-triggering gesture, same as SFX).
+  // Music follows the same toggle as the effects: stop at once when switched
+  // off, fade back in when switched on (if audio has already started).
   if (on) {
     if (ctx) startMusic();
   } else {
@@ -31,40 +35,92 @@ export function setSoundEnabled(on: boolean) {
   }
 }
 
+// ---------------------------------------------------------------- engine
+
 let ctx: AudioContext | null = null;
-/** Input of the master bus: gain -> gentle lowpass -> compressor -> out. */
-let bus: GainNode | null = null;
-/** True while we suspended the context because the tab was hidden. */
+/** Dry input for effects. */
+let sfx: GainNode | null = null;
+/** Input of the shared room reverb. */
+let send: GainNode | null = null;
+let musicGain: GainNode | null = null;
+let noise: AudioBuffer | null = null;
+/** True while we suspended the context because of a hold (see below). */
 let suspendedByHide = false;
+
+/** A small, warm room: decaying stereo noise that darkens as it fades. */
+function makeRoom(c: AudioContext): AudioBuffer {
+  const seconds = 2.2;
+  const len = Math.floor(c.sampleRate * seconds);
+  const buf = c.createBuffer(2, len, c.sampleRate);
+  for (let ch = 0; ch < 2; ch++) {
+    const d = buf.getChannelData(ch);
+    let lp = 0;
+    for (let i = 0; i < len; i++) {
+      const t = i / len;
+      // One-pole lowpass whose cutoff falls over time: bright start, soft tail.
+      const k = 0.55 - t * 0.45;
+      lp += k * ((Math.random() * 2 - 1) - lp);
+      d[i] = lp * Math.pow(1 - t, 2.4) * (i < c.sampleRate * 0.012 ? i / (c.sampleRate * 0.012) : 1);
+    }
+  }
+  return buf;
+}
+
+function makeNoise(c: AudioContext): AudioBuffer {
+  const buf = c.createBuffer(1, Math.floor(c.sampleRate * 0.5), c.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  return buf;
+}
 
 function audio(): AudioContext {
   if (!ctx) {
     // Created lazily from the first sound, which always follows a user
     // gesture, so nothing plays before the first interaction.
     ctx = new AudioContext();
-    bus = ctx.createGain();
-    bus.gain.value = 0.8;
-    const lowpass = ctx.createBiquadFilter();
-    lowpass.type = 'lowpass';
-    lowpass.frequency.value = 3200;
-    lowpass.Q.value = 0.5;
-    const comp = ctx.createDynamicsCompressor();
-    comp.threshold.value = -18;
-    comp.knee.value = 12;
-    comp.ratio.value = 4;
-    comp.attack.value = 0.004;
-    comp.release.value = 0.2;
-    bus.connect(lowpass);
-    lowpass.connect(comp);
-    comp.connect(ctx.destination);
+    const c = ctx;
 
-    // The ambient pad has its own gain feeding into the shared bus, so it
-    // gets the same lowpass/compressor glue but can be mixed and ducked
-    // independently of the SFX. This is the one and only time it's built,
-    // same as the bus above — one AudioContext, one music instance, ever.
-    musicGain = ctx.createGain();
+    const master = c.createGain();
+    master.gain.value = 0.85;
+    // Warmth: roll off harsh top end, a touch of low-mid body.
+    const shelf = c.createBiquadFilter();
+    shelf.type = 'highshelf';
+    shelf.frequency.value = 5200;
+    shelf.gain.value = -6;
+    const body = c.createBiquadFilter();
+    body.type = 'peaking';
+    body.frequency.value = 320;
+    body.Q.value = 0.8;
+    body.gain.value = 1.5;
+    const comp = c.createDynamicsCompressor();
+    comp.threshold.value = -20;
+    comp.knee.value = 14;
+    comp.ratio.value = 3;
+    comp.attack.value = 0.006;
+    comp.release.value = 0.25;
+    master.connect(shelf).connect(body).connect(comp).connect(c.destination);
+
+    const room = c.createConvolver();
+    room.buffer = makeRoom(c);
+    const roomOut = c.createGain();
+    roomOut.gain.value = 0.55;
+    send = c.createGain();
+    send.connect(room).connect(roomOut).connect(master);
+
+    sfx = c.createGain();
+    sfx.gain.value = 0.9;
+    sfx.connect(master);
+
+    // Music has its own fader (for ducking and the on/off toggle) and sends
+    // a little more to the room than the effects do.
+    musicGain = c.createGain();
     musicGain.gain.value = 0;
-    musicGain.connect(bus);
+    musicGain.connect(master);
+    const musicSend = c.createGain();
+    musicSend.gain.value = 0.6;
+    musicGain.connect(musicSend).connect(send);
+
+    noise = makeNoise(c);
     startMusic();
   }
   if (ctx.state === 'suspended' && holds.size === 0) {
@@ -77,8 +133,8 @@ function audio(): AudioContext {
 // Audio goes quiet while anything "holds" it: the tab is hidden, the window
 // lost focus (Arkadium requires muting then), the Arena paused the game, or
 // a video ad is playing. It comes back only when every hold is released, and
-// only if it was running when we suspended it. The music scheduler's
-// lookahead timer pauses too, so it never has to catch up on missed chords.
+// only if it was running when we suspended it. The music scheduler pauses
+// too, so it never has to catch up on missed notes.
 type Hold = 'hidden' | 'blur' | 'paused' | 'ad';
 const holds = new Set<Hold>();
 
@@ -109,92 +165,237 @@ document.addEventListener('visibilitychange', () => setAudioHold('hidden', docum
 window.addEventListener('blur', () => setAudioHold('blur', true));
 window.addEventListener('focus', () => setAudioHold('blur', false));
 
-/** C major pentatonic, C5 up to G6: the tune the cats play. Declared up
- *  here (ahead of the other SFX) because the ambient pad below voices the
- *  same scale, just lower. */
+// ---------------------------------------------------------------- instruments
+
+/** C major pentatonic, C5 up to G6: the tune the cats play. */
 const PENTA = [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66, 1318.51, 1567.98];
 
-// ---------------------------------------------------------------- ambient pad
+/** Where a voice goes: effects bus or music bus, plus how much room. */
+interface Out { dest: AudioNode; room: number }
+const fx = (room = 0.25): Out => ({ dest: sfx!, room });
+
+function connectOut(c: AudioContext, node: AudioNode, out: Out) {
+  node.connect(out.dest);
+  if (out.room > 0 && out.dest === sfx) {
+    const s = c.createGain();
+    s.gain.value = out.room;
+    node.connect(s).connect(send!);
+  }
+}
+
+/** Gain envelope: quick attack, exponential fall to silence. */
+function env(g: GainNode, t0: number, peak: number, attack: number, decay: number) {
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.linearRampToValueAtTime(peak, t0 + attack);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + attack + decay);
+}
+
+/**
+ * Music-box / kalimba pluck: triangle body plus a quiet sine an octave up,
+ * through a lowpass that closes as the note fades. Soft and wooden.
+ */
+function pluck(freq: number, t0: number, gain: number, decay = 0.9, out: Out = fx(0.3)) {
+  const c = ctx!;
+  const lp = c.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.Q.value = 0.7;
+  lp.frequency.setValueAtTime(Math.min(9000, freq * 7), t0);
+  lp.frequency.exponentialRampToValueAtTime(Math.max(500, freq * 1.4), t0 + decay * 0.8);
+  const g = c.createGain();
+  env(g, t0, gain, 0.004, decay);
+  lp.connect(g);
+  connectOut(c, g, out);
+
+  const a = c.createOscillator();
+  a.type = 'triangle';
+  a.frequency.value = freq;
+  const b = c.createOscillator();
+  b.type = 'sine';
+  b.frequency.value = freq * 2.005;
+  const bg = c.createGain();
+  bg.gain.value = 0.22;
+  a.connect(lp);
+  b.connect(bg).connect(lp);
+  [a, b].forEach((o) => { o.start(t0); o.stop(t0 + decay + 0.1); });
+}
+
+/** Glassy FM bell: a sine whose brightness (mod index) fades with the note. */
+function bell(freq: number, t0: number, gain: number, decay = 1.4, out: Out = fx(0.45)) {
+  const c = ctx!;
+  const car = c.createOscillator();
+  car.frequency.value = freq;
+  const mod = c.createOscillator();
+  mod.frequency.value = freq * 3.5;
+  const idx = c.createGain();
+  idx.gain.setValueAtTime(freq * 1.6, t0);
+  idx.gain.exponentialRampToValueAtTime(freq * 0.05, t0 + decay * 0.6);
+  mod.connect(idx).connect(car.frequency);
+  const g = c.createGain();
+  env(g, t0, gain, 0.003, decay);
+  car.connect(g);
+  connectOut(c, g, out);
+  [car, mod].forEach((o) => { o.start(t0); o.stop(t0 + decay + 0.1); });
+}
+
+/** Felt tap: a breath of filtered noise with a tiny pitched thump under it. */
+function felt(t0: number, centre: number, gain: number, thumpHz: number) {
+  const c = ctx!;
+  const src = c.createBufferSource();
+  src.buffer = noise;
+  const bp = c.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.frequency.value = centre;
+  bp.Q.value = 1.2;
+  const g = c.createGain();
+  env(g, t0, gain, 0.002, 0.05);
+  src.connect(bp).connect(g);
+  connectOut(c, g, fx(0.08));
+  src.start(t0, Math.random() * 0.4);
+  src.stop(t0 + 0.08);
+
+  const o = c.createOscillator();
+  o.frequency.setValueAtTime(thumpHz, t0);
+  o.frequency.exponentialRampToValueAtTime(thumpHz * 0.7, t0 + 0.07);
+  const og = c.createGain();
+  env(og, t0, gain * 0.9, 0.003, 0.07);
+  o.connect(og);
+  connectOut(c, og, fx(0.06));
+  o.start(t0);
+  o.stop(t0 + 0.1);
+}
+
+/** Simple sine/triangle glide, for mews and sighs. */
+function glide(f0: number, f1: number, t0: number, dur: number, gain: number, type: OscillatorType = 'triangle', room = 0.2) {
+  const c = ctx!;
+  const o = c.createOscillator();
+  o.type = type;
+  o.frequency.setValueAtTime(f0, t0);
+  o.frequency.exponentialRampToValueAtTime(f1, t0 + dur);
+  const lp = c.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.value = 2200;
+  const g = c.createGain();
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.linearRampToValueAtTime(gain, t0 + Math.min(0.04, dur * 0.25));
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.connect(lp).connect(g);
+  connectOut(c, g, fx(room));
+  o.start(t0);
+  o.stop(t0 + dur + 0.05);
+}
+
+/** ±3% random detune so repeated sounds don't feel mechanical. */
+const humanize = () => 1 + (Math.random() * 2 - 1) * 0.03;
+
+function guard(fn: (c: AudioContext, now: number) => void) {
+  if (!enabled) return;
+  try {
+    const c = audio();
+    fn(c, c.currentTime + 0.005);
+  } catch {
+    /* audio unavailable: silently continue */
+  }
+}
+
+// ---------------------------------------------------------------- music
 //
-// A generative background loop: every few bars we fade in a soft chord built
-// from the same pentatonic family as the cat tune, voiced two octaves lower
-// so it sits under the SFX. A lookahead scheduler keeps queuing the next
-// chord a little ahead of AudioContext time, so the tempo can't drift the
-// way a plain setInterval loop would.
+// A slow generative lullaby at ~66 BPM: a warm filtered pad walking through
+// a four-chord progression, a soft bass note, and a music box that picks a
+// few chord tones each bar. A lookahead scheduler queues notes in
+// AudioContext time, so timing never drifts.
 
-/** The cat tune's scale, voiced two octaves down for the pad. */
-const MUSIC_PENTA = PENTA.map((f) => f / 4);
-// This is the pad's own bus level, the same role `bus.gain.value` plays for
-// SFX — the per-voice gains in scheduleChord() are already the "soft" knob,
-// so this should sit near unity rather than attenuating a second time
-// (that double attenuation is what made the loop inaudible).
-const MUSIC_BASE_GAIN = 0.9;
-const CHORD_MIN_S = 7; // a couple of bars at ~65 BPM
-const CHORD_MAX_S = 13;
-const SCHEDULE_AHEAD_S = 2; // keep this much chord-time queued up
-const SCHEDULER_TICK_MS = 1000; // how often we check whether to queue more
+const BEAT = 60 / 66;
+const BAR = BEAT * 4;
+/** Chords as semitones above C3 (130.81 Hz); each lasts two bars. */
+const PROGRESSION: { bass: number; pad: number[]; melody: number[] }[] = [
+  { bass: 0, pad: [12, 16, 19, 26], melody: [24, 26, 28, 31, 33] }, // Cadd9
+  { bass: 9, pad: [12, 16, 21, 24], melody: [24, 28, 31, 33, 36] }, // Am7
+  { bass: 5, pad: [9, 12, 16, 21], melody: [21, 24, 28, 31, 33] },  // Fmaj7
+  { bass: 7, pad: [11, 14, 19, 24], melody: [26, 28, 31, 33, 35] }, // G6/9
+];
+const C3 = 130.81;
+const hz = (semi: number) => C3 * Math.pow(2, semi / 12);
 
-let musicGain: GainNode | null = null;
-/** True once the loop has been started; stays true across duck/pause so a
- *  resume knows to pick back up without creating a second loop. */
+const MUSIC_BASE_GAIN = 0.8;
+const SCHEDULE_AHEAD_S = 1.5;
+const SCHEDULER_TICK_MS = 400;
+
 let musicRunning = false;
 let musicSchedulerTimer: number | null = null;
-let nextChordTime = 0;
+let nextBarTime = 0;
+let barIndex = 0;
 
-/** One pad tone: long fade in, hold, long fade out, then the oscillator
- *  stops itself — nothing is left dangling once `release` has elapsed. */
-function padVoice(
-  freq: number,
-  start: number,
-  dur: number,
-  attack: number,
-  release: number,
-  gain: number,
-  detuneCents = 0
-) {
+function padChord(t0: number, dur: number, semis: number[]) {
   const c = ctx!;
-  const osc = c.createOscillator();
-  osc.type = 'sine';
-  osc.frequency.value = freq;
-  osc.detune.value = detuneCents;
+  const lp = c.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.Q.value = 0.5;
+  // Filter breathes open and closed across the chord.
+  lp.frequency.setValueAtTime(520, t0);
+  lp.frequency.linearRampToValueAtTime(1100, t0 + dur * 0.5);
+  lp.frequency.linearRampToValueAtTime(600, t0 + dur);
   const g = c.createGain();
-  g.gain.setValueAtTime(0, start);
-  g.gain.linearRampToValueAtTime(gain, start + attack);
-  const releaseStart = Math.max(start + attack, start + dur - release);
-  g.gain.setValueAtTime(gain, releaseStart);
-  g.gain.linearRampToValueAtTime(0, releaseStart + release);
-  osc.connect(g);
-  g.connect(musicGain!);
-  osc.start(start);
-  osc.stop(releaseStart + release + 0.05);
+  const att = 1.6;
+  const rel = 2.0;
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.linearRampToValueAtTime(0.028, t0 + att);
+  g.gain.setValueAtTime(0.028, t0 + dur - 0.2);
+  g.gain.linearRampToValueAtTime(0.0001, t0 + dur + rel);
+  lp.connect(g).connect(musicGain!);
+  semis.forEach((s, i) => {
+    [-6, 6].forEach((cents) => {
+      const o = c.createOscillator();
+      o.type = i % 2 ? 'triangle' : 'sawtooth';
+      o.frequency.value = hz(s);
+      o.detune.value = cents + (Math.random() * 4 - 2);
+      const og = c.createGain();
+      og.gain.value = o.type === 'sawtooth' ? 0.35 : 0.6;
+      o.connect(og).connect(lp);
+      o.start(t0);
+      o.stop(t0 + dur + rel + 0.1);
+    });
+  });
 }
 
-/** A soft chord: a detuned pair voicing two scale tones, plus a sub an
- *  octave below the root — three oscillators, long attack and release. */
-function scheduleChord(time: number, dur: number) {
-  const i = Math.floor(Math.random() * MUSIC_PENTA.length);
-  const root = MUSIC_PENTA[i];
-  const second = MUSIC_PENTA[(i + 2) % MUSIC_PENTA.length];
-  const sub = root / 2;
-  const attack = 1.4 + Math.random() * 0.6; // 1.4-2s fade in
-  const release = Math.min(2.2, dur * 0.3);
-  padVoice(root, time, dur, attack, release, 0.045, -5);
-  padVoice(second, time, dur, attack, release, 0.035, 5);
-  padVoice(sub, time, dur, attack, release, 0.03, 0);
+function bassNote(t0: number, dur: number, semi: number) {
+  const c = ctx!;
+  const o = c.createOscillator();
+  o.frequency.value = hz(semi) / 2;
+  const g = c.createGain();
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.linearRampToValueAtTime(0.05, t0 + 0.3);
+  g.gain.exponentialRampToValueAtTime(0.012, t0 + dur * 0.8);
+  g.gain.linearRampToValueAtTime(0.0001, t0 + dur + 0.6);
+  o.connect(g).connect(musicGain!);
+  o.start(t0);
+  o.stop(t0 + dur + 0.7);
 }
 
-/** Lookahead tick: queue any chords due within SCHEDULE_AHEAD_S, then
- *  reschedule itself. Chord timing lives entirely in AudioContext time
- *  (`nextChordTime`), so the setTimeout cadence can jitter freely without
- *  the music drifting. */
+/** A few music-box notes per bar, on the beat or the off-beat, sometimes none. */
+function musicBoxBar(t0: number, notes: number[]) {
+  const out: Out = { dest: musicGain!, room: 0 };
+  const count = Math.random() < 0.25 ? 0 : 2 + Math.floor(Math.random() * 3);
+  const slots = [0, 1, 1.5, 2, 2.5, 3, 3.5].sort(() => Math.random() - 0.5).slice(0, count).sort((a, b) => a - b);
+  slots.forEach((beat, i) => {
+    const note = notes[Math.floor(Math.random() * notes.length)];
+    const vel = 0.022 + Math.random() * 0.012 - (i % 2) * 0.006;
+    pluck(hz(note + 12), t0 + beat * BEAT + Math.random() * 0.015, vel, 1.6, out);
+  });
+}
+
 function musicTick() {
   musicSchedulerTimer = null;
   if (!musicRunning || !ctx || !musicGain) return;
   if (ctx.state === 'running' && !document.hidden) {
-    while (nextChordTime < ctx.currentTime + SCHEDULE_AHEAD_S) {
-      const dur = CHORD_MIN_S + Math.random() * (CHORD_MAX_S - CHORD_MIN_S);
-      scheduleChord(nextChordTime, dur);
-      nextChordTime += dur;
+    while (nextBarTime < ctx.currentTime + SCHEDULE_AHEAD_S) {
+      const chord = PROGRESSION[Math.floor(barIndex / 2) % PROGRESSION.length];
+      if (barIndex % 2 === 0) {
+        padChord(nextBarTime, BAR * 2, chord.pad);
+        bassNote(nextBarTime, BAR * 2, chord.bass);
+      }
+      musicBoxBar(nextBarTime, chord.melody);
+      nextBarTime += BAR;
+      barIndex++;
     }
   }
   musicSchedulerTimer = window.setTimeout(musicTick, SCHEDULER_TICK_MS);
@@ -208,26 +409,26 @@ function pauseMusicScheduler() {
 }
 
 function resumeMusicScheduler() {
-  if (musicRunning && musicSchedulerTimer === null) musicTick();
+  if (!musicRunning || musicSchedulerTimer !== null || !ctx) return;
+  // Don't try to replay bars that were missed while paused.
+  if (nextBarTime < ctx.currentTime) nextBarTime = ctx.currentTime + 0.2;
+  musicTick();
 }
 
-/** Starts (or restarts, after being stopped) the ambient loop and fades it
- *  in gently. A no-op if it's already running. */
 function startMusic() {
   if (!ctx || !musicGain || musicRunning) return;
   musicRunning = true;
   const t = ctx.currentTime;
   musicGain.gain.cancelScheduledValues(t);
   musicGain.gain.setValueAtTime(musicGain.gain.value, t);
-  musicGain.gain.linearRampToValueAtTime(MUSIC_BASE_GAIN, t + 2);
-  nextChordTime = t + 0.4;
+  musicGain.gain.linearRampToValueAtTime(MUSIC_BASE_GAIN, t + 3);
+  nextBarTime = t + 0.3;
+  barIndex = 0;
   pauseMusicScheduler();
   musicTick();
 }
 
-/** Stops the loop: no more chords get queued, and whatever's sounding fades
- *  out with the gain rather than cutting off. */
-function stopMusic(fadeOutS = 0.4) {
+function stopMusic(fadeOutS = 0.5) {
   musicRunning = false;
   pauseMusicScheduler();
   if (ctx && musicGain) {
@@ -238,161 +439,129 @@ function stopMusic(fadeOutS = 0.4) {
   }
 }
 
-/** Lowers the music under a short jingle (win fanfare, out-of-lives sigh)
- *  without stopping the loop, then brings it back once `ms` has passed. */
-function duckMusicFor(ms: number, factor = 0.3) {
+/** Lower the music under a jingle, then bring it back after `ms`. */
+function duckMusicFor(ms: number, factor = 0.35) {
   if (!ctx || !musicGain || !musicRunning) return;
   const t = ctx.currentTime;
-  const duckedTo = MUSIC_BASE_GAIN * factor;
+  const to = MUSIC_BASE_GAIN * factor;
   musicGain.gain.cancelScheduledValues(t);
   musicGain.gain.setValueAtTime(musicGain.gain.value, t);
-  musicGain.gain.linearRampToValueAtTime(duckedTo, t + 0.12);
-  musicGain.gain.setValueAtTime(duckedTo, t + 0.12 + ms / 1000);
-  musicGain.gain.linearRampToValueAtTime(MUSIC_BASE_GAIN, t + 0.12 + ms / 1000 + 0.6);
+  musicGain.gain.linearRampToValueAtTime(to, t + 0.15);
+  musicGain.gain.setValueAtTime(to, t + 0.15 + ms / 1000);
+  musicGain.gain.linearRampToValueAtTime(MUSIC_BASE_GAIN, t + 0.15 + ms / 1000 + 0.8);
 }
 
-interface ToneOpts {
-  freq: number;
-  to?: number;
-  start?: number;
-  dur?: number;
-  gain?: number;
-  type?: OscillatorType;
-  attack?: number;
-}
-
-function tone({ freq, to, start = 0, dur = 0.12, gain = 0.1, type = 'sine', attack = 0.012 }: ToneOpts) {
-  const c = audio();
-  const t0 = c.currentTime + start;
-  const osc = c.createOscillator();
-  const g = c.createGain();
-  osc.type = type;
-  osc.frequency.setValueAtTime(freq, t0);
-  if (to !== undefined) osc.frequency.exponentialRampToValueAtTime(to, t0 + dur);
-  g.gain.setValueAtTime(0, t0);
-  g.gain.linearRampToValueAtTime(gain, t0 + attack);
-  g.gain.exponentialRampToValueAtTime(0.0008, t0 + dur);
-  osc.connect(g);
-  g.connect(bus!);
-  osc.start(t0);
-  osc.stop(t0 + dur + 0.02);
-}
-
-/** Soft bell: a sine plus a quiet inharmonic partial that dies faster. */
-function bell(freq: number, start = 0, gain = 0.07, dur = 0.45) {
-  tone({ freq, start, dur, gain, attack: 0.006 });
-  tone({ freq: freq * 2.76, start, dur: dur * 0.5, gain: gain * 0.16, attack: 0.004 });
-}
-
-/** ±4% random detune so repeated sounds don't feel mechanical. */
-const detune = () => 1 + (Math.random() * 2 - 1) * 0.04;
-
-function guard(fn: () => void) {
-  if (!enabled) return;
-  try {
-    fn();
-  } catch {
-    /* audio unavailable — silently continue */
-  }
-}
+// ---------------------------------------------------------------- effects
 
 /** Pentatonic ratios a drag stroke climbs through, one per painted cell. */
 const PAW_STEPS = [1, 9 / 8, 5 / 4, 3 / 2, 5 / 3, 2, 9 / 4, 5 / 2];
 const PAW_THROTTLE_MS = 35;
 let lastPawAt = -Infinity;
 
-/** Soft "pat" for a paw mark. `step` is the cell's index within a drag
- *  stroke (0 for a tap); it steps the pitch up, capped at the top note.
- *  Throttled so fast swipes don't machine-gun. */
+/** Soft felt "pat" for a paw mark; a drag stroke climbs gently in pitch. */
 export function playPaw(step = 0) {
   const now = performance.now();
   if (now - lastPawAt < PAW_THROTTLE_MS) return;
   lastPawAt = now;
-  guard(() => {
-    const f = 330 * PAW_STEPS[Math.min(step, PAW_STEPS.length - 1)] * detune();
-    tone({ freq: f, to: f * 0.92, dur: 0.075, gain: 0.05, attack: 0.005 });
+  guard((_, t) => {
+    const r = PAW_STEPS[Math.min(step, PAW_STEPS.length - 1)] * humanize();
+    felt(t, 1500 * r, 0.06, 240 * r);
   });
 }
 
-/** Placing a correct cat: the next note of the board's tune. `placed` is
- *  how many cats are correctly placed now (1 = first note, C5). */
+/** Correct cat: the next note of the board's tune on the music box, with a
+ *  faint bell an octave up for sparkle. `placed` = cats placed so far. */
 export function playCat(placed: number) {
-  guard(() => bell(PENTA[Math.max(0, Math.min(placed, PENTA.length) - 1)], 0, 0.075));
+  guard((_, t) => {
+    const f = PENTA[Math.max(0, Math.min(placed, PENTA.length) - 1)];
+    pluck(f, t, 0.085, 1.1);
+    bell(f * 2, t + 0.01, 0.014, 0.9);
+  });
 }
 
-/** Hint: a quiet high sparkle, so it's distinct from a cat you placed. */
+/** Hint: four quick ascending glass bells, high and airy. */
 export function playHint() {
-  guard(() => {
-    [1600, 2100, 2600].forEach((f, i) =>
-      tone({ freq: f, start: i * 0.055, dur: 0.16, gain: 0.022, attack: 0.004 })
-    );
+  guard((_, t) => {
+    [1046.5, 1318.51, 1567.98, 2093].forEach((f, i) => bell(f, t + i * 0.06, 0.022, 0.9, fx(0.6)));
   });
 }
 
-/** A heart slipping away: a soft falling minor third. Starts a beat after
- *  the unhappy mew so the two read as one gentle moment. */
+/** A heart slipping away: a soft falling third on the music box. */
 export function playHeartLost() {
-  guard(() => {
-    tone({ freq: 659.25, start: 0.16, dur: 0.22, gain: 0.04 });
-    tone({ freq: 554.37, start: 0.28, dur: 0.32, gain: 0.038 });
+  guard((_, t) => {
+    pluck(659.25, t + 0.16, 0.05, 0.6);
+    pluck(523.25, t + 0.3, 0.045, 0.9);
   });
 }
 
-/** Out of hearts: a soft three-note sigh as the fail modal opens. Lasts
- *  about 3 notes * 0.22s + 0.5s tail ≈ 1s — a brief duck is enough to keep
- *  the pad from clashing with it. */
+/** Out of hearts: a slow, gentle three-note sigh as the fail modal opens. */
 export function playOutOfLives() {
-  guard(() => {
-    duckMusicFor(900);
-    [[523.25, 493.88], [440, 415.3], [349.23, 329.63]].forEach(([f, to], i) =>
-      tone({ freq: f, to, start: i * 0.22, dur: 0.5, gain: 0.045, attack: 0.03 })
-    );
+  guard((_, t) => {
+    duckMusicFor(1200);
+    [783.99, 659.25, 523.25].forEach((f, i) => pluck(f, t + i * 0.26, 0.055, 1.3));
+    bell(261.63, t + 0.78, 0.02, 1.8);
   });
 }
 
-/** Lifting a cat or mark back off the board. */
+/** Lifting a mark back off the board: a quiet airy tap, a little lower. */
 export function playLift() {
-  guard(() => tone({ freq: 380, to: 260, dur: 0.09, gain: 0.055, type: 'triangle' }));
+  guard((_, t) => felt(t, 900, 0.045, 170));
 }
 
-/** A cat that can't sit there — a soft downward mew, never harsh. */
+/** A cat that can't sit there: a tiny, sleepy "mrrp" (up, then down). */
 export function playUnhappy() {
-  guard(() => {
-    tone({ freq: 340, to: 240, dur: 0.2, gain: 0.07, type: 'sine' });
-    tone({ freq: 226, start: 0.09, dur: 0.18, gain: 0.04, type: 'sine' });
+  guard((c, t) => {
+    const o = c.createOscillator();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(380, t);
+    o.frequency.linearRampToValueAtTime(470, t + 0.07);
+    o.frequency.exponentialRampToValueAtTime(260, t + 0.26);
+    const formant = c.createBiquadFilter();
+    formant.type = 'bandpass';
+    formant.frequency.setValueAtTime(1300, t);
+    formant.frequency.linearRampToValueAtTime(800, t + 0.26);
+    formant.Q.value = 1.4;
+    const g = c.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(0.11, t + 0.03);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+    o.connect(formant).connect(g);
+    connectOut(c, g, fx(0.2));
+    o.start(t);
+    o.stop(t + 0.35);
+    glide(190, 150, t + 0.02, 0.22, 0.03, 'sine', 0.1);
   });
 }
 
-/** Level complete, timed to the board's cat-hop wave: each hop replays a
- *  note of the tune (starting at `start` s, one every `step` s, `count`
- *  hops), then a soft C major chord settles it. */
+/** Level complete, timed to the board's cat-hop wave: one music-box note per
+ *  hop rising up the scale, then a soft Cmaj9 bell chord with a shimmer. */
 export function playWin(start = 0, step = 0.1, count = 4) {
-  guard(() => {
-    const end = start + Math.max(0, count - 1) * step + 0.28;
-    // Duck for the whole celebration: the hop wave plus the closing chord's
-    // ring-out, roughly the 1.2-1.6s the win sequence takes end to end.
-    duckMusicFor((end + 1.1) * 1000);
-    for (let i = 0; i < count; i++) bell(PENTA[i % PENTA.length], start + i * step, 0.05, 0.4);
-    [523.25, 659.25, 783.99, 1046.5].forEach((f) => bell(f, end, 0.032, 1.1));
+  guard((_, t) => {
+    const end = start + Math.max(0, count - 1) * step + 0.3;
+    duckMusicFor((end + 1.6) * 1000);
+    for (let i = 0; i < count; i++) pluck(PENTA[i % PENTA.length], t + start + i * step, 0.055, 0.9);
+    [261.63, 329.63, 392, 493.88, 587.33].forEach((f, i) => bell(f * 2, t + end + i * 0.025, 0.02, 2.2));
+    pluck(130.81, t + end, 0.05, 2.0);
+    [2093, 2637, 3136].forEach((f, i) => bell(f, t + end + 0.15 + i * 0.07, 0.008, 1.2, fx(0.8)));
   });
 }
 
 const TYPE_THROTTLE_MS = 45;
 let lastTypeAt = -Infinity;
 
-/** Typewriter blip for tips: a very short, quiet note picked at random from
- *  the lower half of the cat tune's scale, so a sentence "speaks" in the
- *  same key as the music. Throttled so fast typing never rattles. */
+/** Typewriter blip for tips: a tiny, muted music-box note from the scale,
+ *  so a sentence "speaks" in the same key as the music. */
 export function playTypeBlip() {
   const now = performance.now();
   if (now - lastTypeAt < TYPE_THROTTLE_MS) return;
   lastTypeAt = now;
-  guard(() => {
-    const f = PENTA[Math.floor(Math.random() * 5)] * detune();
-    tone({ freq: f, to: f * 0.97, dur: 0.055, gain: 0.022, type: 'triangle', attack: 0.004 });
+  guard((_, t) => {
+    const f = PENTA[Math.floor(Math.random() * 5)] * humanize();
+    pluck(f, t, 0.02, 0.12, fx(0.1));
   });
 }
 
+/** UI button: a soft rounded tap. */
 export function playTap() {
-  guard(() => tone({ freq: 600, dur: 0.05, gain: 0.04, type: 'triangle' }));
+  guard((_, t) => felt(t, 2200, 0.035, 420));
 }
