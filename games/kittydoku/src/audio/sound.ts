@@ -368,6 +368,22 @@ export function playWin(start = 0, step = 0.1, count = 4) {
   });
 }
 
+const TYPE_THROTTLE_MS = 45;
+let lastTypeAt = -Infinity;
+
+/** Typewriter blip for tips: a very short, quiet note picked at random from
+ *  the lower half of the cat tune's scale, so a sentence "speaks" in the
+ *  same key as the music. Throttled so fast typing never rattles. */
+export function playTypeBlip() {
+  const now = performance.now();
+  if (now - lastTypeAt < TYPE_THROTTLE_MS) return;
+  lastTypeAt = now;
+  guard(() => {
+    const f = PENTA[Math.floor(Math.random() * 5)] * detune();
+    tone({ freq: f, to: f * 0.97, dur: 0.055, gain: 0.022, type: 'triangle', attack: 0.004 });
+  });
+}
+
 export function playTap() {
   guard(() => tone({ freq: 600, dur: 0.05, gain: 0.04, type: 'triangle' }));
 }

@@ -1,9 +1,8 @@
 /**
- * A cat coat for the mascot. `line` colours the eyes, mouth and whiskers;
- * `mouth` overrides it for the mouth only (e.g. a dark mouth on a white
- * muzzle). `outline` draws a soft silhouette edge so pale coats still read on
- * a pastel square. `pattern` is extra SVG markup drawn over the head and under
- * the inner ears, face and whiskers.
+ * A cat coat for the mascot. `line` colours the eyes; `mouth` colours the
+ * nose-to-mouth line (defaults to `line`). `outline` is the silhouette edge;
+ * when omitted it's a deeper shade of `body`. `pattern` is extra SVG markup
+ * drawn over the head (clipped to the silhouette) and under the face.
  */
 export interface Coat {
   name: string;
@@ -12,13 +11,28 @@ export interface Coat {
   blush: string;
   line: string;
   mouth?: string;
+  nose?: string;
   outline?: string;
   pattern?: string;
 }
 
+/** Visible ear shapes, used by coat patterns (calico/siamese ear colours). */
 const EAR_L = 'M25 42 L28 13 Q28.5 8 33 11 L55 25 Z';
 const EAR_R = 'M75 42 L72 13 Q71.5 8 67 11 L45 25 Z';
-const HEAD = 'cx="50" cy="57" rx="32" ry="29"';
+/** Same ears with the base pushed deep into the head (hidden behind it), so
+ *  a twitching ear never lifts far enough to show a gap at its root. */
+const EAR_L_FULL = 'M25 42 L28 13 Q28.5 8 33 11 L55 25 L50 46 Z';
+const EAR_R_FULL = 'M75 42 L72 13 Q71.5 8 67 11 L45 25 L50 46 Z';
+/** Round head with little fur tufts at the cheeks, so the silhouette reads
+ *  as fluffy rather than a plain ellipse. */
+const HEAD_PATH =
+  'M50 28 C67 28 79 37 81 51 L86.5 56.5 L81.5 60 L85.5 66 L79 68 ' +
+  'C74.5 79.5 63.5 86 50 86 C36.5 86 25.5 79.5 21 68 L14.5 66 L18.5 60 ' +
+  'L13.5 56.5 L19 51 C21 37 33 28 50 28 Z';
+
+/** Whiskers are drawn in this warm ink so they read on every pastel square
+ *  and on the cream page, whatever the coat colour. */
+const WHISKER = '#4a3b34';
 
 const foreheadStripes = (color: string) =>
   `<g fill="none" stroke="${color}" stroke-width="3.2" stroke-linecap="round">
@@ -27,25 +41,27 @@ const foreheadStripes = (color: string) =>
 
 export const COATS = {
   lilac: {
-    name: 'lilac', body: '#b0a2d6', innerEar: '#ded8f0', blush: '#e7908c', line: '#fff8ef',
+    name: 'lilac', body: '#b0a2d6', innerEar: '#e4dcf5', blush: '#f09a9a', line: '#4b3d66',
   },
   ginger: {
-    name: 'ginger', body: '#f2a65e', innerEar: '#fbd5b0', blush: '#e5786f', line: '#fff8ef',
+    name: 'ginger', body: '#f2a65e', innerEar: '#fbd5b0', blush: '#e5786f', line: '#6b3a17',
     pattern: foreheadStripes('#d9803a'),
   },
   greyTabby: {
-    name: 'grey tabby', body: '#a3a0ad', innerEar: '#dcd8e3', blush: '#e7908c', line: '#fff8ef',
+    name: 'grey tabby', body: '#a9a6b3', innerEar: '#e0dce6', blush: '#ee9a98', line: '#3f3c4a',
     pattern: foreheadStripes('#7a7685'),
   },
   black: {
-    name: 'black', body: '#4d4452', innerEar: '#8f7f92', blush: '#e58a93', line: '#fff8ef',
+    // Golden eyes read on a dark face without the stark look of cream lines.
+    name: 'black', body: '#4d4452', innerEar: '#8f7f92', blush: '#e58a93', line: '#f3c969',
+    nose: '#e58a93', mouth: '#d9c3cc',
   },
   cream: {
-    name: 'cream', body: '#f7e8d0', innerEar: '#f6c9bd', blush: '#eda39a', line: '#8a6a58',
+    name: 'cream', body: '#f7e8d0', innerEar: '#f6c9bd', blush: '#eda39a', line: '#6e5242',
     outline: '#c9a984',
   },
   tuxedo: {
-    name: 'tuxedo', body: '#4d4452', innerEar: '#9b8b9c', blush: '#e7908c', line: '#fff8ef',
+    name: 'tuxedo', body: '#4d4452', innerEar: '#9b8b9c', blush: '#e7908c', line: '#f3c969',
     mouth: '#4a3b34',
     // White blaze down the nose widening into a muzzle and chin bib.
     pattern: `<path d="M50 36 Q48.5 48 47.5 58 Q36 62 37 74 Q40 85.5 50 86 Q60 85.5 63 74 Q64 62 52.5 58 Q51.5 48 50 36 Z" fill="#fbf6ee"/>`,
@@ -56,55 +72,133 @@ export const COATS = {
     pattern: `<path d="${EAR_L}" fill="#f0a35e"/><ellipse cx="37" cy="40" rx="12" ry="8" fill="#f0a35e"/>
       <path d="${EAR_R}" fill="#5a4f57"/><ellipse cx="65" cy="39" rx="9" ry="6.5" fill="#5a4f57"/>`,
   },
+  snow: {
+    // White winter cat with dark eyes and pink ears.
+    name: 'snow', body: '#f7f5fa', innerEar: '#f6c9d4', blush: '#f2a5b2', line: '#4e4a62',
+    outline: '#c6c0d6',
+  },
+  smoke: {
+    // Blue-grey "smoke" cat with golden eyes, for the lantern night.
+    name: 'smoke', body: '#7d87a6', innerEar: '#b9c0d8', blush: '#ef9aa6', line: '#ffd88a',
+    mouth: '#2f3550', nose: '#e58a93',
+  },
   siamese: {
-    name: 'siamese', body: '#f4e8d6', innerEar: '#c9a08e', blush: '#e9a59b', line: '#fff8ef',
-    outline: '#c8b096',
+    // Dark eye lines on the mid-brown mask, like the lighter coats.
+    name: 'siamese', body: '#f4e8d6', innerEar: '#c9a08e', blush: '#e9a59b', line: '#3a2620',
+    outline: '#c8b096', nose: '#d98e86',
     // Dark points: ears and a soft face mask.
     pattern: `<path d="${EAR_L}" fill="#7d5f52"/><path d="${EAR_R}" fill="#7d5f52"/>
       <ellipse cx="50" cy="63" rx="22" ry="15" fill="#8c6c5e" opacity="0.92"/>`,
   },
 } satisfies Record<string, Coat>;
 
+// ---------------------------------------------------------------- colour
+
+function hexToRgb(hex: string): [number, number, number] {
+  const h = hex.replace('#', '');
+  return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)) as [number, number, number];
+}
+
+/** Blend two hex colours; t=0 gives `a`, t=1 gives `b`. */
+function mix(a: string, b: string, t: number): string {
+  const ca = hexToRgb(a);
+  const cb = hexToRgb(b);
+  return '#' + ca.map((v, i) => Math.round(v + (cb[i] - v) * t).toString(16).padStart(2, '0')).join('');
+}
+
+function isLight(hex: string): boolean {
+  const [r, g, b] = hexToRgb(hex);
+  return 0.299 * r + 0.587 * g + 0.114 * b > 150;
+}
+
+/** Each SVG needs its own gradient/clip ids, since many cats share a page. */
+let svgUid = 0;
+
 /** The original lilac mascot: title, modals and how-to demo. */
 export const DEFAULT_COAT: Coat = COATS.lilac;
 
 /**
- * The KittyDoku mascot — flat-vector happy cat face in a given coat.
+ * The KittyDoku mascot: a soft-shaded happy cat face in a given coat.
  * Used on the title screen, modals, and board cells for correct cats.
  * Eyes are content and closed (`.eyesClosed`); `.eyesOpen` is hidden unless
  * CSS animates a blink on the board.
  */
 export function mascotSvg(size = 100, coat: Coat = DEFAULT_COAT): string {
-  const outline = coat.outline
-    ? `<g fill="${coat.outline}" stroke="${coat.outline}" stroke-width="5" stroke-linejoin="round">
-    <path d="${EAR_L}"/><path d="${EAR_R}"/><ellipse ${HEAD}/>
-  </g>`
+  const u = ++svgUid;
+  const edge = coat.outline ?? mix(coat.body, '#2a1f1a', 0.38);
+  const nose = coat.nose ?? mix(coat.blush, '#4a3b34', 0.3);
+  const mouth = coat.mouth ?? coat.line;
+  // Light (golden) eyes get a dark slit pupil when open; dark eyes don't need one.
+  const pupils = isLight(coat.line)
+    ? `<ellipse cx="38" cy="54.5" rx="1.3" ry="3.4" fill="#2a1f1a"/>
+    <ellipse cx="62" cy="54.5" rx="1.3" ry="3.4" fill="#2a1f1a"/>`
     : '';
+
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="${size}" height="${size}" aria-hidden="true">
-  ${outline}
-  <path d="${EAR_L}" fill="${coat.body}"/>
-  <path d="${EAR_R}" fill="${coat.body}"/>
-  <ellipse ${HEAD} fill="${coat.body}"/>
-  ${coat.pattern ?? ''}
-  <path d="M30.5 36 L32.5 18 L46 27 Z" fill="${coat.innerEar}"/>
-  <path d="M69.5 36 L67.5 18 L54 27 Z" fill="${coat.innerEar}"/>
-  <ellipse cx="33" cy="62" rx="5.5" ry="3.4" fill="${coat.blush}" opacity="0.75"/>
-  <ellipse cx="67" cy="62" rx="5.5" ry="3.4" fill="${coat.blush}" opacity="0.75"/>
-  <g fill="none" stroke="${coat.line}" stroke-width="3" stroke-linecap="round">
-    <line x1="22" y1="60" x2="6"  y2="57"/>
-    <line x1="22" y1="67" x2="7"  y2="69"/>
-    <line x1="78" y1="60" x2="94" y2="57"/>
-    <line x1="78" y1="67" x2="93" y2="69"/>
+  <defs>
+    <radialGradient id="kd-shade-${u}" gradientUnits="userSpaceOnUse" cx="42" cy="38" r="58">
+      <stop offset="0"    stop-color="#ffffff" stop-opacity="0.34"/>
+      <stop offset="0.5"  stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="1"    stop-color="#2a1f1a" stop-opacity="0.24"/>
+    </radialGradient>
+    <radialGradient id="kd-blush-${u}">
+      <stop offset="0" stop-color="${coat.blush}" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="${coat.blush}" stop-opacity="0"/>
+    </radialGradient>
+    <!-- Ears use an opaque gradient (not a translucent overlay) so the spot
+         where the two ears overlap doesn't get shaded twice. -->
+    <linearGradient id="kd-ear-${u}" gradientUnits="userSpaceOnUse" x1="50" y1="8" x2="50" y2="42">
+      <stop offset="0" stop-color="${mix(coat.body, '#ffffff', 0.2)}"/>
+      <stop offset="1" stop-color="${coat.body}"/>
+    </linearGradient>
+    <clipPath id="kd-clip-${u}">
+      <path d="${EAR_L_FULL}"/><path d="${EAR_R_FULL}"/><path d="${HEAD_PATH}"/>
+    </clipPath>
+  </defs>
+
+  <!-- silhouette edge, drawn behind so it reads as a soft outline -->
+  <g fill="${edge}" stroke="${edge}" stroke-width="4.5" stroke-linejoin="round">
+    <path d="${EAR_L_FULL}"/><path class="earR" d="${EAR_R_FULL}"/><path d="${HEAD_PATH}"/>
   </g>
-  <g class="eyesClosed" fill="none" stroke="${coat.line}" stroke-width="3.4" stroke-linecap="round">
-    <path d="M32 57.5 Q38 51.5 44 57.5"/>
-    <path d="M56 57.5 Q62 51.5 68 57.5"/>
+
+  <path d="${EAR_L_FULL}" fill="url(#kd-ear-${u})"/>
+  <path class="earR" d="${EAR_R_FULL}" fill="url(#kd-ear-${u})"/>
+  <path d="${HEAD_PATH}" fill="${coat.body}"/>
+  <g clip-path="url(#kd-clip-${u})">${coat.pattern ?? ''}</g>
+
+  <path d="M30.5 36 L32.5 18 L46 27 Z" fill="${coat.innerEar}"/>
+  <path class="earR" d="M69.5 36 L67.5 18 L54 27 Z" fill="${coat.innerEar}"/>
+
+  <path d="${HEAD_PATH}" fill="url(#kd-shade-${u})"/>
+  <ellipse cx="50" cy="69.5" rx="13" ry="8.5" fill="#ffffff" opacity="0.16"/>
+
+  <ellipse cx="31" cy="63.5" rx="8" ry="5.2" fill="url(#kd-blush-${u})"/>
+  <ellipse cx="69" cy="63.5" rx="8" ry="5.2" fill="url(#kd-blush-${u})"/>
+
+  <g fill="none" stroke="${WHISKER}" stroke-width="2.2" stroke-linecap="round" opacity="0.72">
+    <path d="M23 62 Q14 59.6 4.5 58.8"/>
+    <path d="M23 66.5 Q14.5 67.2 5.5 70.5"/>
+    <path d="M77 62 Q86 59.6 95.5 58.8"/>
+    <path d="M77 66.5 Q85.5 67.2 94.5 70.5"/>
+  </g>
+
+  <g class="eyesClosed" fill="none" stroke="${coat.line}" stroke-width="3.6" stroke-linecap="round">
+    <path d="M31 56.5 Q38 49.5 45 56.5"/>
+    <path d="M55 56.5 Q62 49.5 69 56.5"/>
   </g>
   <g class="eyesOpen" fill="${coat.line}" opacity="0">
-    <ellipse cx="38" cy="55.5" rx="3.4" ry="3.9"/>
-    <ellipse cx="62" cy="55.5" rx="3.4" ry="3.9"/>
+    <ellipse cx="38" cy="54.5" rx="3.8" ry="4.4"/>
+    <ellipse cx="62" cy="54.5" rx="3.8" ry="4.4"/>
+    ${pupils}
+    <circle cx="39.3" cy="53" r="1.4" fill="#ffffff"/>
+    <circle cx="63.3" cy="53" r="1.4" fill="#ffffff"/>
   </g>
-  <path d="M43 65 Q50 73 57 65" fill="none" stroke="${coat.mouth ?? coat.line}" stroke-width="3.4" stroke-linecap="round"/>
+
+  <path d="M46.2 62.4 Q50 60.8 53.8 62.4 Q52.6 65.8 50 66.2 Q47.4 65.8 46.2 62.4 Z" fill="${nose}"/>
+  <g fill="none" stroke="${mouth}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M50 66.2 V68.2 Q50 71.2 46.6 71.2 Q44 71.2 43.2 69"/>
+    <path d="M50 68.2 Q50 71.2 53.4 71.2 Q56 71.2 56.8 69"/>
+  </g>
 </svg>`;
 }
 
@@ -128,7 +222,7 @@ export function deadCatSvg(size = 100): string {
     <ellipse cx="33" cy="62" rx="5.5" ry="3.4" fill="#b0a8b4" opacity="0.45"/>
     <ellipse cx="67" cy="62" rx="5.5" ry="3.4" fill="#b0a8b4" opacity="0.45"/>
     <!-- whiskers -->
-    <g fill="none" stroke="#f5f3f7" stroke-width="2.6" stroke-linecap="round">
+    <g fill="none" stroke="#7d7684" stroke-width="2.4" stroke-linecap="round" opacity="0.8">
       <line x1="22" y1="60" x2="6"  y2="57"/>
       <line x1="22" y1="67" x2="7"  y2="69"/>
       <line x1="78" y1="60" x2="94" y2="57"/>
@@ -144,14 +238,14 @@ export function deadCatSvg(size = 100): string {
     <!-- tongue out, pale pink -->
     <ellipse cx="50" cy="72" rx="5.5" ry="4" fill="#e8c8cc"/>
     <path d="M44.5 69 Q50 74 55.5 69" fill="#e8c8cc" stroke="none"/>
-    <!-- tiny impact stars -->
-    <g fill="none" stroke="#f5f3f7" stroke-width="2.2" stroke-linecap="round">
+    <!-- tiny impact stars (on the background, so drawn in a darker grey) -->
+    <g fill="none" stroke="#8d8693" stroke-width="2.2" stroke-linecap="round">
       <line x1="14" y1="36" x2="14" y2="28"/>
       <line x1="10" y1="32" x2="18" y2="32"/>
       <line x1="11" y1="29" x2="17" y2="35"/>
       <line x1="17" y1="29" x2="11" y2="35"/>
     </g>
-    <g fill="none" stroke="#f5f3f7" stroke-width="2.2" stroke-linecap="round">
+    <g fill="none" stroke="#8d8693" stroke-width="2.2" stroke-linecap="round">
       <line x1="83" y1="28" x2="83" y2="20"/>
       <line x1="79" y1="24" x2="87" y2="24"/>
       <line x1="80" y1="21" x2="86" y2="27"/>
@@ -193,22 +287,26 @@ export function pastel(index: number): Pastel {
 }
 
 /**
- * A sitting cat, as SVG inner markup. Simple filled silhouette — ears, head,
- * body, tail — so it stays readable at small board sizes where line art would
- * turn to mush.
+ * "Purrfect" medal: a gold coin with a star, hung on two pink ribbon tails.
+ * Marks levels solved without a hint (map nodes, header stats). Flat fills
+ * only (no gradient ids), so it can repeat freely on one page.
  */
-export function catSvg(color: string, size = 40): string {
-  return `<svg viewBox="0 0 48 48" width="${size}" height="${size}" fill="none" aria-hidden="true">
-    <path d="M13 19 L11.5 9.5 L19.5 14.5 Z" fill="${color}"/>
-    <path d="M35 19 L36.5 9.5 L28.5 14.5 Z" fill="${color}"/>
-    <ellipse cx="24" cy="22" rx="11" ry="9.5" fill="${color}"/>
-    <path d="M15 30 Q24 27 33 30 L35 41 Q24 44 13 41 Z" fill="${color}"/>
-    <path d="M35 38 Q43 37 42 29 Q41.4 25 37.5 25.5" stroke="${color}" stroke-width="3.4"
-      stroke-linecap="round" fill="none"/>
-    <circle cx="20" cy="21" r="1.7" fill="#fffdf7"/>
-    <circle cx="28" cy="21" r="1.7" fill="#fffdf7"/>
-    <path d="M22.4 25.4 Q24 26.8 25.6 25.4" stroke="#fffdf7" stroke-width="1.5"
-      stroke-linecap="round" fill="none"/>
+export function medalSvg(size = 24): string {
+  const star = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    .map((i) => {
+      const a = (Math.PI / 5) * i - Math.PI / 2;
+      const r = i % 2 === 0 ? 5.6 : 2.5;
+      return `${(12 + Math.cos(a) * r).toFixed(2)},${(11.2 + Math.sin(a) * r).toFixed(2)}`;
+    })
+    .join(' ');
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 28" width="${size}" height="${Math.round((size * 28) / 24)}" aria-hidden="true">
+    <path d="M7.2 15.5 L4.2 26.5 L7.9 24.9 L9.9 27.6 L12.2 17.4 Z" fill="#ff9db0"/>
+    <path d="M16.8 15.5 L19.8 26.5 L16.1 24.9 L14.1 27.6 L11.8 17.4 Z" fill="#e0687f"/>
+    <circle cx="12" cy="11.2" r="9.6" fill="#e9a92a"/>
+    <circle cx="12" cy="11.2" r="8.2" fill="#ffcf4d"/>
+    <circle cx="12" cy="11.2" r="6.6" fill="none" stroke="#f5b93a" stroke-width="1.1"/>
+    <polygon points="${star}" fill="#fff6d6"/>
+    <ellipse cx="8.6" cy="6.9" rx="2.6" ry="1.3" fill="#ffffff" opacity="0.55" transform="rotate(-30 8.6 6.9)"/>
   </svg>`;
 }
 

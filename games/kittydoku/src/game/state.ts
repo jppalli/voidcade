@@ -1,4 +1,4 @@
-import { generatePuzzle, type Position, type PuzzleBoard } from '@arcade/queens-core';
+import type { Position, PuzzleBoard } from '@arcade/queens-core';
 import type { LevelRef } from './levels';
 
 export type CellMark = 'empty' | 'paw' | 'wrong' | 'cat';
@@ -19,12 +19,8 @@ export class Game {
 
   constructor(ref: LevelRef) {
     this.ref = ref;
-    this.board = generatePuzzle({
-      size: ref.size,
-      seed: ref.seed,
-      singletonRegions: ref.singletons,
-      minRegionSize: ref.minRegionSize,
-    });
+    // Boards are pre-generated and graded offline (levels.data.json).
+    this.board = ref.board;
     this.marks = Game.emptyMarks(ref.size);
   }
 

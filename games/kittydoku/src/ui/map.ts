@@ -1,99 +1,30 @@
 import { CHAPTERS, TOTAL_LEVELS, allLevels, type LevelRef } from '../game/levels';
 import { cleanCount, solvedCount, type Progress } from '../game/progress';
+import { mascotSvg, medalSvg } from '../render/art';
+import { WORLDS, worldBackground, worldCoat, type World } from './mapScenery';
 
 const $ = (id: string) => document.getElementById(id) as HTMLElement;
 
 interface Pt { x: number; y: number }
 
-const REGION_TINTS: string[] = [
-  'rgba(255,214,165,0.18)',
-  'rgba(215,199,255,0.16)',
-  'rgba(184,235,200,0.16)',
-  'rgba(191,227,255,0.16)',
-  'rgba(255,201,217,0.18)',
-];
+// World themes and scenery live in mapScenery.ts.
+export { worldCoat };
 
-/**
- * One thematic SVG illustration per chapter — rendered as a large, very faint
- * background watermark so the chapter has personality without competing with
- * the nodes and trail. Each fits in a 200×200 viewBox.
- */
-const CHAPTER_SCENES: string[] = [
-  // 0: Sunny Windowsill — arched window with sun rays and a little plant
-  `<svg viewBox="0 0 200 200" width="180" height="180" fill="none" opacity="0.13">
-    <rect x="55" y="30" width="90" height="110" rx="45" fill="#ffd6a5"/>
-    <rect x="70" y="30" width="60" height="110" rx="30" fill="#fff0d0" opacity="0.7"/>
-    <line x1="100" y1="30" x2="100" y2="140" stroke="#e8b96a" stroke-width="4"/>
-    <line x1="55" y1="85" x2="145" y2="85" stroke="#e8b96a" stroke-width="4"/>
-    <line x1="62" y1="52" x2="138" y2="118" stroke="#e8b96a" stroke-width="2.5" opacity="0.5"/>
-    <line x1="138" y1="52" x2="62" y2="118" stroke="#e8b96a" stroke-width="2.5" opacity="0.5"/>
-    <rect x="45" y="135" width="110" height="14" rx="4" fill="#d4a96a"/>
-    <circle cx="100" cy="168" r="10" fill="#9cd49c"/>
-    <path d="M100 158 Q108 148 115 152" stroke="#6fb56f" stroke-width="3" fill="none" stroke-linecap="round"/>
-    <path d="M100 158 Q92 145 85 150" stroke="#6fb56f" stroke-width="3" fill="none" stroke-linecap="round"/>
-  </svg>`,
+const WAVE =
+  'M0 30 V15 C150 1 300 29 450 15 C600 1 750 29 900 15 C1050 1 1140 23 1200 13 V30 Z';
 
-  // 1: Cosy Armchair — simple armchair silhouette with a cushion
-  `<svg viewBox="0 0 200 200" width="180" height="180" fill="none" opacity="0.12">
-    <rect x="35" y="100" width="130" height="65" rx="16" fill="#c9b8e8"/>
-    <rect x="50" y="75" width="100" height="45" rx="12" fill="#d9caf0"/>
-    <rect x="28" y="85" width="32" height="80" rx="14" fill="#c9b8e8"/>
-    <rect x="140" y="85" width="32" height="80" rx="14" fill="#c9b8e8"/>
-    <rect x="55" y="90" width="90" height="32" rx="10" fill="#e8dff8" opacity="0.8"/>
-    <circle cx="100" cy="106" r="7" fill="#b0a2d6" opacity="0.6"/>
-    <rect x="62" y="165" width="18" height="20" rx="5" fill="#b0a0d0"/>
-    <rect x="120" y="165" width="18" height="20" rx="5" fill="#b0a0d0"/>
-  </svg>`,
+const stripBg = (s: World['strip']) =>
+  // Single quotes: this lands inside a double-quoted style="" attribute, and
+  // encodeURIComponent leaves ' untouched (the strip SVGs never use it).
+  `url('data:image/svg+xml,${encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${s.w}" height="48" viewBox="0 0 ${s.w} 48">${s.svg}</svg>`
+  )}')`;
 
-  // 2: Garden Fence — picket fence with flowers and a butterfly
-  `<svg viewBox="0 0 200 200" width="180" height="180" fill="none" opacity="0.12">
-    <line x1="20" y1="130" x2="180" y2="130" stroke="#9cd49c" stroke-width="5"/>
-    ${[30,55,80,105,130,155].map(x=>`
-      <rect x="${x-6}" y="95" width="12" height="45" rx="4" fill="#b8ebc8"/>
-      <path d="M${x-6} 95 L${x} 82 L${x+6} 95Z" fill="#b8ebc8"/>
-    `).join('')}
-    <circle cx="55" cy="118" r="7" fill="#ffd6a5"/>
-    <circle cx="55" cy="118" r="4" fill="#ffb84d"/>
-    <circle cx="130" cy="112" r="9" fill="#ffc9d9"/>
-    <circle cx="130" cy="112" r="5" fill="#ff9db0"/>
-    <path d="M148 82 Q158 72 162 82 Q158 92 148 82Z" fill="#bfe3ff" opacity="0.9"/>
-    <path d="M148 82 Q138 72 134 82 Q138 92 148 82Z" fill="#bfe3ff" opacity="0.9"/>
-    <path d="M148 84 Q158 94 162 84 Q158 74 148 84Z" fill="#d7c7ff" opacity="0.8"/>
-    <path d="M148 84 Q138 94 134 84 Q138 74 148 84Z" fill="#d7c7ff" opacity="0.8"/>
-    <circle cx="148" cy="83" r="3" fill="#b0a2d6"/>
-  </svg>`,
-
-  // 3: Rooftop Moon — crescent moon, stars, rooftop silhouette
-  `<svg viewBox="0 0 200 200" width="180" height="180" fill="none" opacity="0.13">
-    <path d="M80 50 Q100 10 135 30 Q95 35 90 70 Q65 65 80 50Z" fill="#bfe3ff"/>
-    <circle cx="52" cy="60" r="4" fill="#bfe3ff" opacity="0.8"/>
-    <circle cx="155" cy="55" r="3" fill="#bfe3ff" opacity="0.7"/>
-    <circle cx="140" cy="80" r="2.5" fill="#bfe3ff" opacity="0.6"/>
-    <circle cx="48" cy="95" r="2" fill="#bfe3ff" opacity="0.5"/>
-    <circle cx="170" cy="100" r="3.5" fill="#bfe3ff" opacity="0.6"/>
-    <rect x="20" y="150" width="160" height="55" fill="#9abfcc" opacity="0.4"/>
-    <path d="M20 150 L50 120 L80 140 L110 110 L140 130 L180 105 L180 150Z" fill="#7aaabb" opacity="0.5"/>
-    <rect x="88" y="128" width="24" height="22" rx="2" fill="#bfe3ff" opacity="0.4"/>
-    <line x1="100" y1="128" x2="100" y2="150" stroke="#7aaabb" stroke-width="1.5" opacity="0.5"/>
-    <line x1="88" y1="139" x2="112" y2="139" stroke="#7aaabb" stroke-width="1.5" opacity="0.5"/>
-  </svg>`,
-
-  // 4: Cat Council — five cat silhouettes sitting in a row
-  `<svg viewBox="0 0 200 200" width="180" height="180" fill="none" opacity="0.11">
-    ${[22,52,82,112,142].map((x, i) => {
-      const earTip = i % 2 === 0 ? '#e8c8d8' : '#d8c8f0';
-      const body = i % 2 === 0 ? '#f0c8d8' : '#d8c8f0';
-      return `
-        <circle cx="${x+15}" cy="${130}" r="12" fill="${body}"/>
-        <ellipse cx="${x+15}" cy="${120}" rx="10" ry="9" fill="${body}"/>
-        <path d="${x+8} ${115} L${x+6} ${105} L${x+12} ${110}Z" fill="${earTip}"/>
-        <path d="${x+22} ${115} L${x+24} ${105} L${x+18} ${110}Z" fill="${earTip}"/>
-        <path d="${x+10} ${132} Q${x+15} ${130} ${x+20} ${132} L${x+22} ${142} Q${x+15} ${145} ${x+8} ${142}Z" fill="${body}"/>
-      `;
-    }).join('')}
-    <line x1="15" y1="148" x2="185" y2="148" stroke="#d8c3b2" stroke-width="3" stroke-linecap="round" opacity="0.5"/>
-  </svg>`,
-];
+/** Tiny deterministic pseudo-random so star fields don't jump on re-render. */
+const rand = (n: number) => {
+  const x = Math.sin(n * 127.1 + 311.7) * 43758.5453;
+  return x - Math.floor(x);
+};
 
 // ---------------------------------------------------------------- testing unlock
 
@@ -101,11 +32,8 @@ const CHAPTER_SCENES: string[] = [
 const lockedLevelClicks = new Map<number, number>();
 
 function handleLockedLevelClick(levelIndex: number, onPick: (index: number) => void): void {
-  const currentClicks = lockedLevelClicks.get(levelIndex) || 0;
-  const newClicks = currentClicks + 1;
-  
+  const newClicks = (lockedLevelClicks.get(levelIndex) || 0) + 1;
   if (newClicks >= 5) {
-    // Reset the counter and unlock the level for testing
     lockedLevelClicks.delete(levelIndex);
     console.log(`🐱 Testing mode: Level ${levelIndex} unlocked after 5 clicks`);
     onPick(levelIndex);
@@ -119,66 +47,125 @@ function handleLockedLevelClick(levelIndex: number, onPick: (index: number) => v
 
 export function renderMap(
   progress: Progress,
-  onPick: (index: number) => void
+  onPick: (index: number) => void,
+  onWorldTap?: (chapterIndex: number) => void
 ): void {
   const wrap = $('mapWrap');
   const width = wrap.clientWidth || 420;
   const cx = width / 2;
-  const amp = Math.max(70, cx - 80);
+  const amp = Math.max(70, cx - 84);
 
-  // ------ layout: compute a winding node trail ------
+  // ------ layout: a winding trail, laid out top-down then flipped ------
   const refs = allLevels();
   const points: Pt[] = [];
-  const bannerSlots: { chapterIndex: number; y: number }[] = [];
+  const signSlots: { chapterIndex: number; y: number }[] = [];
 
-  let y = 88;
+  let y = 96;
   let phase = 0.9;
-
   let lastChapter = -1;
   refs.forEach((ref, i) => {
     if (ref.chapterIndex !== lastChapter) {
-      bannerSlots.push({ chapterIndex: ref.chapterIndex, y });
-      y += 120;
+      if (lastChapter !== -1) y += 44; // breathing room before a new world
+      signSlots.push({ chapterIndex: ref.chapterIndex, y });
+      y += 124;
       lastChapter = ref.chapterIndex;
     }
     const jitter = Math.sin((i + 1) * 12.9898) * 14;
     points.push({ x: cx + amp * Math.sin(phase) + jitter, y });
-    y += 88 + ((i * 47) % 3) * 10;
+    // Slightly tighter than before so 100 levels don't make an endless map.
+    y += 86 + ((i * 47) % 3) * 8;
     phase += 0.78;
   });
 
-  const totalH = y + 40;
+  // Extra sky above the last world for the "more worlds coming" sign.
+  const TOP_PAD = 280;
+  const totalH = y + 60 + TOP_PAD;
   wrap.style.height = `${totalH}px`;
 
-  // Journey climbs upward: level 1 at the bottom. Mirror every y.
+  // Journey climbs upward: level 1 at the bottom, each world's sign sits at
+  // its entrance (the bottom of its band).
   const flip = (yy: number) => totalH - yy;
   points.forEach((p) => (p.y = flip(p.y)));
-  bannerSlots.forEach((s) => (s.y = flip(s.y)));
+  signSlots.forEach((s) => (s.y = flip(s.y)));
 
-  // ------ region tints ------
+  const BAND_PAD = 72; // band edge sits this far below the world's sign
+  const bandOf = (k: number) => {
+    const bottom = k === 0 ? totalH : signSlots[k].y + BAND_PAD;
+    const top = k === signSlots.length - 1 ? TOP_PAD : signSlots[k + 1].y + BAND_PAD;
+    return { top, bottom };
+  };
+
+  const isUnlockedWorld = (k: number) => {
+    const first = refs.find((r) => r.chapterIndex === k);
+    return !!first && first.index <= progress.unlocked;
+  };
+
+  // ------ world bands ------
   const regionsEl = $('mapRegions');
+  regionsEl.style.height = `${totalH}px`;
   regionsEl.innerHTML = '';
-  bannerSlots.forEach((slot, bi) => {
-    const nextY = bi + 1 < bannerSlots.length ? bannerSlots[bi + 1].y : 0;
-    const top = Math.min(slot.y, nextY);
-    const height = Math.abs(slot.y - nextY) + 80;
-    const div = document.createElement('div');
-    div.className = 'mapRegion';
-    div.style.cssText = `
-      position:absolute; left:0; right:0;
-      top:${top - 40}px; height:${height}px;
-      background:${REGION_TINTS[slot.chapterIndex % REGION_TINTS.length]};
-      pointer-events:none;
-    `;
-    // Chapter-themed watermark illustration
-    const scene = CHAPTER_SCENES[slot.chapterIndex % CHAPTER_SCENES.length];
-    div.innerHTML = `<span class="regionMark" style="
-      position:absolute; left:50%; top:50%;
-      transform:translate(-50%,-50%) rotate(${bi % 2 ? 5 : -5}deg);
-      pointer-events:none; user-select:none;
-    ">${scene}</span>`;
-    regionsEl.appendChild(div);
+  signSlots.forEach((slot, k) => {
+    const w = WORLDS[slot.chapterIndex % WORLDS.length];
+    const { top, bottom } = bandOf(k);
+    const h = bottom - top;
+
+    const band = document.createElement('div');
+    band.className = `worldBand${w.night ? ' night' : ''}${isUnlockedWorld(k) ? '' : ' lockedWorld'}`;
+    // Lower worlds stack above higher ones so each wave overlaps the band above.
+    band.style.cssText = `top:${top}px;height:${h}px;z-index:${signSlots.length - k};
+      background:${worldBackground(w)};`;
+
+    let inner = '';
+    // Every world, including the last, gets a wave on top (the last one
+    // rises into the "coming soon" sky).
+    inner += `<svg class="worldWave" viewBox="0 0 1200 30" preserveAspectRatio="none" aria-hidden="true"><path d="${WAVE}" fill="${w.top}"/></svg>`;
+    inner += `<div class="worldStrip" style="background-image:${stripBg(w.strip)}"></div>`;
+
+    if (w.night) {
+      for (let s = 0; s < 26; s++) {
+        const sx = (rand(s + k * 50) * 100).toFixed(1);
+        const sy = Math.round(30 + rand(s * 3.7 + k) * (h - 140));
+        const sz = 3 + Math.round(rand(s * 9.1) * 4);
+        inner += `<span class="star" style="left:${sx}%;top:${sy}px;width:${sz}px;height:${sz}px;animation-delay:${(-rand(s) * 3).toFixed(2)}s"></span>`;
+      }
+    }
+
+    // Scenery in the margins: each prop has its own size, height in the band
+    // (`at`) and distance out into the margin (`inset`).
+    w.props.forEach((p, i) => {
+      const py = Math.round(30 + p.at * Math.max(0, h - 100 - p.size));
+      inner += `<span class="mapProp ${p.side}${p.still ? ' still' : ''}" style="top:${py}px;--sz:${p.size}px;--in:${p.inset};animation-delay:${(-i * 1.7).toFixed(1)}s">${p.svg}</span>`;
+    });
+
+    band.innerHTML = inner;
+    regionsEl.appendChild(band);
   });
+
+  // ------ "more worlds coming" sky above the last world ------
+  const sky = document.createElement('div');
+  sky.className = 'comingSky';
+  sky.style.height = `${TOP_PAD + 40}px`;
+  // Blend from the page colour down into the last world's own sky colour.
+  const lastWorld = WORLDS[signSlots[signSlots.length - 1].chapterIndex % WORLDS.length];
+  sky.style.background = lastWorld.night
+    ? `linear-gradient(180deg, #fff8ef 0%, #ffe3d6 30%, #b98aa8 62%, ${lastWorld.top} 100%)`
+    : `linear-gradient(180deg, #fff8ef 0%, #fff1f4 50%, ${lastWorld.top} 100%)`;
+  const cloud = (cls: string, style: string, scale = 1) =>
+    `<svg class="skyCloud ${cls}" style="${style}" viewBox="0 0 160 80" width="${Math.round(160 * scale)}" height="${Math.round(80 * scale)}" aria-hidden="true">
+      <circle cx="44" cy="48" r="24" fill="#ffffff"/><circle cx="78" cy="34" r="30" fill="#ffffff"/>
+      <circle cx="112" cy="46" r="24" fill="#ffffff"/><rect x="24" y="46" width="112" height="26" rx="13" fill="#ffffff"/>
+      <ellipse cx="66" cy="26" rx="14" ry="6" fill="#ffffff" opacity="0.9"/>
+    </svg>`;
+  sky.innerHTML =
+    cloud('', 'left:4%;top:34px', 0.9) +
+    cloud('slow', 'right:6%;top:18px', 1.15) +
+    cloud('', 'left:22%;top:150px', 0.7) +
+    cloud('slow', 'right:20%;top:170px', 0.8) +
+    cloud('', 'left:58%;top:70px', 0.55) +
+    [[12, 110], [30, 60], [70, 40], [86, 120], [48, 200], [92, 210]]
+      .map(([x, yy], i) => `<span class="skySpark" style="left:${x}%;top:${yy}px;animation-delay:${(-i * 0.7).toFixed(1)}s"></span>`)
+      .join('');
+  regionsEl.appendChild(sky);
 
   // ------ dotted trail ------
   const svg = $('mapPath') as unknown as SVGSVGElement;
@@ -197,48 +184,75 @@ export function renderMap(
     const c2x = p2.x - (p3.x - p1.x) / 6;
     const c2y = p2.y - (p3.y - p1.y) / 6;
     const done = !!progress.results[i]?.solved;
+    const night = !!WORLDS[refs[i + 1].chapterIndex % WORLDS.length].night;
     segs.push(
-      `<path class="trail${done ? ' lit' : ''}" d="M ${p1.x} ${p1.y} C ${c1x} ${c1y},${c2x} ${c2y},${p2.x} ${p2.y}"/>`
+      `<path class="trail${done ? ' lit' : ''}${night ? ' night' : ''}" d="M ${p1.x} ${p1.y} C ${c1x} ${c1y},${c2x} ${c2y},${p2.x} ${p2.y}"/>`
     );
   }
+  // A faint dotted path carries on past the last level, up to the sign.
+  const lastPt = points[points.length - 1];
+  const COMING_Y = 128; // centre of the "coming soon" sign
+  segs.push(
+    `<path class="trail future" d="M ${lastPt.x} ${lastPt.y} C ${lastPt.x} ${lastPt.y - 90}, ${cx} ${COMING_Y + 150}, ${cx} ${COMING_Y + 52}"/>`
+  );
   svg.innerHTML = segs.join('');
 
-  // ------ chapter banners ------
-  const bannerHost = $('mapBanners');
-  bannerHost.innerHTML = '';
-  bannerSlots.forEach((slot) => {
+  // ------ world signs ------
+  const signHost = $('mapBanners');
+  signHost.innerHTML = '';
+  signSlots.forEach((slot, k) => {
     const ch = CHAPTERS[slot.chapterIndex];
+    const w = WORLDS[slot.chapterIndex % WORLDS.length];
     const chRefs = refs.filter((r) => r.chapterIndex === slot.chapterIndex);
     const doneInCh = chRefs.filter((r) => progress.results[r.index]?.solved).length;
     const total = chRefs.length;
     const cleared = doneInCh === total;
-
-    // A chapter is unlocked once the previous one has ≥3 solved levels (or it's the first).
-    const prevDone =
-      slot.chapterIndex === 0
-        ? 3
-        : refs.filter((r) => r.chapterIndex === slot.chapterIndex - 1 && progress.results[r.index]?.solved).length;
-    const unlocked = prevDone >= 3 || slot.chapterIndex === 0;
+    const unlocked = isUnlockedWorld(k);
 
     const sub = !unlocked
-      ? `Clear 3 levels in "${CHAPTERS[slot.chapterIndex - 1].name}" to enter`
+      ? `Finish ${CHAPTERS[slot.chapterIndex - 1].name} to open`
       : cleared
-        ? 'All cats cosy!'
-        : `${doneInCh} / ${total} · ${ch.blurb}`;
+        ? 'Every cat is cosy here'
+        : ch.blurb;
 
-    const banner = document.createElement('div');
-    banner.className = `mapBanner${unlocked ? '' : ' lockedB'}${cleared ? ' clearedB' : ''}`;
-    banner.style.top = `${slot.y - 30}px`;
-    banner.innerHTML = `
-      <span class="mbDot" style="background:${ch.accent}"></span>
-      <span class="mbText">
-        <span class="mbName">${ch.name}</span>
-        <span class="mbSub">${sub}</span>
+    const sign = document.createElement('button');
+    sign.className = `worldSign${unlocked ? '' : ' locked'}${cleared ? ' cleared' : ''}`;
+    sign.style.top = `${slot.y}px`;
+    sign.style.setProperty('--deep', w.deep);
+    sign.setAttribute('aria-label', `World ${k + 1}: ${ch.name}. ${unlocked ? `${doneInCh} of ${total} solved` : sub}`);
+    sign.innerHTML = `
+      <span class="wsCat">${mascotSvg(48, w.coat)}</span>
+      <span class="wsText">
+        <span class="wsKicker">World ${k + 1}${unlocked ? ` · ${doneInCh}/${total}` : ''}</span>
+        <span class="wsName">${ch.name}</span>
+        <span class="wsSub">${sub}</span>
+        ${unlocked ? `<span class="wsBar"><span style="width:${Math.round((doneInCh / total) * 100)}%"></span></span>` : ''}
       </span>
-      ${unlocked ? '' : '<svg class="icon lockIcon" style="width:14px;height:14px;margin-left:auto"><use href="#i-lock"/></svg>'}
+      ${unlocked ? '' : '<svg class="icon wsLock"><use href="#i-lock"/></svg>'}
     `;
-    bannerHost.appendChild(banner);
+    if (unlocked && onWorldTap) sign.addEventListener('click', () => onWorldTap(slot.chapterIndex));
+    else sign.tabIndex = -1;
+    signHost.appendChild(sign);
   });
+
+  // ------ "more worlds coming" signpost ------
+  const allDone = solvedCount(progress) >= TOTAL_LEVELS;
+  const coming = document.createElement('div');
+  coming.className = `comingSign${allDone ? ' celebrate' : ''}`;
+  coming.style.top = `${COMING_Y}px`;
+  coming.setAttribute('role', 'note');
+  coming.innerHTML = `
+    <span class="csBoard">
+      <span class="csNails" aria-hidden="true"><i></i><i></i></span>
+      <span class="csKicker">${allDone ? 'Every cat is cosy!' : `World ${signSlots.length + 1}`}</span>
+      <span class="csName">More worlds coming soon</span>
+      <span class="csSub">${allDone ? 'You found a spot for every cat. New puzzles are on the way.' : 'The cats are still exploring up here…'}</span>
+      <span class="csPaws" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><use href="#i-paw"/></svg><svg viewBox="0 0 24 24"><use href="#i-paw"/></svg><svg viewBox="0 0 24 24"><use href="#i-paw"/></svg>
+      </span>
+    </span>
+    <span class="csPost" aria-hidden="true"></span>`;
+  signHost.appendChild(coming);
 
   // ------ level nodes ------
   const nodesHost = $('mapNodes');
@@ -249,58 +263,67 @@ export function renderMap(
 
   refs.forEach((ref: LevelRef, i: number) => {
     const p = points[i];
+    const w = WORLDS[ref.chapterIndex % WORLDS.length];
     const unlocked = ref.index <= progress.unlocked;
     const result = progress.results[ref.index];
     const done = !!result?.solved;
     const isNext = ref.index === frontierId;
     const clean = !!result?.clean;
+    const num = ref.levelInChapter + 1;
 
-    const stateClass = done ? 'done' : isNext ? 'next' : unlocked ? 'open' : 'locked';
+    const stateClass = isNext ? 'next' : done ? 'done' : unlocked ? 'open' : 'locked';
 
     const node = document.createElement('button');
-    node.className = `mapNode ${stateClass}`;
+    node.className = `mapNode ${stateClass}${w.night ? ' onNight' : ''}`;
     node.style.cssText = `left:${p.x}px;top:${p.y}px`;
+    node.style.setProperty('--deep', w.deep);
+    node.setAttribute(
+      'aria-label',
+      `${ref.chapter.name}, level ${num}, ${ref.size} by ${ref.size}` +
+        (done ? (clean ? ', solved without hints' : ', solved') : unlocked ? '' : ', locked')
+    );
 
-    if (unlocked || done) {
-      const stamp = done
-        ? `<span class="mnStamp${clean ? ' clean' : ''}">
-             <svg viewBox="0 0 24 24" width="11" height="11" fill="${clean ? '#7d5f04' : '#1f6b3c'}" stroke="none">
-               ${clean ? '<path d="M12 2.5l3.09 6.26 6.91 1-5 4.87 1.18 6.87L12 18.27 5.82 21.5 7 14.63l-5-4.87 6.91-1z"/>'
-                       : '<path d="M20 6 9 17l-5-5" fill="none" stroke="#1f6b3c" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>'}
-             </svg>
-           </span>`
-        : '';
+    if (stateClass === 'done') {
+      // A solved level is a cat that found its spot: show that world's cat.
       node.innerHTML = `
-        <span class="mnNum">${ref.levelInChapter + 1}</span>
-        <span class="mnSize">${ref.size}×${ref.size}</span>
-        ${stamp}
+        <span class="mnCat">${mascotSvg(60, w.coat)}</span>
+        <span class="mnBadge">${num}</span>
+        ${clean ? `<span class="mnMedal" title="Purrfect: no hints used">${medalSvg(24)}</span>` : ''}
       `;
-      if (isNext) {
-        node.innerHTML += `<span class="mnLabel">${ref.chapter.name}</span>`;
-      }
+      node.addEventListener('click', () => onPick(ref.index));
+    } else if (stateClass === 'next' || stateClass === 'open') {
+      node.innerHTML = `
+        <span class="mnNum">${num}</span>
+        <span class="mnSize">${ref.size}×${ref.size}</span>
+        ${isNext ? `<span class="mnAvatar" aria-hidden="true">${mascotSvg(56)}</span><span class="mnLabel">Play</span>` : ''}
+      `;
       node.addEventListener('click', () => onPick(ref.index));
     } else {
-      // locked - but allow clicking for testing unlock
-      node.innerHTML = `<svg class="icon lockIcon" style="width:16px;height:16px"><use href="#i-lock"/></svg>`;
-      node.disabled = false;
+      // Locked, but still clickable 5x for testing.
+      node.innerHTML = `<svg class="icon mnLock"><use href="#i-lock"/></svg>`;
       node.addEventListener('click', () => handleLockedLevelClick(ref.index, onPick));
     }
 
     nodesHost.appendChild(node);
   });
 
-  // ------ progress chip ------
-  const chip = $('mapProgressChip');
-  if (chip) {
-    chip.textContent = `${solvedCount(progress)} / ${TOTAL_LEVELS} cosy · ${cleanCount(progress)} purrfect`;
-  }
+  // ------ header stats ------
+  const solved = solvedCount(progress);
+  const clean = cleanCount(progress);
+  $('mapStats').innerHTML = `
+    <span class="statPill" title="Levels solved" aria-label="${solved} of ${TOTAL_LEVELS} levels solved">
+      <span class="spIcon">${mascotSvg(22)}</span><b>${solved}</b><span class="spOf">/ ${TOTAL_LEVELS}</span>
+    </span>
+    <span class="statPill gold" title="Purrfect: solved without a hint" aria-label="${clean} purrfect, solved without a hint">
+      <span class="spIcon">${medalSvg(16)}</span><b>${clean}</b><span class="spOf">purrfect</span>
+    </span>`;
 }
 
 /** Scroll so the frontier (next unsolved) node is centred on screen. */
 export function scrollToFrontier(): void {
   const target =
-    (document.querySelector<HTMLElement>('.mapNode.next') ??
-    document.querySelector<HTMLElement>('.mapNode.done'));
+    document.querySelector<HTMLElement>('.mapNode.next') ??
+    document.querySelector<HTMLElement>('.mapNode.done');
   if (!target) return;
   const yAbs = target.getBoundingClientRect().top + window.scrollY;
   window.scrollTo({

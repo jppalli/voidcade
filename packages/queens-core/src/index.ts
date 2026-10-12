@@ -8,6 +8,7 @@ export {
   findSolutionExcluding,
   conflictsWithPlaced,
 } from './solver';
+export { gradePuzzle, logicalSolution, type Grade, type Tier } from './grader';
 export {
   generatePuzzle,
   allRegionsConnected,

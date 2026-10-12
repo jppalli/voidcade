@@ -11,9 +11,13 @@ import {
   setSoundEnabled,
   soundEnabled,
 } from './audio/sound';
-import { TOTAL_LEVELS, allLevels, levelAt, type LevelRef } from './game/levels';
+import { CHAPTERS, TOTAL_LEVELS, allLevels, levelAt, type LevelRef } from './game/levels';
 import {
+  hasSeenIntro,
+  hasSeenTip,
   loadProgress,
+  markIntroSeen,
+  markTipSeen,
   recordWin,
   saveProgress,
   solvedCount,
@@ -21,7 +25,9 @@ import {
 } from './game/progress';
 import { Game, MAX_LIVES } from './game/state';
 import { deadCatSvg, mascotSvg, pastel, pawSvg } from './render/art';
-import { renderMap, scrollToFrontier } from './ui/map';
+import { renderMap, scrollToFrontier, worldCoat } from './ui/map';
+import { worldBackground, worldOf } from './ui/mapScenery';
+import { closeTip, isTipOpen, openTip, wireTip } from './ui/tip';
 
 type Screen = 'title' | 'map' | 'game';
 
@@ -49,8 +55,9 @@ function show(screen: Screen) {
     }
   });
   if (screen === 'map') {
-    renderMap(progress, startLevel);
+    renderMap(progress, startLevel, (k) => { playTap(); speakWorld(k); });
     requestAnimationFrame(scrollToFrontier);
+    maybeWelcomeOnMap();
   }
   if (screen === 'title') renderTitle();
   window.scrollTo({ top: 0 });
@@ -59,11 +66,26 @@ function show(screen: Screen) {
 // ---------------------------------------------------------------- title
 
 function renderTitle() {
-  $('titleCat').innerHTML = mascotSvg(92);
+  $('titleCat').innerHTML = mascotSvg(200);
+  $('logoPaw').innerHTML = pawSvg('#e0687f', 22);
+
   const done = solvedCount(progress);
+  const allDone = done >= TOTAL_LEVELS;
+  const next = levelAt(nextUnsolvedIndex());
+
+  $('playLabel').textContent = done === 0 ? 'Play' : allDone ? 'Play again' : 'Continue';
+  $('playSub').textContent =
+    allDone || !next ? '' : `${next.chapter.name} · Level ${next.levelInChapter + 1}`;
+  $('playSub').classList.toggle('hidden', allDone || !next);
+
+  $('progressFill').style.width = `${Math.round((done / TOTAL_LEVELS) * 100)}%`;
+  $('titleProgressWrap').classList.toggle('empty', done === 0);
   $('titleProgress').textContent =
-    done === 0 ? `${TOTAL_LEVELS} cosy puzzles` : `${done} / ${TOTAL_LEVELS} solved`;
-  $('btnPlay').textContent = done === 0 ? 'Play' : 'Continue';
+    done === 0
+      ? `${TOTAL_LEVELS} cosy puzzles to solve`
+      : allDone
+        ? `All ${TOTAL_LEVELS} cats are cosy`
+        : `${done} of ${TOTAL_LEVELS} cats cosy`;
 }
 
 function seedTitleFloat() {
@@ -92,16 +114,71 @@ function startLevel(index: number) {
   renderedLives = -1;
   clearCelebration();
 
+  // The level sits inside its world: same pattern and colours as its map band.
+  const world = worldOf(ref.chapterIndex);
+  const gameScreen = $('screen-game');
+  gameScreen.style.background = worldBackground(world);
+  gameScreen.classList.toggle('night', !!world.night);
+
   $('gameChapter').textContent = ref.chapter.name;
   $('gameLevelNum').textContent = `Level ${ref.levelInChapter + 1} · ${ref.size}×${ref.size}`;
 
-  const tipBar = $('tipBar');
-  tipBar.classList.toggle('hidden', !ref.tip);
-  if (ref.tip) $('tipText').textContent = ref.tip;
+  closeTip(false);
+  $('btnTipGame').classList.toggle('hidden', !ref.tip);
 
   buildBoard(ref);
   renderBoard();
   show('game');
+
+  // First time in a world, its cat says hello; then the level tip (once).
+  const needsIntro = !hasSeenIntro(progress, ref.chapter.id);
+  const needsTip = !!ref.tip && !hasSeenTip(progress, ref.index);
+  if (needsIntro || needsTip) {
+    const g = game;
+    setTimeout(() => {
+      if (game !== g || $('screen-game').classList.contains('hidden') || isTipOpen()) return;
+      if (needsIntro) speakWorld(ref.chapterIndex, needsTip ? showLevelTip : undefined);
+      else showLevelTip();
+    }, 380);
+  }
+}
+
+/** The world's own cat welcomes you (typed speech bubble). Marks the intro
+ *  as seen when dismissed, then runs `then` (e.g. the level's tip). */
+function speakWorld(chapterIndex: number, then?: () => void) {
+  const ch = CHAPTERS[chapterIndex];
+  if (!ch) return;
+  openTip(ch.intro, {
+    title: ch.name,
+    coat: worldCoat(chapterIndex),
+    onClose: () => {
+      progress = markIntroSeen(progress, ch.id);
+      saveProgress(progress);
+      if (then) setTimeout(then, 220);
+    },
+  });
+}
+
+/** On the map, greet the player the first time they reach a new world. */
+function maybeWelcomeOnMap() {
+  if (solvedCount(progress) >= TOTAL_LEVELS) return;
+  const ref = levelAt(nextUnsolvedIndex());
+  if (!ref || hasSeenIntro(progress, ref.chapter.id)) return;
+  setTimeout(() => {
+    if ($('screen-map').classList.contains('hidden') || isTipOpen()) return;
+    speakWorld(ref.chapterIndex);
+  }, 450);
+}
+
+function showLevelTip() {
+  const ref = game?.ref;
+  if (!ref?.tip) return;
+  openTip(ref.tip, {
+    onClose: () => {
+      progress = markTipSeen(progress, ref.index);
+      saveProgress(progress);
+    },
+  });
 }
 
 function buildBoard(ref: LevelRef) {
@@ -543,6 +620,10 @@ function init() {
   const openHowTo = () => { playTap(); $('howToOverlay').classList.remove('hidden'); };
   $('btnHowTo').addEventListener('click', openHowTo);
   $('btnHelpGame').addEventListener('click', openHowTo);
+
+  // Level tip (the cat's speech bubble)
+  wireTip();
+  $('btnTipGame').addEventListener('click', () => { playTap(); showLevelTip(); });
   $('btnHowToClose').addEventListener('click', () => { playTap(); $('howToOverlay').classList.add('hidden'); });
 
   // Board controls
@@ -595,6 +676,7 @@ function init() {
   // Keyboard shortcuts
   window.addEventListener('keydown', (e) => {
     if ($('screen-game').classList.contains('hidden')) return;
+    if (isTipOpen()) return; // the tip handles its own keys
     if (e.key === 'r' || e.key === 'R') $('btnReset').click();
     if (e.key === 'z' || e.key === 'Z') $('btnUndo').click();
     if (e.key === 'h' || e.key === 'H') $('btnHint').click();

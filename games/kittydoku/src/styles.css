@@ -10,8 +10,17 @@
   --ink-faint: #b8a79c;
   --line: #e8d9cc;
   --line-strong: #d8c3b2;
+  /* Soft pink: decoration only (trail, paws, bars, glows). */
   --accent: #ff9db0;
-  --accent-deep: #e0687f;
+  /* Pink buttons and the next-level circle: soft fill, dark text.
+     #5a2333 on #ff9db0 is about 6:1, so it reads easily without the colour
+     having to go dark and heavy. */
+  --rose: #ff9db0;
+  --rose-deep: #e27a91;   /* 3D edge / shadow under pink buttons */
+  --on-rose: #5a2333;     /* text and icons sitting on pink */
+  /* Small pink text on the cream page (tip title, "Play" label): ~4.9:1. */
+  --rose-text: #b8455f;
+  --accent-deep: var(--rose-text);
   --mint: #7ecfa0;
   --shadow: 0 6px 0 rgba(122, 96, 80, 0.13);
   --shadow-lift: 0 10px 0 rgba(122, 96, 80, 0.15);
@@ -63,9 +72,9 @@ button {
 .btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(122,96,80,0.13); }
 
 .btn.primary {
-  background: var(--accent);
-  border-color: var(--accent-deep);
-  color: #fff;
+  background: var(--rose);
+  border-color: var(--rose-deep);
+  color: var(--on-rose);
 }
 
 .btn.big { width: 100%; padding: 16px 22px; font-size: 17px; }
@@ -94,56 +103,196 @@ button {
 /* ---------------- title screen ---------------- */
 #screen-title { justify-content: center; position: relative; overflow: hidden; }
 
-.titleCard {
+/* No card: the cat, logo and buttons sit straight on the warm background. */
+.titleStage {
   position: relative;
   z-index: 1;
   width: 100%;
-  max-width: 380px;
-  background: var(--card);
-  border: 3px solid var(--line-strong);
-  border-radius: 30px;
-  padding: 34px 26px 26px;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
-  box-shadow: 0 12px 0 rgba(122, 96, 80, 0.12);
+}
+
+.titleSound { position: absolute; top: 18px; right: 18px; z-index: 2; }
+
+/* Hero: mascot curled on a cushion */
+.titleHero {
+  position: relative;
+  width: 220px;
+  height: 205px;
+  margin-bottom: 8px;
+}
+
+.titleCat {
+  position: absolute;
+  left: 50%;
+  bottom: 30px;
+  width: 168px;
+  height: 168px;
+  margin-left: -84px;
+  z-index: 1;
+}
+
+.titleCat svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  transform-origin: 50% 90%;
+  animation: titleBreathe 4.2s ease-in-out infinite;
+}
+
+.titleCat .eyesClosed { animation: blinkClosed 6s linear 1.5s infinite; }
+.titleCat .eyesOpen   { animation: blinkOpen   6s linear 1.5s infinite; }
+
+/* Right ear flicks twice, then rests for a while. */
+.titleCat .earR {
+  transform-box: view-box;
+  transform-origin: 62px 34px;
+  animation: earTwitch 5s ease-in-out 2s infinite;
+}
+
+.titleCushion {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 220px;
+  height: 70px;
+}
+
+/* A small heart drifts up from the cat now and then. */
+.titleHeart {
+  position: absolute;
+  right: 34px;
+  top: 30px;
+  z-index: 2;
+  opacity: 0;
+  animation: heartFloat 6s ease-out 3s infinite;
+}
+.titleHeart svg { display: block; }
+
+@keyframes titleBreathe {
+  0%, 100% { transform: scale(1, 1); }
+  50%      { transform: scale(1.02, 0.975); }
+}
+
+@keyframes earTwitch {
+  0%, 84%, 100% { transform: rotate(0deg); }
+  87%           { transform: rotate(12deg); }
+  90%           { transform: rotate(-3deg); }
+  93%           { transform: rotate(10deg); }
+  96%           { transform: rotate(0deg); }
+}
+
+@keyframes heartFloat {
+  0%   { opacity: 0; transform: translate(0, 10px) scale(0.6); }
+  10%  { opacity: 1; transform: translate(0, 0) scale(1); }
+  35%  { opacity: 0; transform: translate(10px, -34px) scale(0.9) rotate(12deg); }
+  100% { opacity: 0; transform: translate(10px, -34px) scale(0.9); }
 }
 
 .logo {
-  font-size: clamp(38px, 11vw, 52px);
+  position: relative;
+  font-size: clamp(46px, 13vw, 60px);
   font-weight: 900;
-  letter-spacing: -1.4px;
+  letter-spacing: -1.8px;
   line-height: 1;
   color: var(--ink);
 }
 
-.logo em { font-style: normal; color: var(--accent-deep); }
+/* The logo is big, bold text, so a lighter pink still reads clearly (~3:1). */
+.logo em { font-style: normal; color: #d9667f; }
 
-.titleCat { margin: 6px auto 4px; width: 92px; height: 92px; }
-.titleCat svg { width: 100%; height: 100%; }
+.logoPaw {
+  position: absolute;
+  top: -12px;
+  right: -22px;
+  transform: rotate(18deg);
+  opacity: 0.85;
+}
+.logoPaw svg { display: block; }
 
 .tagline {
   color: var(--ink-soft);
-  font-size: 14.5px;
-  font-weight: 600;
-  margin: 8px 0 22px;
-  line-height: 1.5;
+  font-size: 16px;
+  font-weight: 700;
+  margin: 10px 0 28px;
 }
 
-.titleButtons { display: flex; flex-direction: column; gap: 11px; }
-
-.titleFooter {
-  margin-top: 20px;
+/* Primary action: one big, clearly-first button */
+.playBtn {
+  width: 100%;
+  min-height: 68px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 2px;
+  padding: 12px 22px;
+  border-radius: 22px;
+  box-shadow: 0 7px 0 var(--rose-deep);
+}
+.playBtn:hover  { box-shadow: 0 10px 0 var(--rose-deep); }
+.playBtn:active { box-shadow: 0 2px 0 var(--rose-deep); }
+
+.playLabel { font-size: 21px; font-weight: 900; letter-spacing: -0.2px; line-height: 1.1; }
+.playSub   { font-size: 12.5px; font-weight: 700; opacity: 0.9; line-height: 1.2; }
+
+/* Secondary actions: smaller pills side by side */
+.titleSecondary {
+  width: 100%;
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.btn.pill {
+  flex: 1;
+  padding: 11px 12px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--ink-soft);
+  box-shadow: 0 4px 0 rgba(122, 96, 80, 0.12);
+}
+.btn.pill:hover { color: var(--ink); }
+
+/* Progress: soft bar with a caption */
+.titleProgress {
+  width: 78%;
+  margin-top: 26px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
   color: var(--ink-soft);
   font-size: 13px;
   font-weight: 700;
 }
 
+.progressTrack {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--bg-2);
+  border: 2px solid var(--line);
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  min-width: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ffc9d9, var(--accent));
+  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.titleProgress.empty .progressTrack { display: none; }
+
 .voidcadeLink {
   display: block;
-  margin-top: 16px;
+  margin-top: 22px;
   color: var(--ink-faint);
   font-size: 12.5px;
   font-weight: 700;
@@ -151,6 +300,14 @@ button {
 }
 
 .voidcadeLink:hover { color: var(--accent-deep); }
+
+@media (min-width: 768px) {
+  .titleStage { max-width: 400px; }
+  .titleHero { width: 250px; height: 232px; }
+  .titleCat { width: 192px; height: 192px; margin-left: -96px; bottom: 32px; }
+  .titleCushion { width: 250px; height: 78px; }
+  .titleSound { top: 24px; right: 28px; }
+}
 
 /* Drifting paw prints in the title background. */
 .titleFloat { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
@@ -161,149 +318,523 @@ button {
   to   { transform: translateY(-102vh) rotate(24deg); }
 }
 
-/* ---------------- map screen (ChessDoku-style winding path) ------------- */
-#screen-map { padding: 0 0 80px; }
+/* ---------------- map screen: worlds along a winding trail -------------- */
+/* overflow-x: clip (not hidden) so the sticky header keeps working while the
+   full-width world bands can't cause sideways scrolling. */
+#screen-map { padding: 0 0 0; position: relative; overflow-x: clip; }
 
+/* Header: back | centred title + stats | sound. Equal outer columns keep the
+   title truly centred. */
 .mapHeader {
-  position: sticky; top: 0; z-index: 6;
-  width: 100%; display: flex; align-items: center; justify-content: space-between;
-  gap: 12px; padding: 12px clamp(12px,3vw,24px);
-  background: rgba(255,248,239,0.85); backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--line-strong);
-}
-.mapHeader h2 { font-size: 19px; font-weight: 900; color: var(--ink); letter-spacing: -0.3px; }
-.mapHeaderRight { display: flex; align-items: center; gap: 10px; }
-.mapProgressChip {
-  background: var(--bg-2); border: 2px solid var(--line-strong); border-radius: 999px;
-  padding: 5px 14px; font-size: 12px; font-weight: 800; color: var(--accent-deep); white-space: nowrap;
-}
-
-/* The back button inside mapHeader uses .btn.back — needs flex so its arrow
-   icon and label text actually sit on the same vertical axis. */
-.btn.back {
-  display: inline-flex;
+  position: sticky; top: 0; z-index: 30;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  gap: 6px;
-  padding: 9px 14px;
-  font-size: 13px;
+  gap: 10px;
+  padding: 10px clamp(12px, 3vw, 24px) 12px;
+  background: rgba(255, 248, 239, 0.94);
+  backdrop-filter: blur(10px);
+  border-bottom: 2px solid var(--line-strong);
+  box-shadow: 0 4px 0 rgba(122, 96, 80, 0.06);
+}
+.mapHeader > :first-child { justify-self: start; }
+.mapHeaderRight { justify-self: end; display: flex; align-items: center; gap: 10px; }
+
+.mapTitle { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
+.mapTitle h2 {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 21px; font-weight: 900; letter-spacing: -0.5px; line-height: 1;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.mtPaw { width: 16px; height: 16px; color: var(--accent); transform: rotate(-18deg); flex-shrink: 0; }
+.mtPaw.flip { transform: rotate(18deg) scaleX(-1); }
+
+.mapStats { display: flex; gap: 6px; }
+.statPill {
+  display: inline-flex; align-items: center; gap: 4px;
+  height: 26px;
+  padding: 0 10px 0 4px;
+  border-radius: 999px;
+  background: var(--card);
+  border: 2px solid var(--line-strong);
+  font-size: 12px; font-weight: 800; color: var(--ink-soft);
+  white-space: nowrap;
+}
+.statPill b { font-size: 13px; font-weight: 900; color: var(--ink); }
+.statPill .spIcon { width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; }
+.statPill .spIcon svg { display: block; max-width: 100%; max-height: 100%; }
+.statPill.gold { border-color: #f5c96a; background: #fff8e1; }
+.statPill.gold b { color: #9a6b00; }
+
+@media (max-width: 420px) {
+  .mapTitle h2 { font-size: 18px; }
+  .mtPaw { display: none; }
+  .btn.back span { display: none; }
+  .statPill .spOf { display: none; }
 }
 
-.btn.back .icon {
-  flex-shrink: 0;
-  width: 17px;
-  height: 17px;
-}
-.mapProgressChip {
-  background: var(--bg-2); border: 2px solid var(--line-strong); border-radius: 999px;
-  padding: 5px 14px; font-size: 12px; font-weight: 800; color: var(--accent-deep); white-space: nowrap;
+@media (min-width: 768px) {
+  .mapTitle h2 { font-size: 24px; }
+  .mtPaw { width: 18px; height: 18px; }
 }
 
-#mapWrap { position: relative; width: min(480px,96vw); margin: 12px auto 0; }
+/* The back button inside mapHeader uses .btn.back: flex so its arrow icon
+   and label sit on the same line. */
+.btn.back { display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px; font-size: 13px; }
+.btn.back .icon { flex-shrink: 0; width: 17px; height: 17px; }
 
+#mapWrap { position: relative; width: min(480px, 96vw); margin: 0 auto; }
+
+@media (min-width: 768px) {
+  #mapWrap { width: min(620px, 90vw); }
+}
+
+/* Bands span the whole viewport, not just the trail column. */
+#mapRegions {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 100vw;
+  margin-left: -50vw;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.worldBand { position: absolute; left: 0; right: 0; }
+
+/* Wavy top edge in the band's own top colour, overlapping the band above. */
+.worldWave {
+  position: absolute;
+  left: 0;
+  top: -29px;
+  width: 100%;
+  height: 30px;
+  display: block;
+}
+
+/* Ground strip along the bottom: sill, rug, fence, rooftops, bunting. */
+.worldStrip {
+  position: absolute;
+  left: 0; right: 0;
+  bottom: 22px;
+  height: 48px;
+  background-repeat: repeat-x;
+  background-position: center bottom;
+  opacity: 0.9;
+}
+
+/* Scenery props in the margins. Opaque on desktop where they have room; a
+   little softer on phones where they sit closer to the trail. */
+/* Each prop sets --sz (desktop size) and --in (0 = hugging the trail column,
+   1 = out at the screen edge). The margin beside the 620px column is
+   50vw - 330px wide; props shrink to fit it on narrower desktops. */
+.mapProp {
+  --w: clamp(60px, calc(50vw - 350px), var(--sz, 120px));
+  position: absolute;
+  width: var(--w);
+  height: var(--w);
+  animation: propBob 6s ease-in-out infinite;
+}
+.mapProp.still { animation: none; }
+.mapProp.left  { right: calc(50% + 330px + var(--in, 0.3) * max(0px, 50vw - 330px - var(--w) - 24px)); }
+.mapProp.right { left:  calc(50% + 330px + var(--in, 0.3) * max(0px, 50vw - 330px - var(--w) - 24px)); }
+.mapProp svg { width: 100%; height: 100%; display: block; overflow: visible; }
+
+/* Phones: no side margins, so props tuck against the screen edges at about
+   half size and stay soft behind the trail. */
+@media (max-width: 767px) {
+  .mapProp { --w: calc(var(--sz, 120px) * 0.46); opacity: 0.6; }
+  .mapProp.left  { right: auto; left: 1vw; }
+  .mapProp.right { left: auto; right: 1vw; }
+}
+
+.worldBand.lockedWorld .mapProp { filter: saturate(0.55); opacity: 0.6; }
+
+@keyframes propBob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+
+/* Prop details */
+.pPulse { animation: propPulse 4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.pSway  { animation: propSway 4.5s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
+.pSpin  { animation: propSpin 24s linear infinite; }
+.pRoll  { animation: propRoll 7s ease-in-out infinite; }
+.pFloat { animation: propFloat 5s ease-in-out infinite; }
+.pFlap  { animation: propFlap 0.9s ease-in-out infinite alternate; }
+.pSmoke { animation: propSmoke 4s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+.pSmoke2 { animation-delay: -2s; }
+.pTwinkle { animation: twinkle 2.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+
+@keyframes propPulse { 0%, 100% { opacity: 0.45; transform: scale(0.96); } 50% { opacity: 0.8; transform: scale(1.04); } }
+@keyframes propSway  { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+@keyframes propSpin  { to { transform: rotate(360deg); } }
+@keyframes propRoll  { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(10deg); } }
+@keyframes propFloat { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(4px, -6px); } }
+@keyframes propFlap  { from { transform: scaleX(1); } to { transform: scaleX(0.55); } }
+@keyframes propSmoke {
+  0%   { transform: translate(0, 10px) scale(0.6); opacity: 0; }
+  30%  { opacity: 0.6; }
+  100% { transform: translate(8px, -22px) scale(1.3); opacity: 0; }
+}
+
+/* Night sky */
+.star {
+  position: absolute;
+  border-radius: 50%;
+  background: #fff6d6;
+  box-shadow: 0 0 6px rgba(255, 246, 214, 0.8);
+  animation: twinkle 3s ease-in-out infinite;
+}
+@keyframes twinkle { 0%, 100% { opacity: 0.25; transform: scale(0.7); } 50% { opacity: 1; transform: scale(1); } }
+
+/* ---------------- trail ---------------- */
+#mapPath { z-index: 1; }
 #mapPath .trail {
-  fill: none; stroke: var(--line-strong); stroke-width: 6;
-  stroke-linecap: round; stroke-dasharray: .1 15;
+  fill: none; stroke: #c9ab95; stroke-width: 8;
+  stroke-linecap: round; stroke-dasharray: .1 16;
+}
+#mapPath .trail.night { stroke: rgba(255, 255, 255, 0.45); }
+#mapPath .trail.future { stroke: #e0b8c4; stroke-dasharray: .1 20; opacity: 0.8; }
+
+/* ---------------- "more worlds coming" sky ---------------- */
+.comingSky {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  z-index: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #fff8ef 0%, #ffeef3 55%, #ffcadb 100%);
+}
+.skyCloud { position: absolute; opacity: 0.9; animation: skyDrift 14s ease-in-out infinite; }
+.skyCloud.slow { animation-duration: 20s; animation-delay: -6s; }
+@keyframes skyDrift {
+  0%, 100% { transform: translateX(0); }
+  50%      { transform: translateX(22px); }
+}
+.skySpark {
+  position: absolute;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #ffd35c;
+  box-shadow: 0 0 8px rgba(255, 211, 92, 0.9);
+  animation: twinkle 2.8s ease-in-out infinite;
+}
+
+/* Wooden signpost at the very top of the trail. */
+.comingSign {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  animation: signSway 5s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+@keyframes signSway {
+  0%, 100% { transform: translate(-50%, -50%) rotate(-1.2deg); }
+  50%      { transform: translate(-50%, -50%) rotate(1.2deg); }
+}
+
+.csBoard {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 2px;
+  width: max-content;
+  max-width: min(88vw, 340px);
+  padding: 14px 26px 12px;
+  border-radius: 16px;
+  background:
+    repeating-linear-gradient(180deg, transparent 0 22px, rgba(150, 98, 52, 0.18) 22px 24px),
+    linear-gradient(180deg, #f2c58f, #e2a96b);
+  border: 3px solid #b97b44;
+  box-shadow: 0 7px 0 rgba(122, 78, 40, 0.3);
+  text-align: center;
+}
+.csNails i {
+  position: absolute; top: 8px;
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #8a5a30; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+.csNails i:first-child { left: 10px; }
+.csNails i:last-child { right: 10px; }
+
+.csKicker { font-size: 11px; font-weight: 900; letter-spacing: 0.5px; text-transform: uppercase; color: #8a4f22; }
+.csName { font-size: 18px; font-weight: 900; color: #4a2c14; letter-spacing: -0.3px; line-height: 1.15; }
+.csSub { font-size: 12.5px; font-weight: 700; color: #7a4c28; line-height: 1.35; }
+.csPaws { display: flex; gap: 6px; margin-top: 6px; color: #b97b44; }
+.csPaws svg { width: 13px; height: 13px; }
+.csPaws svg:nth-child(2) { transform: translateY(-3px) rotate(12deg); }
+.csPaws svg:nth-child(3) { transform: rotate(-10deg); }
+
+.csPost {
+  width: 14px; height: 40px;
+  margin-top: -3px;
+  border-radius: 0 0 4px 4px;
+  background: linear-gradient(90deg, #c98a52, #a9703d);
+  border: 3px solid #b97b44; border-top: none;
+}
+
+.comingSign.celebrate .csBoard { border-color: #e0a020; box-shadow: 0 7px 0 rgba(122, 78, 40, 0.3), 0 0 0 4px #ffe08a; }
+
+@media (min-width: 768px) {
+  .csName { font-size: 20px; }
+  .csSub { font-size: 13.5px; }
 }
 #mapPath .trail.lit {
   stroke: var(--accent);
-  filter: drop-shadow(0 0 4px rgba(255,157,176,0.5));
+  stroke-width: 9;
+  filter: drop-shadow(0 0 6px rgba(255,157,176,0.7));
 }
 
-.mapBanner {
-  position: absolute; left: 50%; transform: translate(-50%,-50%);
-  display: flex; align-items: center; gap: 12px;
-  background: var(--card); border: 2px solid var(--line-strong); border-radius: 999px;
-  padding: 10px 20px 10px 14px;
-  box-shadow: 0 6px 0 rgba(122,96,80,0.12);
-  pointer-events: none; max-width: 92%; white-space: nowrap;
-}
-.mbDot { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; border: 2px solid rgba(255,255,255,0.6); }
-.mbText { display: flex; flex-direction: column; min-width: 0; }
-.mbName { font-size: 14px; font-weight: 900; color: var(--ink); }
-.mbSub  { font-size: 11.5px; color: var(--ink-soft); font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
-.mapBanner.lockedB  { opacity: 0.6; filter: saturate(0.4); }
-.mapBanner.clearedB { border-color: var(--mint); }
-.mapBanner.clearedB .mbName { color: #1f6b3c; }
-.mapBanner.clearedB .mbSub  { color: var(--mint); }
+/* ---------------- world signs ---------------- */
+#mapBanners { z-index: 2; }
 
-.mapNode {
-  position: absolute; transform: translate(-50%,-50%);
-  width: 56px; height: 56px; border-radius: 50%;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
-  background: var(--card); border: 3px solid var(--line-strong);
-  cursor: pointer; pointer-events: auto;
-  box-shadow: 0 5px 0 rgba(122,96,80,0.14);
-  transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease;
+.worldSign {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: max-content;
+  max-width: min(92vw, 400px);
+  padding: 10px 18px 10px 10px;
+  background: var(--card);
+  border: 3px solid var(--deep, var(--line-strong));
+  border-radius: 22px;
+  box-shadow: 0 7px 0 rgba(74, 59, 52, 0.18);
+  text-align: left;
+  pointer-events: auto;
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
 }
-.mapNode:hover:not(:disabled) { transform: translate(-50%,-50%) scale(1.12); border-color: var(--accent); z-index: 4; }
-.mapNode .mnNum  { font-size: 18px; font-weight: 900; line-height: 1; }
-.mapNode .mnSize { font-size: 9.5px; font-weight: 800; color: var(--ink-soft); line-height: 1; }
-.mapNode.open { border-color: var(--accent); }
+.worldSign:hover  { transform: translate(-50%, -50%) scale(1.04); box-shadow: 0 10px 0 rgba(74, 59, 52, 0.2); }
+.worldSign:active { transform: translate(-50%, -50%) scale(0.98); }
 
-.mapNode.next {
-  width: 70px; height: 70px;
-  background: var(--accent); border-color: var(--accent-deep);
-  box-shadow: 0 6px 0 rgba(224,104,127,0.25); z-index: 4;
-  animation: nodePulse 2s ease-out infinite;
-}
-.mapNode.next .mnNum  { font-size: 22px; color: #fff; }
-.mapNode.next .mnSize { color: rgba(255,255,255,0.75); }
-@keyframes nodePulse {
-  0%   { box-shadow: 0 6px 0 rgba(224,104,127,0.25), 0 0 0 0    rgba(255,157,176,0.55); }
-  70%  { box-shadow: 0 6px 0 rgba(224,104,127,0.25), 0 0 0 16px rgba(255,157,176,0); }
-  100% { box-shadow: 0 6px 0 rgba(224,104,127,0.25), 0 0 0 0    rgba(255,157,176,0); }
-}
-
-.mapNode.done {
-  background: linear-gradient(180deg,#7ecfa0,#3aad68); border-color: #9de6b8; color: #061a0c;
-}
-.mapNode.done .mnNum  { color: #07130b; }
-.mapNode.done .mnSize { color: rgba(6,26,12,0.65); }
-
-.mnStamp {
-  position: absolute; top: -7px; right: -7px;
-  width: 20px; height: 20px; border-radius: 50%;
-  background: var(--mint); border: 2.5px solid var(--card);
+.wsCat {
+  flex-shrink: 0;
+  width: 52px; height: 52px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--deep) 16%, #fff);
   display: flex; align-items: center; justify-content: center;
 }
-.mnStamp.clean { background: #ffc94d; }
+.wsCat svg { width: 46px; height: 46px; display: block; }
+
+.wsText { display: flex; flex-direction: column; min-width: 0; gap: 1px; }
+.wsKicker { font-size: 11px; font-weight: 900; letter-spacing: 0.4px; color: var(--deep); text-transform: uppercase; }
+.wsName { font-size: 17px; font-weight: 900; color: var(--ink); letter-spacing: -0.3px; line-height: 1.15; }
+.wsSub  { font-size: 12.5px; font-weight: 700; color: var(--ink-soft); line-height: 1.3; }
+
+.wsBar {
+  margin-top: 6px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--bg-2);
+  overflow: hidden;
+}
+.wsBar span { display: block; height: 100%; border-radius: 999px; background: var(--deep); }
+
+.wsLock { width: 18px; height: 18px; color: var(--ink-faint); margin-left: 4px; flex-shrink: 0; }
+
+/* Solid colours (no opacity) so the trail never shows through a sign. */
+.worldSign.locked {
+  border-color: var(--line-strong);
+  background: #f4ece4;
+  cursor: default;
+  box-shadow: 0 5px 0 rgba(74, 59, 52, 0.12);
+}
+.worldSign.locked:hover { transform: translate(-50%, -50%); }
+.worldSign.locked .wsCat { background: #ebe1d7; filter: grayscale(0.85); }
+.worldSign.locked .wsKicker { color: var(--ink-faint); }
+.worldSign.locked .wsName { color: var(--ink-soft); }
+
+.worldSign.cleared .wsSub { color: #2d8a54; }
+
+@media (min-width: 768px) {
+  .worldSign { padding: 12px 22px 12px 12px; gap: 14px; }
+  .wsCat { width: 60px; height: 60px; }
+  .wsCat svg { width: 54px; height: 54px; }
+  .wsName { font-size: 19px; }
+  .wsSub { font-size: 13.5px; }
+}
+
+/* ---------------- level nodes ---------------- */
+#mapNodes { z-index: 3; }
+
+/* Every node state uses solid fills, so the dotted trail never shows through. */
+.mapNode {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 60px; height: 60px;
+  border-radius: 50%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  background: var(--card);
+  border: 3px solid var(--deep, var(--accent));
+  color: var(--ink);
+  cursor: pointer;
+  pointer-events: auto;
+  box-shadow: 0 5px 0 rgba(74, 59, 52, 0.2);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+}
+.mapNode:hover { transform: translate(-50%, -50%) scale(1.12); z-index: 5; }
+.mapNode:active { transform: translate(-50%, -50%) scale(0.96); }
+
+.mapNode .mnNum  { font-size: 20px; font-weight: 900; line-height: 1; }
+.mapNode .mnSize { font-size: 10px; font-weight: 800; color: var(--ink-soft); line-height: 1; }
+
+/* Solved: the world's cat sits in the circle, level number on a badge. */
+.mapNode.done {
+  background: color-mix(in srgb, var(--deep) 18%, #fff);
+  border-color: var(--deep);
+}
+.mnCat { width: 50px; height: 50px; display: block; margin-top: -2px; }
+.mnCat svg { width: 100%; height: 100%; display: block; }
+.mnBadge {
+  position: absolute;
+  bottom: -9px; left: 50%;
+  transform: translateX(-50%);
+  min-width: 22px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--deep);
+  border: 2px solid var(--card);
+  color: #fff;
+  font-size: 11px; font-weight: 900; line-height: 1.2;
+}
+/* Purrfect medal hanging off the top-right of a solved node. */
+.mnMedal {
+  position: absolute;
+  top: -12px; right: -10px;
+  transform: rotate(14deg);
+  filter: drop-shadow(0 2px 0 rgba(74, 59, 52, 0.22));
+  pointer-events: none;
+}
+.mnMedal svg { display: block; }
+
+/* Next: big pink node with your cat sitting on top. */
+.mapNode.next {
+  width: 76px; height: 76px;
+  background: var(--rose);
+  border-color: var(--rose-deep);
+  color: var(--on-rose);
+  z-index: 4;
+  box-shadow: 0 6px 0 var(--rose-deep);
+  animation: nodePulse 2.2s ease-out infinite;
+}
+.mapNode.next .mnNum  { font-size: 26px; color: var(--on-rose); }
+.mapNode.next .mnSize { color: var(--on-rose); opacity: 0.8; }
+
+@keyframes nodePulse {
+  0%   { box-shadow: 0 6px 0 var(--rose-deep), 0 0 0 0    rgba(255, 157, 176, 0.7); }
+  70%  { box-shadow: 0 6px 0 var(--rose-deep), 0 0 0 20px rgba(255, 157, 176, 0); }
+  100% { box-shadow: 0 6px 0 var(--rose-deep), 0 0 0 0    rgba(255, 157, 176, 0); }
+}
+
+.mnAvatar {
+  position: absolute;
+  bottom: calc(100% - 14px);
+  left: 50%;
+  width: 56px; height: 56px;
+  margin-left: -28px;
+  pointer-events: none;
+  animation: avatarBob 1.6s ease-in-out infinite;
+  filter: drop-shadow(0 3px 0 rgba(74, 59, 52, 0.18));
+}
+.mnAvatar svg { width: 100%; height: 100%; display: block; }
+@keyframes avatarBob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-5px); }
+}
 
 .mnLabel {
-  position: absolute; top: calc(100% + 9px); left: 50%; transform: translateX(-50%);
-  background: var(--card); border: 2px solid var(--accent);
-  color: var(--accent-deep); font-size: 11.5px; font-weight: 800;
-  padding: 4px 12px; border-radius: 999px; white-space: nowrap;
-  box-shadow: 0 4px 0 rgba(122,96,80,0.12); pointer-events: none;
-}
-.mnLabel::before {
-  content: ''; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
-  border: 5px solid transparent; border-bottom-color: var(--accent);
+  position: absolute;
+  top: calc(100% + 10px); left: 50%;
+  transform: translateX(-50%);
+  background: var(--card);
+  border: 2px solid var(--accent-deep);
+  color: var(--accent-deep);
+  font-size: 12px; font-weight: 900;
+  padding: 3px 14px;
+  border-radius: 999px;
+  white-space: nowrap;
+  box-shadow: 0 3px 0 rgba(74, 59, 52, 0.14);
+  pointer-events: none;
 }
 
-.mapNode.locked, .mapNode:disabled {
-  background: var(--bg-2); border-color: var(--line); color: var(--ink-faint);
-  cursor: default; box-shadow: none;
+/* Locked: solid muted disc with a lock. */
+.mapNode.locked {
+  background: #efe5db;
+  border-color: #dccbbc;
+  color: #b3a091;
+  cursor: default;
+  box-shadow: 0 4px 0 rgba(74, 59, 52, 0.12);
+}
+.mapNode.locked:hover { transform: translate(-50%, -50%); }
+.mnLock { width: 20px; height: 20px; }
+
+.mapNode.locked.onNight {
+  background: #3a4677;
+  border-color: #56639a;
+  color: #9aa6d6;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.25);
+}
+
+@media (min-width: 768px) {
+  .mapNode { width: 68px; height: 68px; }
+  .mapNode .mnNum { font-size: 22px; }
+  .mapNode .mnSize { font-size: 11px; }
+  .mnCat { width: 58px; height: 58px; }
+  .mapNode.next { width: 86px; height: 86px; }
+  .mapNode.next .mnNum { font-size: 30px; }
+  .mnAvatar { width: 64px; height: 64px; margin-left: -32px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mapProp, .pPulse, .pSway, .pSpin, .pRoll, .pFloat, .pFlap, .pSmoke, .pTwinkle, .star,
+  .skyCloud, .skySpark, .comingSign,
+  .mnAvatar, .mapNode.next { animation: none; }
 }
 
 .screen.entering { animation: screenIn 0.28s cubic-bezier(0.22,1,0.36,1); }
 @keyframes screenIn { from { opacity:0; transform:scale(0.98); } to { opacity:1; transform:none; } }
 
 /* ---------------- game screen ---------------- */
+/* The background (world pattern + colours) is set per level in main.ts. */
 #screen-game { justify-content: flex-start; }
+
+/* Night worlds (Rooftop Moon, Lantern Festival): light text on the dark sky.
+   Buttons and the board keep their own cream cards, so they need nothing. */
+#screen-game.night .gameChapter  { color: rgba(255, 246, 230, 0.78); }
+#screen-game.night .gameLevelNum { color: #fff6e6; }
+#screen-game.night .helpText     { color: rgba(255, 246, 230, 0.62); }
+#screen-game.night .heart.empty svg path { stroke: rgba(255, 246, 230, 0.45) !important; }
+#screen-game.night .board { box-shadow: 0 8px 0 rgba(0, 0, 0, 0.3); }
 
 /* Clean 3-column header: back left, title center, lives+icons right */
 .gameHeader {
   width: 100%;
   max-width: 520px;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: 10px;
   margin-bottom: 14px;
   padding: 0 2px;
 }
 
+.gameHeader > *:first-child {
+  justify-self: start;
+}
+
+.gameHeader > *:last-child {
+  justify-self: end;
+}
+
 .gameHeaderCenter {
-  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -312,24 +843,32 @@ button {
 }
 
 .gameChapter {
-  font-size: 10.5px;
-  font-weight: 800;
-  letter-spacing: 0.6px;
-  text-transform: uppercase;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
   color: var(--ink-soft);
 }
 
 .gameLevelNum {
-  font-size: 16px;
-  font-weight: 900;
+  font-size: 17px;
+  font-weight: 800;
   color: var(--ink);
-  line-height: 1.1;
+  line-height: 1.2;
+  letter-spacing: -0.2px;
+}
+
+.gameHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
 }
 
 .livesRow {
   display: flex;
   gap: 2px;
   align-items: center;
+  margin-top: 2px;
 }
 
 .heart { position: relative; display: block; }
@@ -482,33 +1021,175 @@ button {
   to   { transform: scale(1)   rotate(0deg);   opacity: 0.55; }
 }
 
-.tipBar {
+/* ---------------- level tip: the cat talks ---------------- */
+.srOnly {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.tipOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 55; /* under the win/fail/how-to modals (60) */
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px 14px calc(18px + env(safe-area-inset-bottom));
+}
+
+/* Light dim only, so the board the tip talks about stays readable. */
+.tipScrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(74, 59, 52, 0.22);
+  cursor: pointer;
+}
+
+.tipDock {
+  position: relative;
   width: 100%;
   max-width: 520px;
   display: flex;
-  align-items: center;
-  gap: 10px;
-  background: #fff;
-  border: 2px dashed var(--line-strong);
-  border-radius: 18px;
-  padding: 11px 14px;
-  margin-bottom: 14px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ink-soft);
-  line-height: 1.45;
+  align-items: flex-end;
+  gap: 4px;
 }
 
-.tipBar b {
+.tipCat {
   flex-shrink: 0;
-  background: var(--accent);
-  color: #fff;
-  border-radius: 999px;
-  padding: 3px 10px;
-  font-size: 10.5px;
+  width: 84px;
+  height: 84px;
+  margin-bottom: -6px;
+  cursor: pointer;
+  filter: drop-shadow(0 5px 0 rgba(122, 96, 80, 0.16));
+}
+.tipCat svg { width: 100%; height: 100%; display: block; overflow: visible; }
+
+/* While it "talks", the cat bobs gently. */
+.tipOverlay.typing .tipCat svg {
+  transform-origin: 50% 90%;
+  animation: tipTalk 0.36s ease-in-out infinite alternate;
+}
+
+.tipBubble {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 26px;
+  background: var(--card);
+  border: 3px solid var(--line-strong);
+  border-radius: 22px;
+  padding: 14px 18px 12px;
+  box-shadow: 0 8px 0 rgba(122, 96, 80, 0.16);
+  cursor: pointer;
+  text-align: left;
+}
+
+/* Tail pointing down-left at the cat: border layer + fill layer. */
+.tipBubble::before,
+.tipBubble::after {
+  content: '';
+  position: absolute;
+  left: -14px;
+  bottom: 14px;
+  border-style: solid;
+  border-color: transparent;
+}
+.tipBubble::before { border-width: 10px 16px 10px 0; border-right-color: var(--line-strong); }
+.tipBubble::after  { left: -9px; bottom: 16px; border-width: 8px 12px 8px 0; border-right-color: var(--card); }
+
+.tipTitle {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 11.5px;
   font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
+  color: var(--accent-deep);
+}
+
+.tipText {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+/* The rest of the sentence keeps its space but isn't drawn yet. */
+.tipRest { visibility: hidden; }
+
+.tipCaret {
+  display: none;
+  width: 2px;
+  height: 1.05em;
+  margin: 0 1px -0.15em;
+  background: var(--accent-deep);
+  border-radius: 1px;
+  animation: caretBlink 0.9s steps(1) infinite;
+}
+.tipOverlay.typing .tipCaret { display: inline-block; }
+
+.tipFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+  min-height: 38px;
+}
+
+.tipHintText {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-faint);
+}
+
+.btn.tipClose {
+  margin-left: auto;
+  padding: 8px 18px;
+  font-size: 14px;
+  border-radius: 999px;
+  box-shadow: 0 4px 0 var(--rose-deep);
+}
+
+/* Entrance: cat hops up, bubble pops in just after. */
+.tipOverlay.entering .tipScrim  { animation: fadeIn 0.25s ease; }
+.tipOverlay.entering .tipCat    { animation: tipCatIn 0.42s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.tipOverlay.entering .tipBubble { animation: tipBubbleIn 0.36s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both; }
+
+@keyframes tipCatIn {
+  from { transform: translateY(40px) scale(0.7); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+
+@keyframes tipBubbleIn {
+  from { transform: translate(-14px, 10px) scale(0.85); transform-origin: 0% 100%; opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+
+@keyframes tipTalk {
+  from { transform: translateY(0) rotate(-1.5deg); }
+  to   { transform: translateY(-2px) rotate(1.5deg); }
+}
+
+@keyframes caretBlink {
+  0%, 50% { opacity: 1; }
+  50.01%, 100% { opacity: 0; }
+}
+
+@media (min-width: 768px) {
+  .tipOverlay { padding-bottom: 32px; }
+  .tipCat { width: 104px; height: 104px; }
+  .tipText { font-size: 16px; }
+}
+
+@media (max-width: 420px) {
+  .tipCat { width: 66px; height: 66px; }
+  .tipBubble { padding: 12px 14px 10px; }
+  .tipText { font-size: 14px; }
 }
 
 /* Board */
@@ -627,20 +1308,78 @@ button {
 
 .modalButtons { display: flex; flex-direction: column; gap: 10px; }
 
-.howToList { list-style: none; text-align: left; display: flex; flex-direction: column;
-  gap: 12px; margin-bottom: 18px; }
+/* ---------------- how to play ----------------
+   Phones: one column (title, demo, steps, note, button).
+   Desktop: demo board on the left, steps on the right, footer across. */
+.howToModal { text-align: left; max-height: calc(100dvh - 40px); overflow-y: auto; }
+.howToModal h2 { text-align: center; }
 
-.howToList li { display: flex; gap: 11px; align-items: flex-start; font-size: 13.5px;
-  font-weight: 600; color: var(--ink-soft); line-height: 1.5; }
+.htDemo { margin: 4px 0 16px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.htDemo figcaption {
+  max-width: 240px;
+  text-align: center;
+  font-size: 12.5px; font-weight: 700; line-height: 1.45;
+  color: var(--ink-faint);
+}
+
+.howToList { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+
+.howToList li {
+  display: flex; gap: 12px; align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: var(--bg);
+  border: 2px solid var(--line);
+  font-size: 13.5px; font-weight: 600; color: var(--ink-soft); line-height: 1.5;
+}
 
 .howToList b { color: var(--ink); }
+.howToList .htHead { display: block; font-size: 14.5px; font-weight: 900; margin-bottom: 1px; }
+
+.htFooter .htNote { text-align: center; font-size: 13px; margin-bottom: 14px; }
+
+@media (min-width: 768px) {
+  .howToModal {
+    max-width: 760px;
+    padding: 30px 32px 26px;
+    display: grid;
+    grid-template-columns: 250px 1fr;
+    grid-template-areas:
+      "title  title"
+      "demo   steps"
+      "footer footer";
+    column-gap: 28px;
+  }
+  .howToModal h2 { grid-area: title; font-size: 28px; margin-bottom: 18px; }
+  .htDemo {
+    grid-area: demo;
+    margin: 0;
+    justify-content: center;
+    padding: 18px 14px;
+    border-radius: 22px;
+    background: var(--bg);
+    border: 2px solid var(--line);
+  }
+  .howToList { grid-area: steps; margin: 0; gap: 10px; }
+  .howToList li { font-size: 14px; }
+  .htFooter {
+    grid-area: footer;
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 2px dashed var(--line);
+    display: flex; align-items: center; gap: 20px;
+  }
+  .htFooter .htNote { flex: 1; text-align: left; margin: 0; }
+  .htFooter .modalButtons { flex-shrink: 0; }
+  .htFooter .btn { min-width: 150px; }
+}
 
 .howToNum {
   flex-shrink: 0;
   width: 24px; height: 24px;
   border-radius: 50%;
-  background: var(--accent);
-  color: #fff;
+  background: var(--rose);
+  color: var(--on-rose);
   font-size: 12px;
   font-weight: 900;
   display: flex; align-items: center; justify-content: center;
@@ -650,15 +1389,22 @@ button {
 .demoBoard {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  width: 148px; height: 148px;
-  margin: 4px auto 18px;
+  width: 156px; height: 156px;
   border: 3px solid var(--ink);
   border-radius: 14px;
   overflow: hidden;
+  box-shadow: 0 5px 0 rgba(122, 96, 80, 0.16);
 }
 
 .demoBoard div { display: flex; align-items: center; justify-content: center; position: relative; }
-.demoBoard .no { opacity: 0.42; }
+/* Art scales with the board, so the bigger desktop demo stays crisp. */
+.demoBoard div > svg { width: 76%; height: 76%; }
+.demoBoard .no { opacity: 0.42; display: flex; width: 42%; height: 42%; }
+.demoBoard .no svg { width: 100%; height: 100%; }
+
+@media (min-width: 768px) {
+  .demoBoard { width: 212px; height: 212px; border-radius: 18px; }
+}
 
 @media (max-width: 420px) {
   .levelRow { gap: 9px; }
@@ -670,6 +1416,11 @@ button {
    wave and confetti become simple fades. */
 @media (prefers-reduced-motion: reduce) {
   .titleFloat span,
+  .titleCat svg,
+  .titleCat .earR,
+  .titleCat .eyesClosed,
+  .titleCat .eyesOpen,
+  .titleHeart,
   .mapNode.next,
   .cell .catWrap svg,
   .cell .catWrap .eyesClosed,
@@ -678,6 +1429,9 @@ button {
   .winCat svg { animation: none; }
 
   .screen.entering, .modal { animation: fadeIn 0.2s ease; }
+  .tipOverlay.entering .tipCat,
+  .tipOverlay.entering .tipBubble { animation: fadeIn 0.2s ease; }
+  .tipOverlay.typing .tipCat svg { animation: none; }
   .cell .catWrap { animation: fadeIn 0.25s ease; }
   .cell .wrongWrap { animation: rmFadeGhost 0.3s ease; }
   .cell .pawWrap { animation: rmFadePaw 0.2s ease; }
