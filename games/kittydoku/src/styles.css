@@ -1052,6 +1052,77 @@ button {
   to   { transform: scale(1)   rotate(0deg);   opacity: 0.55; }
 }
 
+/* ---------------- tutorial coach ----------------
+   No scrim: the board stays playable. The bubble docks at the top, or at the
+   bottom (.dockBottom) when the thing it points at is near the top. */
+.coach {
+  position: fixed;
+  left: 0; right: 0; top: 10px;
+  z-index: 50;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 12px;
+  pointer-events: none;
+}
+.coach.dockBottom { top: auto; bottom: calc(12px + env(safe-area-inset-bottom)); align-items: flex-end; }
+.coach > * { pointer-events: auto; }
+
+.coachCat { flex-shrink: 0; width: 64px; height: 64px; filter: drop-shadow(0 4px 0 rgba(122, 96, 80, 0.16)); }
+.coachCat svg { width: 100%; height: 100%; display: block; }
+
+.coachBubble {
+  width: min(460px, calc(100vw - 100px));
+  background: var(--card);
+  border: 3px solid var(--line-strong);
+  border-radius: 20px;
+  padding: 10px 14px 10px;
+  box-shadow: 0 7px 0 rgba(122, 96, 80, 0.16);
+  text-align: left;
+}
+.coachHead { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.coachTitle { font-size: 11.5px; font-weight: 900; color: var(--accent-deep); letter-spacing: 0.3px; }
+.coachStep { font-size: 11px; font-weight: 800; color: var(--ink-faint); }
+.coachText { margin: 3px 0 0; font-size: 15px; font-weight: 700; line-height: 1.45; color: var(--ink); cursor: default; }
+.coachRest { visibility: hidden; }
+.coachFooter { display: flex; align-items: center; gap: 10px; margin-top: 8px; min-height: 34px; }
+.coachDo {
+  flex: 1;
+  font-size: 12.5px; font-weight: 800; color: var(--accent-deep);
+  animation: coachNudge 1.6s ease-in-out infinite;
+}
+.coachDo.hidden + .coachSkip { margin-left: auto; }
+.coachSkip {
+  border: none; background: none; padding: 4px 2px;
+  font-size: 12px; font-weight: 800; color: var(--ink-faint);
+  text-decoration: underline; text-underline-offset: 2px;
+}
+.coachSkip:hover { color: var(--ink-soft); }
+.btn.coachNext { padding: 7px 18px; font-size: 14px; border-radius: 999px; box-shadow: 0 4px 0 var(--rose-deep); }
+
+.coach.entering .coachBubble { animation: tipBubbleIn 0.32s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.coach.entering .coachCat { animation: tipCatIn 0.36s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes coachNudge { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+
+/* Spotlight: a pulsing gold ring on the square or button to use. */
+/* Buttons/hearts pulse an outline (not box-shadow, so their own shadows and
+   the board's patch borders, which are box-shadows, stay intact). */
+.coachSpot { position: relative; z-index: 6; outline: 4px solid #ffcf4d; outline-offset: 3px; border-radius: 14px; animation: coachSpot 1.4s ease-in-out infinite; }
+.cell.coachSpot { outline-offset: -5px; border-radius: 0; }
+@keyframes coachSpot {
+  0%, 100% { outline-color: rgba(255, 207, 77, 0.35); filter: brightness(1); }
+  50%      { outline-color: rgba(255, 207, 77, 1); filter: brightness(1.12); }
+}
+/* Lanes: a soft wash over the squares a rule is about. */
+.cell.coachLane { background: linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5)), var(--cell, #eee); }
+
+@media (max-height: 560px) {
+  .coach { top: 4px; }
+  .coachCat { width: 48px; height: 48px; }
+  .coachText { font-size: 13.5px; }
+}
+
 /* ---------------- level tip: the cat talks ---------------- */
 .srOnly {
   position: absolute;
@@ -1658,6 +1729,7 @@ body.paused *, body.paused *::before, body.paused *::after { animation-play-stat
   .cell .wrongWrap svg,
   .winCat svg,
   .winRays, .winMedal, #winTitle span, .winChip, .winFx span svg,
+  .coachSpot, .coachDo, .coach.entering .coachBubble, .coach.entering .coachCat,
   .board.celebrate, .board.celebrate::after { animation: none; }
   .winFx, .catHeart { display: none; }
 

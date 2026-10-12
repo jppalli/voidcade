@@ -52,10 +52,12 @@ export const CHAPTERS: ChapterDef[] = [
     accent: '#ffd6a5',
     intro: 'Welcome to the Sunny Windowsill! Every puzzle here is a little group of cats, each looking for a warm spot of its own.',
     levels: [
-      L(4, 2, 1, 'Every colour patch needs exactly one cat. A patch of a single square is an easy first cat.'),
-      L(4, 2, 1, 'One cat per row and one per column, too. No sharing lines.'),
-      L(4, 1, 1, 'Cats will not sit next to each other, not even corner to corner.'),
-      L(4, 1, 1, 'Tap once to leave a paw, and tap it again to clear it. Double-tap a square when you are sure a cat belongs there.'),
+      // Levels 1-4 are the guided tutorial (see game/tutorial.ts). They need
+      // at least one one-square patch each, which the coach points at.
+      L(4, 2, 1),
+      L(4, 2, 1),
+      L(4, 1, 1),
+      L(4, 1, 1),
       L(5, 2, 1),
       L(5, 2, 2, 'A patch squeezed inside one row must keep its cat in that row, so the rest of that row is free of cats.'),
       L(5, 1, 2),

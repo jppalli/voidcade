@@ -120,6 +120,24 @@
     <p class="helpText">Tap for a paw, or drag to paint paws. Tap a paw again to clear it. Double-tap an empty square to place a cat — a wrong cat costs a heart.</p>
   </section>
 
+  <!-- ============ tutorial coach: talks while the board stays playable ============ -->
+  <div id="coach" class="coach hidden" role="region" aria-label="Tutorial" aria-live="polite">
+    <div class="coachCat" id="coachCat" aria-hidden="true"></div>
+    <div class="coachBubble">
+      <div class="coachHead">
+        <span class="coachTitle" id="coachTitle">Learning the ropes</span>
+        <span class="coachStep" id="coachStep"></span>
+      </div>
+      <p class="coachText" id="coachText" aria-hidden="true"><span id="coachTyped"></span><span class="coachRest" id="coachRest"></span></p>
+      <p class="srOnly" id="coachFull"></p>
+      <div class="coachFooter">
+        <span class="coachDo" id="coachDo"></span>
+        <button class="coachSkip" id="btnCoachSkip">Skip tutorial</button>
+        <button class="btn primary coachNext" id="btnCoachNext">Next</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ============ tip: the cat talks, text types out ============ -->
   <div id="tipOverlay" class="tipOverlay hidden" role="dialog" aria-modal="true" aria-labelledby="tipTitle">
     <div class="tipScrim" id="tipScrim"></div>
@@ -234,6 +252,7 @@
         <p class="htNote">Every puzzle has exactly one answer and can always be worked out by logic. No guessing needed.</p>
         <div class="modalButtons">
           <button class="btn primary" id="btnHowToClose">Got it</button>
+          <button class="btn" id="btnReplayTutorial">Replay tutorial</button>
         </div>
       </div>
     </div>

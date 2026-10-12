@@ -43,6 +43,8 @@ import { deadCatSvg, mascotSvg, medalSvg, pastel, pawSvg } from './render/art';
 import { renderMap, scrollToFrontier, worldCoat } from './ui/map';
 import { worldBackground, worldOf } from './ui/mapScenery';
 import { closeTip, isTipOpen, openTip, wireTip } from './ui/tip';
+import { coachNotify, isCoachActive, startCoach, stopCoach, wireCoach } from './ui/coach';
+import { TUTORIAL_LEVELS, tutorialSteps } from './game/tutorial';
 
 type Screen = 'title' | 'map' | 'game';
 
@@ -68,7 +70,7 @@ let winTimers: number[] = [];
 // ---------------------------------------------------------------- screens
 
 function show(screen: Screen) {
-  if (screen !== 'game') endActiveLevel();
+  if (screen !== 'game') { endActiveLevel(); stopCoach(); }
   (['title', 'map', 'game'] as Screen[]).forEach((s) => {
     const el = $(`screen-${s}`);
     el.classList.toggle('hidden', s !== screen);
@@ -130,7 +132,7 @@ function seedTitleFloat() {
 
 // ---------------------------------------------------------------- game
 
-function startLevel(index: number) {
+function startLevel(index: number, forceTutorial = false) {
   const ref = levelAt(index);
   if (!ref) return;
   endActiveLevel();
@@ -154,6 +156,7 @@ function startLevel(index: number) {
   $('gameLevelNum').textContent = `Level ${ref.index + 1} · ${ref.size}×${ref.size}`;
 
   closeTip(false);
+  stopCoach();
   $('btnTipGame').classList.toggle('hidden', !ref.tip);
 
   buildBoard(ref);
@@ -161,17 +164,37 @@ function startLevel(index: number) {
   refreshHintBadge();
   show('game');
 
-  // First time in a world, its cat says hello; then the level tip (once).
+  // First time in a world, its cat says hello. Then either the guided
+  // tutorial (levels 1-4, once, or on request) or the level's tip (once).
   const needsIntro = !hasSeenIntro(progress, ref.chapter.id);
-  const needsTip = !!ref.tip && !hasSeenTip(progress, ref.index);
-  if (needsIntro || needsTip) {
+  const tutorial = ref.index < TUTORIAL_LEVELS && (forceTutorial || !hasSeenTip(progress, ref.index));
+  const needsTip = !tutorial && !!ref.tip && !hasSeenTip(progress, ref.index);
+  const next = tutorial ? runTutorial : needsTip ? showLevelTip : undefined;
+  if (needsIntro || next) {
     const g = game;
     setTimeout(() => {
       if (game !== g || $('screen-game').classList.contains('hidden') || isTipOpen()) return;
-      if (needsIntro) speakWorld(ref.chapterIndex, needsTip ? showLevelTip : undefined);
-      else showLevelTip();
+      if (needsIntro) speakWorld(ref.chapterIndex, next);
+      else next?.();
     }, 380);
   }
+}
+
+/** Walk the player through this tutorial level with the world's cat. */
+function runTutorial() {
+  const g = game;
+  if (!g) return;
+  const index = g.ref.index;
+  startCoach(tutorialSteps(index, { game: g, cell: cellEl }), {
+    coat: worldCoat(g.ref.chapterIndex),
+    title: index === 0 ? 'Welcome!' : 'Learning the ropes',
+    onDone: () => markTutorialDone(index),
+  });
+}
+
+function markTutorialDone(index: number) {
+  progress = markTipSeen(progress, index);
+  saveProgress(progress);
 }
 
 /** The world's own cat welcomes you (typed speech bubble). Marks the intro
@@ -371,7 +394,7 @@ let lastTap: { r: number; c: number; time: number } | null = null;
 function togglePaw(r: number, c: number): 'paw' | 'cleared' | null {
   const g = game!;
   let result: 'paw' | 'cleared';
-  if (g.markPaw(r, c)) { playPaw(); result = 'paw'; }
+  if (g.markPaw(r, c)) { playPaw(); result = 'paw'; coachNotify({ type: 'paw', r, c }); }
   else if (g.clearPaw(r, c)) { playLift(); result = 'cleared'; }
   else return null;
   renderBoard();
@@ -403,6 +426,7 @@ function placeCat(r: number, c: number, recordUndo: boolean) {
   if (result === 'correct') {
     renderBoard();
     playCat(g.correctCount());
+    coachNotify({ type: 'cat', r, c });
     if (g.isSolved()) finishLevel();
   } else {
     // livesRemaining now equals the index of the heart just lost.
@@ -448,6 +472,7 @@ function paintPaw(r: number, c: number) {
     press.painted = true; // whole stroke = one undo step
     playPaw(press.strokeCells++); // pitch climbs per cell, resets per stroke
     renderBoard();
+    coachNotify({ type: 'paw', r, c });
   }
 }
 
@@ -590,6 +615,7 @@ function applyHint() {
   const spot = game.hint();
   if (!spot) return;
   playHint(); renderBoard();
+  coachNotify({ type: 'cat', r: spot.row, c: spot.col });
   const el = cellEl(spot.row, spot.col);
   if (el) { el.classList.add('hintGlow'); setTimeout(() => el.classList.remove('hintGlow'), 2300); }
   if (game.isSolved()) finishLevel();
@@ -743,6 +769,8 @@ function burstConfetti() {
 function finishLevel() {
   const g = game!;
   winPending = true; // blocks all board input until the next level starts
+  // Solved before the tutorial's last step: it's done, quietly.
+  if (isCoachActive()) { stopCoach(); markTutorialDone(g.ref.index); }
   clearCelebration();
   const { step, count } = celebrateBoard(g);
   playWin(WIN_WAVE_START, step, count);
@@ -873,6 +901,17 @@ function init() {
   wireTip();
   $('btnTipGame').addEventListener('click', () => { playTap(); showLevelTip(); });
   $('btnHowToClose').addEventListener('click', () => { playTap(); $('howToOverlay').classList.add('hidden'); });
+  // Replays level 1 with the guided steps (progress is unaffected).
+  $('btnReplayTutorial').addEventListener('click', () => {
+    playTap();
+    $('howToOverlay').classList.add('hidden');
+    $('failOverlay').classList.add('hidden');
+    $('winOverlay').classList.add('hidden');
+    startLevel(0, true);
+  });
+
+  // Tutorial coach
+  wireCoach();
 
   // Board controls
   wireBoardInput();
