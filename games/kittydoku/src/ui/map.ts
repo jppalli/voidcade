@@ -295,7 +295,7 @@ export function renderMap(
       node.innerHTML = `
         <span class="mnNum">${num}</span>
         <span class="mnSize">${ref.size}×${ref.size}</span>
-        ${isNext ? `<span class="mnAvatar" aria-hidden="true">${mascotSvg(56)}</span><span class="mnLabel">Play</span>` : ''}
+        ${isNext ? `<span class="mnAvatar" aria-hidden="true">${mascotSvg(56, w.coat)}</span><span class="mnLabel">Play</span>` : ''}
       `;
       node.addEventListener('click', () => onPick(ref.index));
     } else {
