@@ -1730,7 +1730,44 @@ body.paused *, body.paused *::before, body.paused *::after { animation-play-stat
   }
   .htFooter .htNote { flex: 1; text-align: left; margin: 0; }
   .htFooter .modalButtons { flex-shrink: 0; }
-  .htFooter .btn { min-width: 150px; }
+  .htFooter .btn { min-width: 0; white-space: nowrap; padding: 12px 18px; }
+}
+
+/* Fit without scrolling: the two buttons sit side by side, and everything
+   tightens on shorter screens. The card can still scroll as a last resort,
+   but never shows a scrollbar. */
+.howToModal { scrollbar-width: none; }
+.howToModal::-webkit-scrollbar { display: none; }
+.howToModal .modalButtons { flex-direction: row; gap: 8px; }
+.howToModal .modalButtons .btn { flex: 1; }
+
+@media (max-width: 767px) {
+  .howToModal { padding: 20px 18px 16px; }
+  .howToModal h2 { margin-bottom: 4px; }
+  .htDemo { margin: 2px 0 10px; gap: 6px; }
+  .howToModal .demoBoard { width: 132px; height: 132px; }
+  .howToList { gap: 7px; margin-bottom: 10px; }
+  .howToList li { padding: 8px 10px; font-size: 13px; line-height: 1.4; }
+  .howToList .htHead { font-size: 14px; }
+  .htFooter .htNote { font-size: 12.5px; margin-bottom: 10px; }
+}
+@media (max-width: 767px) and (max-height: 760px) {
+  .htDemo figcaption { display: none; }
+  .howToModal .demoBoard { width: 112px; height: 112px; }
+}
+
+@media (min-width: 768px) and (max-height: 760px) {
+  .howToModal { padding: 20px 26px 18px; }
+  .howToModal h2 { font-size: 23px; margin-bottom: 12px; }
+  .htDemo { padding: 12px; }
+  .howToModal .demoBoard { width: 168px; height: 168px; }
+  .howToList { gap: 7px; }
+  .howToList li { padding: 8px 12px; font-size: 13px; line-height: 1.4; }
+  .htFooter { margin-top: 14px; padding-top: 12px; }
+}
+@media (min-width: 768px) and (max-height: 600px) {
+  .htDemo figcaption { display: none; }
+  .howToModal .demoBoard { width: 136px; height: 136px; }
 }
 
 .howToNum {
