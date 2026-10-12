@@ -2,22 +2,21 @@ import type { CoachEvent, CoachStep } from '../ui/coach';
 import type { Game } from './state';
 
 /**
- * Guided first levels (World 1, levels 1-3). Show, don't tell: one action at
- * a time on a dimmed screen, an animated paw acting it out, a few words of
- * caption. The rules are taught by the board itself: after the first cat,
- * paws ripple across every square it rules out.
+ * Level 1's guided moment. Everything else is explained by the How to Play
+ * card (shown once on first launch) and by one-time notes when hearts or
+ * hints first matter (see main.ts).
  *
- * Scripts are built from the level's real board, so they always point at a
- * real one-square patch (levels 1-3 are generated with at least one).
+ *  1. Double-tap the one-square patch: the cat lands.
+ *  2. Mark every square that cat rules out with a paw, by tapping them.
+ *     Doing it yourself is what makes the rule (and the paw) stick.
+ *  3. "Now place the other cats!" and the coach gets out of the way.
  */
-export const TUTORIAL_LEVELS = 3;
+export const TUTORIAL_LEVELS = 1;
 
 interface Hooks {
   game: Game;
   /** The board square element at (r, c). */
   cell: (r: number, c: number) => Element | null;
-  /** Mark these squares with paws, one after another (a ripple). */
-  ripplePaws: (cells: { row: number; col: number }[]) => void;
 }
 
 type Pos = { row: number; col: number };
@@ -30,89 +29,44 @@ function certainCell(g: Game): Pos {
   return free.find((p) => sizes.get(g.regionAt(p.row, p.col)) === 1) ?? free[0];
 }
 
-/** Every empty square a cat at `p` rules out: its row, column, patch and the
- *  squares touching it, nearest first so the ripple spreads outwards. */
-function ruledOutBy(g: Game, p: Pos): Pos[] {
+/** Every square a cat at `p` rules out: touching it, or in its row, column
+ *  or colour patch. */
+export function ruledOutBy(g: Game, p: Pos): Pos[] {
   const out: Pos[] = [];
   for (let r = 0; r < g.size; r++) {
     for (let c = 0; c < g.size; c++) {
       if (r === p.row && c === p.col) continue;
-      if (g.marks[r][c] !== 'empty') continue;
       const touching = Math.abs(r - p.row) <= 1 && Math.abs(c - p.col) <= 1;
       if (r === p.row || c === p.col || touching || g.regionAt(r, c) === g.regionAt(p.row, p.col)) out.push({ row: r, col: c });
     }
   }
-  const d = (q: Pos) => Math.max(Math.abs(q.row - p.row), Math.abs(q.col - p.col));
-  return out.sort((a, b) => d(a) - d(b));
+  return out;
 }
 
-export function tutorialSteps(levelIndex: number, hooks: Hooks): CoachStep[] {
-  const { game: g, cell, ripplePaws } = hooks;
+export function tutorialSteps(levelIndex: number, { game: g, cell }: Hooks): CoachStep[] {
+  if (levelIndex !== 0) return [];
   const target = certainCell(g);
-  const at = (p: Pos) => () => cell(p.row, p.col);
-  const isCatAt = (p: Pos) => (e: CoachEvent) => e.type === 'cat' && e.r === p.row && e.c === p.col;
+  const blocked = ruledOutBy(g, target);
+  /** Ruled-out squares still waiting for their paw. */
+  const unmarked = () => blocked.filter((p) => g.marks[p.row][p.col] === 'empty');
+  const els = (list: Pos[]) => list.map((p) => cell(p.row, p.col)).filter((x): x is Element => !!x);
 
-  switch (levelIndex) {
-    case 0:
-      return [
-        {
-          caption: 'Double-tap to place a cat',
-          target: at(target), dim: true, gesture: 'double',
-          until: isCatAt(target),
-        },
-        {
-          caption: 'No other cat can go here',
-          onEnter: () => ripplePaws(ruledOutBy(g, target)),
-          hold: 3000,
-        },
-        { caption: 'Now place the other cats!', hold: 2200 },
-      ];
-
-    case 1: {
-      // A square in that cat's row is certain to be empty: a perfect first paw.
-      const pawAt = (): Pos | null => {
-        for (let c = 0; c < g.size; c++) {
-          if (c !== target.col && g.marks[target.row][c] === 'empty') return { row: target.row, col: c };
-        }
-        return null;
-      };
-      let pawSpot: Pos | null = null;
-      return [
-        {
-          caption: 'Double-tap to place a cat',
-          target: at(target), dim: true, gesture: 'double',
-          until: isCatAt(target),
-        },
-        {
-          caption: 'Tap once to mark “no cat here”',
-          target: () => { pawSpot = pawAt(); return pawSpot ? cell(pawSpot.row, pawSpot.col) : null; },
-          dim: true, gesture: 'tap',
-          until: (e) => e.type === 'paw' && !!pawSpot && e.r === pawSpot.row && e.c === pawSpot.col,
-        },
-        {
-          caption: 'Or hold and drag to mark lots',
-          target: () => document.getElementById('board'),
-          gesture: 'drag',
-          hold: 3200,
-        },
-      ];
-    }
-
-    case 2:
-      return [
-        {
-          caption: 'A wrong cat costs a heart',
-          target: () => document.getElementById('livesRow'),
-          dim: true, hold: 3200,
-        },
-        {
-          caption: 'Stuck? Tap Hint for help',
-          target: () => document.getElementById('btnHint'),
-          dim: true, hold: 3200,
-        },
-      ];
-
-    default:
-      return [];
-  }
+  return [
+    {
+      caption: 'Double-tap to place a cat',
+      target: () => cell(target.row, target.col),
+      dim: true,
+      gesture: 'double',
+      until: (e: CoachEvent) => e.type === 'cat' && e.r === target.row && e.c === target.col,
+    },
+    {
+      caption: 'Tap the glowing squares to mark them',
+      sub: 'No other cat can sit next to this one, or anywhere in its row, column or colour patch.',
+      marks: () => els(unmarked()),
+      keep: () => els([target]),
+      counter: () => unmarked().length,
+      until: () => unmarked().length === 0,
+    },
+    { caption: 'Lovely! Now place the other cats', hold: 2400 },
+  ];
 }

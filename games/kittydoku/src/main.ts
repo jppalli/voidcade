@@ -70,7 +70,7 @@ let winTimers: number[] = [];
 // ---------------------------------------------------------------- screens
 
 function show(screen: Screen) {
-  if (screen !== 'game') { endActiveLevel(); stopCoach(); }
+  if (screen !== 'game') { endActiveLevel(); stopCoach(); hideNote(); if (idleTimer !== null) clearTimeout(idleTimer); idleTimer = null; }
   (['title', 'map', 'game'] as Screen[]).forEach((s) => {
     const el = $(`screen-${s}`);
     el.classList.toggle('hidden', s !== screen);
@@ -164,38 +164,104 @@ function startLevel(index: number, forceTutorial = false) {
   refreshHintBadge();
   show('game');
 
-  // First time in a world, its cat says hello. Then either the guided
-  // tutorial (levels 1-4, once, or on request) or the level's tip (once).
-  const needsIntro = !hasSeenIntro(progress, ref.chapter.id);
+  // Very first launch: the How to Play card opens before level 1 (instead of
+  // the world welcome, so there's only one thing to read), then level 1's
+  // guided moment. Otherwise: world welcome first time in a world, then the
+  // guided moment (level 1, once or on request) or the level's tip (once).
+  const firstLaunch = ref.index === 0 && !hasSeenIntro(progress, HOWTO_SEEN);
+  const needsIntro = !firstLaunch && !hasSeenIntro(progress, ref.chapter.id);
   const tutorial = ref.index < TUTORIAL_LEVELS && (forceTutorial || !hasSeenTip(progress, ref.index));
   const needsTip = !tutorial && !!ref.tip && !hasSeenTip(progress, ref.index);
   const next = tutorial ? runTutorial : needsTip ? showLevelTip : undefined;
-  if (needsIntro || next) {
+  if (firstLaunch || needsIntro || next) {
     const g = game;
     setTimeout(() => {
       if (game !== g || $('screen-game').classList.contains('hidden') || isTipOpen()) return;
-      if (needsIntro) speakWorld(ref.chapterIndex, next);
+      if (firstLaunch) {
+        openFirstHowTo(() => {
+          progress = markIntroSeen(markIntroSeen(progress, HOWTO_SEEN), ref.chapter.id);
+          saveProgress(progress);
+          if (game === g) next?.();
+        });
+      } else if (needsIntro) speakWorld(ref.chapterIndex, next);
       else next?.();
     }, 380);
   }
+  armIdleNudge();
 }
 
-/** Walk the player through this tutorial level with the world's cat. */
+/** Seen-marker for the first-launch How to Play card (stored with the world welcomes). */
+const HOWTO_SEEN = 'how-to-play';
+let afterHowTo: (() => void) | null = null;
+
+function openFirstHowTo(then: () => void) {
+  afterHowTo = then;
+  $('btnReplayTutorial').classList.add('hidden'); // nothing to replay yet
+  $('howToOverlay').classList.remove('hidden');
+}
+
+/** Level 1's guided moment with the world's cat. */
 function runTutorial() {
   const g = game;
   if (!g) return;
   const index = g.ref.index;
-  const ripplePaws = (cells: { row: number; col: number }[]) =>
-    cells.forEach((p, i) =>
-      window.setTimeout(() => {
-        if (game !== g || winPending) return;
-        // The whole ripple is one undo step.
-        if (g.markPaw(p.row, p.col, i === 0)) { playPaw(i); renderBoard(); }
-      }, 120 + i * 90)
-    );
-  startCoach(tutorialSteps(index, { game: g, cell: cellEl, ripplePaws }), {
+  startCoach(tutorialSteps(index, { game: g, cell: cellEl }), {
     onDone: () => markTutorialDone(index),
   });
+}
+
+// ---------------------------------------------------------------- one-time notes
+//
+// Hearts and hints explain themselves when they first matter, instead of in
+// a tutorial: the first wrong cat ever, and a gentle "Stuck?" after a quiet
+// spell on an early level.
+
+const NOTE_HEART = 'note-heart';
+const IDLE_MS = 30_000;
+const IDLE_LEVELS = 10; // only nudge on the first ten levels
+let noteTimer: number | null = null;
+let idleTimer: number | null = null;
+
+function showNote(text: string, anchor: Element | null) {
+  const note = $('note');
+  if (noteTimer !== null) clearTimeout(noteTimer);
+  note.textContent = text;
+  note.classList.remove('hidden', 'above', 'below');
+  const r = anchor?.getBoundingClientRect();
+  if (r) {
+    const above = r.top > window.innerHeight * 0.5;
+    note.classList.add(above ? 'above' : 'below');
+    note.style.left = `${Math.min(window.innerWidth - 20, Math.max(20, r.left + r.width / 2))}px`;
+    note.style.top = `${above ? r.top - 12 : r.bottom + 12}px`;
+  }
+  noteTimer = window.setTimeout(hideNote, 4200);
+}
+
+function hideNote() {
+  if (noteTimer !== null) clearTimeout(noteTimer);
+  noteTimer = null;
+  $('note').classList.add('hidden');
+}
+
+/** Restart the "Stuck?" countdown; called on level start and every move. */
+function armIdleNudge() {
+  if (idleTimer !== null) clearTimeout(idleTimer);
+  idleTimer = null;
+  const g = game;
+  if (!g || g.ref.index >= IDLE_LEVELS) return;
+  idleTimer = window.setTimeout(() => {
+    idleTimer = null;
+    if (game !== g || winPending || adPlaying || isCoachActive() || isTipOpen()) return;
+    if ($('screen-game').classList.contains('hidden') || !$('howToOverlay').classList.contains('hidden')) return;
+    showNote('Stuck? Tap Hint for a helping paw', $('btnHint'));
+  }, IDLE_MS);
+}
+
+function noteFirstWrongCat() {
+  if (hasSeenIntro(progress, NOTE_HEART)) return;
+  progress = markIntroSeen(progress, NOTE_HEART);
+  saveProgress(progress);
+  showNote('A wrong cat costs a heart. You have 3!', $('livesRow'));
 }
 
 function markTutorialDone(index: number) {
@@ -437,6 +503,7 @@ function placeCat(r: number, c: number, recordUndo: boolean) {
   } else {
     // livesRemaining now equals the index of the heart just lost.
     renderBoard(g.livesRemaining);
+    if (!g.outOfLives) noteFirstWrongCat();
     shakeCell(r, c);
     playUnhappy();
     // On the last heart the fail modal plays its own sigh; skip the heart
@@ -451,6 +518,7 @@ function placeCat(r: number, c: number, recordUndo: boolean) {
 
 function onTap(r: number, c: number) {
   if (!game || winPending) return;
+  armIdleNudge();
   const now = performance.now();
   const prev = lastTap;
   lastTap = null;
@@ -479,6 +547,7 @@ function paintPaw(r: number, c: number) {
     playPaw(press.strokeCells++); // pitch climbs per cell, resets per stroke
     renderBoard();
     coachNotify({ type: 'paw', r, c });
+    armIdleNudge();
   }
 }
 
@@ -908,7 +977,14 @@ function init() {
   // Level tip (the cat's speech bubble)
   wireTip();
 
-  $('btnHowToClose').addEventListener('click', () => { playTap(); $('howToOverlay').classList.add('hidden'); });
+  $('btnHowToClose').addEventListener('click', () => {
+    playTap();
+    $('howToOverlay').classList.add('hidden');
+    $('btnReplayTutorial').classList.remove('hidden');
+    const then = afterHowTo;
+    afterHowTo = null;
+    then?.();
+  });
   // Replays level 1 with the guided steps (progress is unaffected).
   $('btnReplayTutorial').addEventListener('click', () => {
     playTap();
@@ -918,8 +994,9 @@ function init() {
     startLevel(0, true);
   });
 
-  // Tutorial coach
+  // Tutorial coach and one-time notes
   wireCoach();
+  $('note').addEventListener('click', hideNote);
 
   // Board controls
   wireBoardInput();

@@ -27,6 +27,15 @@ export interface CoachStep {
   hold?: number;
   /** Runs when the step appears (e.g. paws rippling across the board). */
   onEnter?: () => void;
+  /** Smaller explanation under the caption. */
+  sub?: string;
+  /** Board squares the player should act on: they glow, the rest of the
+   *  board dims. Re-read after every action, so finished ones stop glowing. */
+  marks?: () => Element[];
+  /** Squares to keep bright (not dimmed) during a marks step, e.g. the cat. */
+  keep?: () => Element[];
+  /** Shown as "N left" next to the caption. */
+  counter?: () => number;
 }
 
 const $ = (id: string) => document.getElementById(id) as HTMLElement;
@@ -58,6 +67,20 @@ function layout() {
   const el = current;
   const vw = window.innerWidth;
   const vh = window.innerHeight;
+
+  if (s.marks) {
+    // Squares glow on the board itself; the caption sits above the board.
+    dim.classList.add('hidden');
+    ring.classList.add('hidden');
+    hand.classList.add('hidden');
+    const board = document.getElementById('board')?.getBoundingClientRect();
+    const above = !!board && board.top > 130;
+    tip.classList.toggle('above', above);
+    tip.classList.toggle('below', !above);
+    tip.style.left = `${vw / 2}px`;
+    tip.style.top = `${board ? (above ? board.top - 12 : board.bottom + 12) : vh * 0.2}px`;
+    return;
+  }
 
   if (!el) {
     // No target: caption floats over the board's upper part.
@@ -102,6 +125,20 @@ function layout() {
   tip.style.top = `${above ? r.top - 14 : r.bottom + 14 + (s.gesture ? 34 : 0)}px`;
 }
 
+/** Glow the squares still to do, dim the rest of the board. */
+function paintMarks() {
+  const s = steps[index];
+  document.querySelectorAll('.coachMark, .coachKeep').forEach((n) => n.classList.remove('coachMark', 'coachKeep'));
+  const board = document.getElementById('board');
+  board?.classList.toggle('coachFocus', !!s?.marks);
+  if (!s?.marks) return;
+  s.marks().forEach((n) => n.classList.add('coachMark'));
+  s.keep?.().forEach((n) => n.classList.add('coachKeep'));
+  const n = s.counter?.();
+  $('coachCount').textContent = n ? `${n} left` : '';
+  $('coachCount').classList.toggle('hidden', !n);
+}
+
 function show(i: number) {
   clearHold();
   index = i;
@@ -109,6 +146,10 @@ function show(i: number) {
   if (!s) { finish(); return; }
   current = s.target?.() ?? null;
   $('coachCaption').textContent = s.caption;
+  $('coachSub').textContent = s.sub ?? '';
+  $('coachSub').classList.toggle('hidden', !s.sub);
+  $('coachCount').classList.add('hidden');
+  paintMarks();
 
   const tip = $('coachTip');
   tip.classList.remove('pop');
@@ -149,6 +190,8 @@ export function startCoach(script: CoachStep[], opts: { onDone?: () => void } = 
 /** Hide without running onDone (e.g. leaving the level). */
 export function stopCoach() {
   clearHold();
+  document.querySelectorAll('.coachMark, .coachKeep').forEach((n) => n.classList.remove('coachMark', 'coachKeep'));
+  document.getElementById('board')?.classList.remove('coachFocus');
   index = -1;
   steps = [];
   current = null;
@@ -160,6 +203,7 @@ export function stopCoach() {
 export function coachNotify(e: CoachEvent) {
   if (index < 0) return;
   const s = steps[index];
+  if (s?.marks) paintMarks(); // the square just marked stops glowing
   if (!s?.until?.(e)) return;
   const at = index;
   // Hide the pointer straight away, move on after the action has landed.
