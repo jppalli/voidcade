@@ -52,7 +52,7 @@ export const CHAPTERS: ChapterDef[] = [
     accent: '#ffd6a5',
     intro: 'Welcome to the Sunny Windowsill! Every puzzle here is a little group of cats, each looking for a warm spot of its own.',
     levels: [
-      // Levels 1-4 are the guided tutorial (see game/tutorial.ts). They need
+      // Levels 1-3 are the guided tutorial (see game/tutorial.ts). They need
       // at least one one-square patch each, which the coach points at.
       L(4, 2, 1),
       L(4, 2, 1),

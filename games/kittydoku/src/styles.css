@@ -1053,75 +1053,133 @@ button {
 }
 
 /* ---------------- tutorial coach ----------------
-   No scrim: the board stays playable. The bubble docks at the top, or at the
-   bottom (.dockBottom) when the thing it points at is near the top. */
-.coach {
-  position: fixed;
-  left: 0; right: 0; top: 10px;
-  z-index: 50;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 4px;
-  padding: 0 12px;
-  pointer-events: none;
+   Dims the screen except a hole around the target (the dim layer is also
+   what blocks taps elsewhere), rings the target, and a paw acts out the
+   gesture next to a short caption. */
+.coach { position: fixed; inset: 0; z-index: 50; pointer-events: none; }
+.coach .hidden { display: none !important; }
+
+.coachDim {
+  position: absolute; inset: 0;
+  background: rgba(46, 34, 30, 0.55);
+  pointer-events: auto;
+  animation: fadeIn 0.25s ease;
 }
-.coach.dockBottom { top: auto; bottom: calc(12px + env(safe-area-inset-bottom)); align-items: flex-end; }
-.coach > * { pointer-events: auto; }
 
-.coachCat { flex-shrink: 0; width: 64px; height: 64px; filter: drop-shadow(0 4px 0 rgba(122, 96, 80, 0.16)); }
-.coachCat svg { width: 100%; height: 100%; display: block; }
+.coachRing {
+  position: absolute;
+  border-radius: 14px;
+  box-shadow: 0 0 0 4px #ffd35c, 0 0 18px 6px rgba(255, 211, 92, 0.7);
+  animation: coachRing 1.3s ease-in-out infinite;
+}
+@keyframes coachRing {
+  0%, 100% { box-shadow: 0 0 0 4px #ffd35c, 0 0 14px 4px rgba(255, 211, 92, 0.55); }
+  50%      { box-shadow: 0 0 0 6px #ffd35c, 0 0 26px 10px rgba(255, 211, 92, 0.85); }
+}
 
-.coachBubble {
-  width: min(460px, calc(100vw - 100px));
+/* The paw "finger". Positioned at the target's centre by coach.ts. */
+.coachHand {
+  position: absolute;
+  width: 46px; height: 46px;
+  margin: -6px 0 0 -10px;
+  filter: drop-shadow(0 3px 2px rgba(0, 0, 0, 0.3));
+}
+.coachHand svg { width: 100%; height: 100%; display: block; position: relative; z-index: 1; transform: rotate(-20deg); }
+.coachRipple {
+  position: absolute; left: 4px; top: 2px;
+  width: 30px; height: 30px; border-radius: 50%;
+  border: 3px solid #fff;
+  opacity: 0;
+}
+.coachHand[data-gesture="tap"]    svg { animation: pressOnce 1.4s ease-in-out infinite; }
+.coachHand[data-gesture="tap"]    .coachRipple { animation: rippleOnce 1.4s ease-out infinite; }
+.coachHand[data-gesture="tap"]    .r2 { display: none; }
+.coachHand[data-gesture="double"] svg { animation: pressTwice 1.6s ease-in-out infinite; }
+.coachHand[data-gesture="double"] .coachRipple { animation: rippleA 1.6s ease-out infinite; }
+.coachHand[data-gesture="double"] .r2 { animation: rippleB 1.6s ease-out infinite; }
+.coachHand[data-gesture="drag"] { animation: dragAcross 2.4s ease-in-out infinite; }
+.coachHand[data-gesture="drag"] .coachRipple { display: none; }
+
+@keyframes pressOnce {
+  0%, 30%, 100% { transform: rotate(-20deg) translate(6px, 6px) scale(1); }
+  42%           { transform: rotate(-20deg) translate(0, 0) scale(0.86); }
+  55%           { transform: rotate(-20deg) translate(4px, 4px) scale(1); }
+}
+@keyframes rippleOnce {
+  0%, 40%  { opacity: 0; transform: scale(0.4); }
+  45%      { opacity: 0.95; }
+  80%, 100% { opacity: 0; transform: scale(1.7); }
+}
+@keyframes pressTwice {
+  0%, 25%, 100% { transform: rotate(-20deg) translate(6px, 6px) scale(1); }
+  32%           { transform: rotate(-20deg) translate(0, 0) scale(0.86); }
+  39%           { transform: rotate(-20deg) translate(3px, 3px) scale(1); }
+  46%           { transform: rotate(-20deg) translate(0, 0) scale(0.86); }
+  56%           { transform: rotate(-20deg) translate(4px, 4px) scale(1); }
+}
+@keyframes rippleA {
+  0%, 30%  { opacity: 0; transform: scale(0.4); }
+  34%      { opacity: 0.95; }
+  62%, 100% { opacity: 0; transform: scale(1.6); }
+}
+@keyframes rippleB {
+  0%, 44%  { opacity: 0; transform: scale(0.4); }
+  48%      { opacity: 0.95; }
+  78%, 100% { opacity: 0; transform: scale(1.9); }
+}
+@keyframes dragAcross {
+  0%, 10%  { transform: translate(-90px, 0); opacity: 0; }
+  20%      { opacity: 1; }
+  70%      { transform: translate(90px, 0); opacity: 1; }
+  85%, 100% { transform: translate(90px, 0); opacity: 0; }
+}
+
+/* Short caption, right next to the target. */
+.coachTip {
+  position: absolute;
+  max-width: min(320px, calc(100vw - 32px));
+  padding: 10px 16px;
+  border-radius: 16px;
   background: var(--card);
-  border: 3px solid var(--line-strong);
-  border-radius: 20px;
-  padding: 10px 14px 10px;
-  box-shadow: 0 7px 0 rgba(122, 96, 80, 0.16);
-  text-align: left;
+  border: 3px solid #ffd35c;
+  box-shadow: 0 6px 0 rgba(46, 34, 30, 0.25);
+  font-size: 17px; font-weight: 900; line-height: 1.25; color: var(--ink);
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: auto;
+  transform: translate(-50%, -50%);
 }
-.coachHead { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-.coachTitle { font-size: 11.5px; font-weight: 900; color: var(--accent-deep); letter-spacing: 0.3px; }
-.coachStep { font-size: 11px; font-weight: 800; color: var(--ink-faint); }
-.coachText { margin: 3px 0 0; font-size: 15px; font-weight: 700; line-height: 1.45; color: var(--ink); cursor: default; }
-.coachRest { visibility: hidden; }
-.coachFooter { display: flex; align-items: center; gap: 10px; margin-top: 8px; min-height: 34px; }
-.coachDo {
-  flex: 1;
-  font-size: 12.5px; font-weight: 800; color: var(--accent-deep);
-  animation: coachNudge 1.6s ease-in-out infinite;
+.coachTip.above { transform: translate(-50%, -100%); }
+.coachTip.below { transform: translate(-50%, 0); }
+.coachTip.pop { animation: coachTipPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes coachTipPop { from { opacity: 0; scale: 0.8; } to { opacity: 1; scale: 1; } }
+/* Little arrow pointing at the target. */
+.coachTip.above::after, .coachTip.below::after {
+  content: ''; position: absolute; left: 50%; margin-left: -8px;
+  border: 8px solid transparent;
 }
-.coachDo.hidden + .coachSkip { margin-left: auto; }
+.coachTip.above::after { top: 100%; border-top-color: #ffd35c; }
+.coachTip.below::after { bottom: 100%; border-bottom-color: #ffd35c; }
+
 .coachSkip {
-  border: none; background: none; padding: 4px 2px;
-  font-size: 12px; font-weight: 800; color: var(--ink-faint);
-  text-decoration: underline; text-underline-offset: 2px;
+  position: absolute;
+  right: 12px; bottom: calc(12px + env(safe-area-inset-bottom));
+  pointer-events: auto;
+  padding: 7px 14px;
+  border: 2px solid var(--line-strong); border-radius: 999px;
+  background: var(--card);
+  font-size: 12.5px; font-weight: 800; color: var(--ink-soft);
 }
-.coachSkip:hover { color: var(--ink-soft); }
-.btn.coachNext { padding: 7px 18px; font-size: 14px; border-radius: 999px; box-shadow: 0 4px 0 var(--rose-deep); }
+.coachSkip:hover { color: var(--ink); }
 
-.coach.entering .coachBubble { animation: tipBubbleIn 0.32s cubic-bezier(0.34, 1.56, 0.64, 1); }
-.coach.entering .coachCat { animation: tipCatIn 0.36s cubic-bezier(0.34, 1.56, 0.64, 1); }
-@keyframes coachNudge { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
-
-/* Spotlight: a pulsing gold ring on the square or button to use. */
-/* Buttons/hearts pulse an outline (not box-shadow, so their own shadows and
-   the board's patch borders, which are box-shadows, stay intact). */
-.coachSpot { position: relative; z-index: 6; outline: 4px solid #ffcf4d; outline-offset: 3px; border-radius: 14px; animation: coachSpot 1.4s ease-in-out infinite; }
-.cell.coachSpot { outline-offset: -5px; border-radius: 0; }
-@keyframes coachSpot {
-  0%, 100% { outline-color: rgba(255, 207, 77, 0.35); filter: brightness(1); }
-  50%      { outline-color: rgba(255, 207, 77, 1); filter: brightness(1.12); }
+@media (max-width: 420px) {
+  .coachTip { font-size: 15px; white-space: normal; }
 }
-/* Lanes: a soft wash over the squares a rule is about. */
-.cell.coachLane { background: linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5)), var(--cell, #eee); }
 
-@media (max-height: 560px) {
-  .coach { top: 4px; }
-  .coachCat { width: 48px; height: 48px; }
-  .coachText { font-size: 13.5px; }
-}
+/* Reduced motion: still pointer, no ripples or pulses. */
+.coach.still .coachRing, .coach.still .coachHand, .coach.still .coachHand svg,
+.coach.still .coachTip.pop, .coach.still .coachDim { animation: none; }
+.coach.still .coachRipple { display: none; }
 
 /* ---------------- level tip: the cat talks ---------------- */
 .srOnly {
@@ -1729,7 +1787,6 @@ body.paused *, body.paused *::before, body.paused *::after { animation-play-stat
   .cell .wrongWrap svg,
   .winCat svg,
   .winRays, .winMedal, #winTitle span, .winChip, .winFx span svg,
-  .coachSpot, .coachDo, .coach.entering .coachBubble, .coach.entering .coachCat,
   .board.celebrate, .board.celebrate::after { animation: none; }
   .winFx, .catHeart { display: none; }
 

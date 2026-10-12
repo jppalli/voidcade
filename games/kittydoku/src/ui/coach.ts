@@ -1,121 +1,133 @@
-import { playTap, playTypeBlip } from '../audio/sound';
-import { mascotSvg, type Coat } from '../render/art';
+import { playTap } from '../audio/sound';
 
 /**
- * Tutorial coach: the world's cat talks the player through a few steps while
- * the board stays playable. Unlike the tip bubble there's no scrim; one square
- * or button gets a soft spotlight, and a step can wait for the player to do
- * the thing (place a cat, leave a paw) before moving on.
- *
- * The bubble docks at the top of the screen, or the bottom when the thing it
- * points at is up top, so it never covers what it's talking about.
+ * Tutorial coach, "show, don't tell":
+ *  - the screen dims except one hole around the thing to use (and only that
+ *    thing can be tapped), with a pulsing ring on it;
+ *  - an animated paw acts out the gesture (tap, double-tap, drag);
+ *  - a caption of a few words sits right next to it, no typing effect;
+ *  - steps move on by themselves: when the player does the thing, after a
+ *    short moment, or on a tap. A small "Skip" stays in the corner.
  */
 
 export type CoachEvent = { type: 'cat' | 'paw'; r: number; c: number };
+export type Gesture = 'tap' | 'double' | 'drag';
 
 export interface CoachStep {
-  text: string;
-  /** Elements to spotlight (a pulsing ring). */
-  spot?: () => Element[];
-  /** Board squares to softly light up (a row, a column, the squares around a cat). */
-  lanes?: () => Element[];
-  /** Leave the step on an event (return true), or on the Next button if omitted. */
+  caption: string;
+  /** What to point at; omit for a caption over the board. */
+  target?: () => Element | null;
+  /** Dim everything else and only let the target be tapped. */
+  dim?: boolean;
+  /** Animated paw acting out what to do. */
+  gesture?: Gesture;
+  /** Leave the step when the player does this (return true). */
   until?: (e: CoachEvent) => boolean;
-  /** Small line under the text while waiting, e.g. "Double-tap the glowing square". */
-  doThis?: string;
+  /** Otherwise leave after this long (ms); tapping also moves on. */
+  hold?: number;
+  /** Runs when the step appears (e.g. paws rippling across the board). */
+  onEnter?: () => void;
 }
 
-const CHAR_MS = 22;
-const PAUSE_MS = 200;
 const $ = (id: string) => document.getElementById(id) as HTMLElement;
 const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 let steps: CoachStep[] = [];
 let index = -1;
 let onDoneCb: (() => void) | null = null;
-let typeTimer: number | null = null;
-let typing = false;
-let marked: Element[] = [];
+let holdTimer: number | null = null;
+let current: Element | null = null;
 
 export function isCoachActive(): boolean {
   return index >= 0;
 }
 
-function clearMarks() {
-  marked.forEach((el) => el.classList.remove('coachSpot', 'coachLane'));
-  marked = [];
+function clearHold() {
+  if (holdTimer !== null) clearTimeout(holdTimer);
+  holdTimer = null;
 }
 
-function typeOut(text: string) {
-  if (typeTimer !== null) clearTimeout(typeTimer);
-  const typed = $('coachTyped');
-  const rest = $('coachRest');
-  $('coachFull').textContent = text;
-  if (reducedMotion()) {
-    typed.textContent = text;
-    rest.textContent = '';
-    typing = false;
+/** Place the dim hole, ring, paw and caption around the current target. */
+function layout() {
+  const s = steps[index];
+  if (!s) return;
+  const dim = $('coachDim');
+  const ring = $('coachRing');
+  const hand = $('coachHand');
+  const tip = $('coachTip');
+  const el = current;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+
+  if (!el) {
+    // No target: caption floats over the board's upper part.
+    const board = document.getElementById('board')?.getBoundingClientRect();
+    dim.classList.add('hidden');
+    ring.classList.add('hidden');
+    hand.classList.add('hidden');
+    const y = board ? board.top + board.height * 0.18 : vh * 0.3;
+    tip.classList.remove('below', 'above');
+    tip.style.left = `${vw / 2}px`;
+    tip.style.top = `${y}px`;
     return;
   }
-  let shown = 0;
-  let letters = 0;
-  typing = true;
-  const tick = () => {
-    typeTimer = null;
-    if (shown >= text.length) { typing = false; return; }
-    const ch = text[shown++];
-    typed.textContent = text.slice(0, shown);
-    rest.textContent = text.slice(shown);
-    if (/[\p{L}\p{N}]/u.test(ch) && ++letters % 2 === 1) playTypeBlip();
-    typeTimer = window.setTimeout(tick, /[.!?,]/.test(ch) ? PAUSE_MS : CHAR_MS);
-  };
-  typed.textContent = '';
-  rest.textContent = text;
-  typeTimer = window.setTimeout(tick, 220);
-}
 
-function finishTyping() {
-  if (typeTimer !== null) clearTimeout(typeTimer);
-  typeTimer = null;
-  typing = false;
-  const text = $('coachFull').textContent ?? '';
-  $('coachTyped').textContent = text;
-  $('coachRest').textContent = '';
-}
+  const r = el.getBoundingClientRect();
+  const pad = 6;
+  const L = Math.max(0, r.left - pad);
+  const T = Math.max(0, r.top - pad);
+  const R = Math.min(vw, r.right + pad);
+  const B = Math.min(vh, r.bottom + pad);
 
-/** Dock the bubble away from whatever it is pointing at. */
-function dock(targets: Element[]) {
-  const box = $('coach');
-  if (!targets.length) { box.classList.remove('dockBottom'); return; }
-  const top = Math.min(...targets.map((t) => t.getBoundingClientRect().top));
-  box.classList.toggle('dockBottom', top < window.innerHeight * 0.4);
+  dim.classList.toggle('hidden', !s.dim);
+  // A donut: the whole screen with the target cut out. It's also what blocks
+  // taps elsewhere, since clip-path limits where it can be hit.
+  dim.style.clipPath =
+    `polygon(0 0, ${vw}px 0, ${vw}px ${vh}px, 0 ${vh}px, 0 0, ` +
+    `${L}px ${T}px, ${L}px ${B}px, ${R}px ${B}px, ${R}px ${T}px, ${L}px ${T}px)`;
+
+  ring.classList.remove('hidden');
+  Object.assign(ring.style, { left: `${L}px`, top: `${T}px`, width: `${R - L}px`, height: `${B - T}px` });
+
+  hand.classList.toggle('hidden', !s.gesture);
+  hand.dataset.gesture = s.gesture ?? '';
+  hand.style.left = `${r.left + r.width * 0.55}px`;
+  hand.style.top = `${r.top + r.height * 0.55}px`;
+
+  // Caption above the target if there's room, otherwise below.
+  const above = r.top > 110;
+  tip.classList.toggle('above', above);
+  tip.classList.toggle('below', !above);
+  tip.style.left = `${Math.min(vw - 16, Math.max(16, r.left + r.width / 2))}px`;
+  tip.style.top = `${above ? r.top - 14 : r.bottom + 14 + (s.gesture ? 34 : 0)}px`;
 }
 
 function show(i: number) {
-  clearMarks();
+  clearHold();
   index = i;
   const s = steps[i];
   if (!s) { finish(); return; }
+  current = s.target?.() ?? null;
+  $('coachCaption').textContent = s.caption;
 
-  const spots = s.spot?.() ?? [];
-  const lanes = s.lanes?.() ?? [];
-  spots.forEach((el) => el.classList.add('coachSpot'));
-  lanes.forEach((el) => el.classList.add('coachLane'));
-  marked = [...spots, ...lanes];
-  dock([...spots, ...lanes]);
+  const tip = $('coachTip');
+  tip.classList.remove('pop');
+  void tip.offsetWidth;
+  tip.classList.add('pop');
 
-  const waiting = !!s.until;
-  $('coachDo').textContent = waiting ? (s.doThis ?? '') : '';
-  $('coachDo').classList.toggle('hidden', !waiting || !s.doThis);
-  $('btnCoachNext').classList.toggle('hidden', waiting);
-  $('btnCoachNext').textContent = i === steps.length - 1 ? 'Let’s play' : 'Next';
-  $('coachStep').textContent = `${i + 1} / ${steps.length}`;
+  s.onEnter?.();
+  // Let the board settle (e.g. a cat landing) before measuring.
+  requestAnimationFrame(layout);
+  if (current instanceof HTMLElement && current.classList.contains('cell')) {
+    current.tabIndex = 0;
+    current.focus({ preventScroll: true });
+  }
+  if (!s.until) holdTimer = window.setTimeout(() => next(), s.hold ?? 3200);
+}
 
-  const box = $('coach');
-  box.classList.remove('entering');
-  void box.offsetWidth;
-  box.classList.add('entering');
-  typeOut(s.text);
+function next() {
+  if (index < 0) return;
+  show(index + 1);
 }
 
 function finish() {
@@ -124,25 +136,22 @@ function finish() {
   cb?.();
 }
 
-/** Start a tutorial. `onDone` runs when the last step is passed or it's skipped. */
-export function startCoach(script: CoachStep[], opts: { coat?: Coat; title?: string; onDone?: () => void } = {}) {
+export function startCoach(script: CoachStep[], opts: { onDone?: () => void } = {}) {
   stopCoach();
   if (!script.length) return;
   steps = script;
   onDoneCb = opts.onDone ?? null;
-  $('coachCat').innerHTML = mascotSvg(64, opts.coat);
-  $('coachTitle').textContent = opts.title ?? 'Learning the ropes';
   $('coach').classList.remove('hidden');
+  $('coach').classList.toggle('still', reducedMotion());
   show(0);
 }
 
 /** Hide without running onDone (e.g. leaving the level). */
 export function stopCoach() {
-  if (typeTimer !== null) clearTimeout(typeTimer);
-  typeTimer = null;
-  clearMarks();
+  clearHold();
   index = -1;
   steps = [];
+  current = null;
   onDoneCb = null;
   $('coach').classList.add('hidden');
 }
@@ -151,22 +160,20 @@ export function stopCoach() {
 export function coachNotify(e: CoachEvent) {
   if (index < 0) return;
   const s = steps[index];
-  if (s?.until?.(e)) {
-    // A short beat so the player sees their action land first.
-    const at = index;
-    window.setTimeout(() => { if (index === at) show(at + 1); }, 450);
-  }
+  if (!s?.until?.(e)) return;
+  const at = index;
+  // Hide the pointer straight away, move on after the action has landed.
+  $('coachHand').classList.add('hidden');
+  $('coachRing').classList.add('hidden');
+  $('coachDim').classList.add('hidden');
+  window.setTimeout(() => { if (index === at) next(); }, 500);
 }
 
 export function wireCoach() {
-  $('btnCoachNext').addEventListener('click', () => {
-    if (typing) { finishTyping(); return; }
-    playTap();
-    show(index + 1);
-  });
   $('btnCoachSkip').addEventListener('click', () => { playTap(); finish(); });
-  // Tapping the bubble text finishes the typing early.
-  $('coachText').addEventListener('click', () => { if (typing) finishTyping(); });
-  // Keep spotlights in the right place: re-dock on resize.
-  window.addEventListener('resize', () => { if (index >= 0) dock(marked); });
+  // Steps that don't wait for an action also move on with a tap.
+  const tapOn = () => { const s = steps[index]; if (s && !s.until) next(); };
+  $('coachDim').addEventListener('click', tapOn);
+  $('coachTip').addEventListener('click', tapOn);
+  window.addEventListener('resize', () => { if (index >= 0) layout(); });
 }

@@ -185,9 +185,15 @@ function runTutorial() {
   const g = game;
   if (!g) return;
   const index = g.ref.index;
-  startCoach(tutorialSteps(index, { game: g, cell: cellEl }), {
-    coat: worldCoat(g.ref.chapterIndex),
-    title: index === 0 ? 'Welcome!' : 'Learning the ropes',
+  const ripplePaws = (cells: { row: number; col: number }[]) =>
+    cells.forEach((p, i) =>
+      window.setTimeout(() => {
+        if (game !== g || winPending) return;
+        // The whole ripple is one undo step.
+        if (g.markPaw(p.row, p.col, i === 0)) { playPaw(i); renderBoard(); }
+      }, 120 + i * 90)
+    );
+  startCoach(tutorialSteps(index, { game: g, cell: cellEl, ripplePaws }), {
     onDone: () => markTutorialDone(index),
   });
 }

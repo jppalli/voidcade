@@ -2,117 +2,113 @@ import type { CoachEvent, CoachStep } from '../ui/coach';
 import type { Game } from './state';
 
 /**
- * Guided first levels (World 1, levels 1-4). Each script is built from the
- * level's actual board, so it always points at a real one-square patch, a
- * real row, and so on. The boards for levels 1-3 are generated with one-square
- * patches (see levels.spec.ts), which the scripts rely on.
+ * Guided first levels (World 1, levels 1-3). Show, don't tell: one action at
+ * a time on a dimmed screen, an animated paw acting it out, a few words of
+ * caption. The rules are taught by the board itself: after the first cat,
+ * paws ripple across every square it rules out.
+ *
+ * Scripts are built from the level's real board, so they always point at a
+ * real one-square patch (levels 1-3 are generated with at least one).
  */
-export const TUTORIAL_LEVELS = 4;
+export const TUTORIAL_LEVELS = 3;
 
 interface Hooks {
   game: Game;
   /** The board square element at (r, c). */
   cell: (r: number, c: number) => Element | null;
+  /** Mark these squares with paws, one after another (a ripple). */
+  ripplePaws: (cells: { row: number; col: number }[]) => void;
 }
 
-const isCat = (e: CoachEvent) => e.type === 'cat';
+type Pos = { row: number; col: number };
 
-/** A one-square patch's cell (its cat is certain), or any solution cell. */
-function certainCell(g: Game): { row: number; col: number } {
+/** A one-square patch's cell (its cat is certain), or any unplaced solution cell. */
+function certainCell(g: Game): Pos {
   const sizes = new Map<number, number>();
   g.board.regions.forEach((row) => row.forEach((v) => sizes.set(v, (sizes.get(v) ?? 0) + 1)));
   const free = g.board.solution.filter((p) => g.marks[p.row][p.col] !== 'cat');
   return free.find((p) => sizes.get(g.regionAt(p.row, p.col)) === 1) ?? free[0];
 }
 
-export function tutorialSteps(levelIndex: number, { game: g, cell }: Hooks): CoachStep[] {
-  const els = (list: { row: number; col: number }[]) =>
-    list.map((p) => cell(p.row, p.col)).filter((x): x is Element => !!x);
-  const all = () => els(g.board.solution.flatMap((_, r) => Array.from({ length: g.size }, (_, c) => ({ row: r, col: c }))));
-  // The cat the player places first; filled in when they do.
-  let placed: { row: number; col: number } | null = null;
-  const remember = (e: CoachEvent) => { if (isCat(e)) { placed = { row: e.r, col: e.c }; return true; } return false; };
-  const lineOf = (p: { row: number; col: number }) =>
-    els(Array.from({ length: g.size }, (_, i) => [{ row: p.row, col: i }, { row: i, col: p.col }]).flat()
-      .filter((q) => q.row !== p.row || q.col !== p.col));
+/** Every empty square a cat at `p` rules out: its row, column, patch and the
+ *  squares touching it, nearest first so the ripple spreads outwards. */
+function ruledOutBy(g: Game, p: Pos): Pos[] {
+  const out: Pos[] = [];
+  for (let r = 0; r < g.size; r++) {
+    for (let c = 0; c < g.size; c++) {
+      if (r === p.row && c === p.col) continue;
+      if (g.marks[r][c] !== 'empty') continue;
+      const touching = Math.abs(r - p.row) <= 1 && Math.abs(c - p.col) <= 1;
+      if (r === p.row || c === p.col || touching || g.regionAt(r, c) === g.regionAt(p.row, p.col)) out.push({ row: r, col: c });
+    }
+  }
+  const d = (q: Pos) => Math.max(Math.abs(q.row - p.row), Math.abs(q.col - p.col));
+  return out.sort((a, b) => d(a) - d(b));
+}
+
+export function tutorialSteps(levelIndex: number, hooks: Hooks): CoachStep[] {
+  const { game: g, cell, ripplePaws } = hooks;
   const target = certainCell(g);
+  const at = (p: Pos) => () => cell(p.row, p.col);
+  const isCatAt = (p: Pos) => (e: CoachEvent) => e.type === 'cat' && e.r === p.row && e.c === p.col;
 
   switch (levelIndex) {
     case 0:
       return [
-        { text: 'Hi! Every colour patch needs exactly one cat.', lanes: all },
         {
-          text: 'This patch is just one square, so its cat must go here. Double-tap it!',
-          spot: () => els([target]),
-          until: remember,
-          doThis: 'Double-tap the glowing square',
+          caption: 'Double-tap to place a cat',
+          target: at(target), dim: true, gesture: 'double',
+          until: isCatAt(target),
         },
         {
-          text: 'Lovely! A cat also needs its own row and column, so no other cat can sit on these squares.',
-          lanes: () => lineOf(placed ?? target),
+          caption: 'No other cat can go here',
+          onEnter: () => ripplePaws(ruledOutBy(g, target)),
+          hold: 3000,
         },
-        { text: 'Now find a spot for every other patch. Take your time!' },
+        { caption: 'Now place the other cats!', hold: 2200 },
       ];
 
     case 1: {
-      // A square in the placed cat's row that is still empty: perfect for a paw.
-      const pawSpot = () => {
-        const p = placed ?? target;
-        const spot = Array.from({ length: g.size }, (_, c) => ({ row: p.row, col: c }))
-          .find((q) => q.col !== p.col && g.marks[q.row][q.col] === 'empty');
-        return spot ? els([spot]) : [];
+      // A square in that cat's row is certain to be empty: a perfect first paw.
+      const pawAt = (): Pos | null => {
+        for (let c = 0; c < g.size; c++) {
+          if (c !== target.col && g.marks[target.row][c] === 'empty') return { row: target.row, col: c };
+        }
+        return null;
       };
+      let pawSpot: Pos | null = null;
       return [
         {
-          text: 'Here’s another one-square patch. Double-tap it to place its cat.',
-          spot: () => els([target]),
-          until: remember,
-          doThis: 'Double-tap the glowing square',
+          caption: 'Double-tap to place a cat',
+          target: at(target), dim: true, gesture: 'double',
+          until: isCatAt(target),
         },
         {
-          text: 'No other cat fits in this row now. Tap a square once to leave a paw, a little note that means “no cat here”.',
-          spot: pawSpot,
-          until: (e) => e.type === 'paw',
-          doThis: 'Tap the glowing square once',
+          caption: 'Tap once to mark “no cat here”',
+          target: () => { pawSpot = pawAt(); return pawSpot ? cell(pawSpot.row, pawSpot.col) : null; },
+          dim: true, gesture: 'tap',
+          until: (e) => e.type === 'paw' && !!pawSpot && e.r === pawSpot.row && e.c === pawSpot.col,
         },
-        { text: 'Tap a paw again to clear it, or hold and drag to paint lots of paws at once. Paws are always free!' },
+        {
+          caption: 'Or hold and drag to mark lots',
+          target: () => document.getElementById('board'),
+          gesture: 'drag',
+          hold: 3200,
+        },
       ];
     }
 
     case 2:
       return [
         {
-          text: 'Start with the one-square patch again.',
-          spot: () => els([target]),
-          until: remember,
-          doThis: 'Double-tap the glowing square',
+          caption: 'A wrong cat costs a heart',
+          target: () => document.getElementById('livesRow'),
+          dim: true, hold: 3200,
         },
         {
-          text: 'Cats like their space. They never sit next to each other, not even corner to corner, so all these squares are out.',
-          lanes: () => {
-            const p = placed ?? target;
-            const out: { row: number; col: number }[] = [];
-            for (let dr = -1; dr <= 1; dr++) {
-              for (let dc = -1; dc <= 1; dc++) {
-                const row = p.row + dr;
-                const col = p.col + dc;
-                if ((dr || dc) && row >= 0 && col >= 0 && row < g.size && col < g.size) out.push({ row, col });
-              }
-            }
-            return els(out);
-          },
-        },
-      ];
-
-    case 3:
-      return [
-        {
-          text: 'Careful! A cat in the wrong spot costs a heart, and you have three.',
-          spot: () => [document.getElementById('livesRow')].filter((x): x is HTMLElement => !!x),
-        },
-        {
-          text: 'Stuck? Tap Hint and I’ll place a cat for you. You get three free every day.',
-          spot: () => [document.getElementById('btnHint')].filter((x): x is HTMLElement => !!x),
+          caption: 'Stuck? Tap Hint for help',
+          target: () => document.getElementById('btnHint'),
+          dim: true, hold: 3200,
         },
       ];
 
