@@ -1,4 +1,4 @@
-import { getItem, setItem } from '../platform/storage';
+import { getItem, registerMerge, setItem } from '../platform/storage';
 
 /**
  * Free hints: a few per day, refilled each local calendar day. Once they run
@@ -29,6 +29,20 @@ function read(): HintState {
   }
   return { day: today(), used: 0 };
 }
+
+/** Two copies of today's count (device and cloud): keep the higher one, so
+ *  signing in or switching devices can't refill the day's free hints. */
+registerMerge(KEY, (local, remote) => {
+  const parse = (raw: string): HintState => {
+    try {
+      const s = JSON.parse(raw) as HintState;
+      return s.day === today() && Number.isFinite(s.used) ? s : { day: today(), used: 0 };
+    } catch {
+      return { day: today(), used: 0 };
+    }
+  };
+  return JSON.stringify({ day: today(), used: Math.max(parse(local).used, parse(remote).used) });
+});
 
 export function freeHintsLeft(): number {
   return Math.max(0, FREE_HINTS_PER_DAY - read().used);

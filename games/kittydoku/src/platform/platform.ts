@@ -18,8 +18,15 @@ export interface Platform {
   gameEnd(): void;
   onPause(cb: () => void): void;
   onResume(cb: () => void): void;
-  load(key: string): Promise<string | null>;
-  save(key: string, value: string): Promise<void>;
+  /** This device's saved copy. */
+  loadLocal(key: string): Promise<string | null>;
+  saveLocal(key: string, value: string): Promise<void>;
+  /** The player's cloud copy; always null / skipped when not signed in. */
+  loadRemote(key: string): Promise<string | null>;
+  saveRemote(key: string, value: string): Promise<void>;
+  isSignedIn(): Promise<boolean>;
+  /** Called when the player signs in or out during the session. */
+  onAuthChange(cb: (signedIn: boolean) => void): void;
   /** Plays a rewarded video. Resolves true only if the reward was earned. */
   showRewardAd(): Promise<boolean>;
   /** Plays an interstitial video; resolves when control is back with the game. */
@@ -47,6 +54,14 @@ function arkadium(sdk: ArkadiumGameSdk): Platform {
   let authorized: Promise<boolean> | null = null;
   const isAuthorized = () =>
     (authorized ??= sdk.auth.isUserAuthorized().catch(() => false));
+  // Keep the cached sign-in state in step with the Arena.
+  const authListeners: ((signedIn: boolean) => void)[] = [];
+  safe(() =>
+    sdk.auth.onAuthStatusChange((signedIn: boolean) => {
+      authorized = Promise.resolve(!!signedIn);
+      authListeners.forEach((cb) => cb(!!signedIn));
+    })
+  );
 
   return {
     name: 'arkadium',
@@ -69,27 +84,27 @@ function arkadium(sdk: ArkadiumGameSdk): Platform {
     onResume: (cb) =>
       safe(() => sdk.lifecycle.registerEventCallback(sdk.lifecycle.LifecycleEvent.GAME_RESUME, cb)),
 
-    // Signed-in players get their progress on every device (remote storage);
-    // everyone else keeps it in the Arena's local storage.
-    async load(key) {
-      if (await isAuthorized()) {
-        try {
-          const remote = await sdk.persistence.getRemoteStorageItem(key);
-          if (remote !== null && remote !== undefined) {
-            return typeof remote === 'string' ? remote : JSON.stringify(remote);
-          }
-        } catch {
-          /* fall back to local */
-        }
-      }
-      return sdk.persistence.getLocalStorageItem(key);
-    },
-    async save(key, value) {
-      await sdk.persistence.setLocalStorageItem(key, value);
-      if (await isAuthorized()) {
-        await sdk.persistence.setRemoteStorageItem(key, value).catch(() => undefined);
+    // Everyone keeps a copy in the Arena's local storage; signed-in players
+    // also get a cloud copy so progress follows them to any device. The
+    // storage layer merges the two (see storage.ts).
+    loadLocal: (key) => sdk.persistence.getLocalStorageItem(key),
+    saveLocal: (key, value) => sdk.persistence.setLocalStorageItem(key, value),
+    async loadRemote(key) {
+      if (!(await isAuthorized())) return null;
+      try {
+        const remote = await sdk.persistence.getRemoteStorageItem(key);
+        if (remote === null || remote === undefined) return null;
+        return typeof remote === 'string' ? remote : JSON.stringify(remote);
+      } catch {
+        return null;
       }
     },
+    async saveRemote(key, value) {
+      if (!(await isAuthorized())) return;
+      await sdk.persistence.setRemoteStorageItem(key, value).catch(() => undefined);
+    },
+    isSignedIn: () => isAuthorized(),
+    onAuthChange: (cb) => { authListeners.push(cb); },
 
     async showRewardAd() {
       try {
@@ -135,12 +150,16 @@ function local(): Platform {
     gameEnd: noop,
     onPause: noop,
     onResume: noop,
-    async load(key) {
+    async loadLocal(key) {
       try { return localStorage.getItem(key); } catch { return null; }
     },
-    async save(key, value) {
+    async saveLocal(key, value) {
       try { localStorage.setItem(key, value); } catch { /* ignore */ }
     },
+    loadRemote: async () => null,
+    saveRemote: async () => undefined,
+    isSignedIn: async () => false,
+    onAuthChange: noop,
     async showRewardAd() {
       console.info('[kittydoku] local build: simulating a rewarded ad');
       await new Promise((r) => setTimeout(r, 1200));

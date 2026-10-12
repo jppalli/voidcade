@@ -1,4 +1,4 @@
-import { getItem, setItem } from '../platform/storage';
+import { getItem, registerMerge, setItem } from '../platform/storage';
 
 const STORAGE_KEY = 'kittydoku-progress-v1';
 
@@ -52,21 +52,48 @@ function migrateV1(old: Partial<Progress>): Progress {
   };
 }
 
-export function loadProgress(): Progress {
+/** Read a saved progress string (any version) as current-format progress. */
+function parseProgress(raw: string | null): { p: Progress; migrated: boolean } {
   try {
-    const raw = getItem(STORAGE_KEY);
-    if (!raw) return empty();
+    if (!raw) return { p: empty(), migrated: false };
     const parsed = JSON.parse(raw) as Partial<Progress>;
-    if (parsed.version !== VERSION) {
-      const migrated = migrateV1(parsed);
-      saveProgress(migrated);
-      return migrated;
-    }
-    return { ...empty(), ...parsed };
+    if (parsed.version !== VERSION) return { p: migrateV1(parsed), migrated: true };
+    return { p: { ...empty(), ...parsed }, migrated: false };
   } catch {
-    return empty();
+    return { p: empty(), migrated: false };
   }
 }
+
+export function loadProgress(): Progress {
+  const { p, migrated } = parseProgress(getItem(STORAGE_KEY));
+  if (migrated) saveProgress(p);
+  return p;
+}
+
+/**
+ * Combine two saves (this device and the cloud) so nothing is ever lost:
+ * a level counts as solved, or purrfect, if it is in either; the furthest
+ * unlocked level wins; seen tips and welcomes are combined.
+ */
+export function mergeProgress(a: Progress, b: Progress): Progress {
+  const results: Record<number, LevelResult> = { ...a.results };
+  for (const [k, r] of Object.entries(b.results)) {
+    const i = Number(k);
+    const prev = results[i];
+    results[i] = { solved: !!(prev?.solved || r.solved), clean: !!(prev?.clean || r.clean) };
+  }
+  return {
+    version: VERSION,
+    unlocked: Math.max(a.unlocked, b.unlocked),
+    results,
+    seenTips: [...new Set([...(a.seenTips ?? []), ...(b.seenTips ?? [])])],
+    seenIntros: [...new Set([...(a.seenIntros ?? []), ...(b.seenIntros ?? [])])],
+  };
+}
+
+registerMerge(STORAGE_KEY, (local, remote) =>
+  JSON.stringify(mergeProgress(parseProgress(local).p, parseProgress(remote).p))
+);
 
 export function saveProgress(p: Progress) {
   setItem(STORAGE_KEY, JSON.stringify(p));

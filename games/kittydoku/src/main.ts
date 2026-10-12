@@ -24,7 +24,7 @@ import {
 } from './audio/sound';
 import { FREE_HINTS_PER_DAY, freeHintsLeft, useFreeHint } from './game/hints';
 import { createPlatform, GAME_VERSION, type Platform } from './platform/platform';
-import { initStorage } from './platform/storage';
+import { initStorage, resyncStorage, setSignedOut } from './platform/storage';
 import { CHAPTERS, TOTAL_LEVELS, allLevels, levelAt, type LevelRef } from './game/levels';
 import {
   cleanCount,
@@ -964,6 +964,22 @@ function init() {
     if (e.key === 'r' || e.key === 'R') $('btnReset').click();
     if (e.key === 'z' || e.key === 'Z') $('btnUndo').click();
     if (e.key === 'h' || e.key === 'H') $('btnHint').click();
+  });
+
+  // Signing in mid-session: merge their cloud save with this device's, then
+  // redraw whatever screen is showing. Signing out just stops cloud saves.
+  platform.onAuthChange((signedIn) => {
+    if (!signedIn) { setSignedOut(); return; }
+    void (async () => {
+      await resyncStorage();
+      progress = loadProgress();
+      loadSoundPref();
+      subscriber = await platform.isSubscriber();
+      refreshSoundButtons();
+      refreshHintBadge();
+      if (!$('screen-title').classList.contains('hidden')) renderTitle();
+      if (!$('screen-map').classList.contains('hidden')) show('map');
+    })();
   });
 
   // The Arena can pause the game (e.g. for its own overlays).
