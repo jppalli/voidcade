@@ -157,7 +157,7 @@ function startLevel(index: number, forceTutorial = false) {
 
   closeTip(false);
   stopCoach();
-  $('btnTipGame').classList.toggle('hidden', !ref.tip);
+  $('panelTip').classList.toggle('hidden', !ref.tip);
 
   buildBoard(ref);
   renderBoard();
@@ -855,7 +855,9 @@ function renderDemoBoard() {
 
 // ---------------------------------------------------------------- sound
 
-const SOUND_BUTTONS = ['btnSoundTitle', 'btnSoundMap', 'btnSoundGame'];
+/** Speaker buttons (title, map). In a level the menu button opens the same
+ *  panel with the level tip and How to Play added on top. */
+const SOUND_BUTTONS = ['btnSoundTitle', 'btnSoundMap'];
 
 function refreshSoundButtons() {
   const on = sfxEnabled() || musicEnabled();
@@ -901,11 +903,11 @@ function init() {
   // How-to modal
   const openHowTo = () => { playTap(); $('howToOverlay').classList.remove('hidden'); };
   $('btnHowTo').addEventListener('click', openHowTo);
-  $('btnHelpGame').addEventListener('click', openHowTo);
+
 
   // Level tip (the cat's speech bubble)
   wireTip();
-  $('btnTipGame').addEventListener('click', () => { playTap(); showLevelTip(); });
+
   $('btnHowToClose').addEventListener('click', () => { playTap(); $('howToOverlay').classList.add('hidden'); });
   // Replays level 1 with the guided steps (progress is unaffected).
   $('btnReplayTutorial').addEventListener('click', () => {
@@ -988,21 +990,28 @@ function init() {
     panelOpener?.focus({ preventScroll: true });
     panelOpener = null;
   };
-  SOUND_BUTTONS.forEach((id) =>
+  [...SOUND_BUTTONS, 'btnMenuGame'].forEach((id) =>
     $(id).addEventListener('click', (e) => {
       e.stopPropagation();
       const btn = $(id);
       if (panelOpener === btn) { closePanel(); return; }
       playTap();
+      // In a level the panel also offers the tip and How to Play.
+      const inGame = id === 'btnMenuGame';
+      $('panelGame').classList.toggle('hidden', !inGame);
+      panel.setAttribute('aria-label', inGame ? 'Menu' : 'Sound settings');
       const r = btn.getBoundingClientRect();
       panel.style.top = `${Math.round(r.bottom + 8)}px`;
       panel.style.right = `${Math.max(8, Math.round(window.innerWidth - r.right))}px`;
       panel.classList.remove('hidden');
       panelOpener = btn;
       btn.setAttribute('aria-expanded', 'true');
-      $('tglMusic').focus({ preventScroll: true });
+      const first = inGame && !$('panelTip').classList.contains('hidden') ? 'panelTip' : inGame ? 'panelHowTo' : 'tglMusic';
+      $(first).focus({ preventScroll: true });
     })
   );
+  $('panelTip').addEventListener('click', () => { closePanel(); playTap(); showLevelTip(); });
+  $('panelHowTo').addEventListener('click', () => { closePanel(); openHowTo(); });
   $('tglMusic').addEventListener('click', () => { setMusicEnabled(!musicEnabled()); refreshSoundButtons(); playTap(); });
   $('tglSfx').addEventListener('click', () => { setSfxEnabled(!sfxEnabled()); refreshSoundButtons(); playTap(); });
   panel.addEventListener('click', (e) => e.stopPropagation());
