@@ -60,21 +60,17 @@
       </button>
 
       <div class="titleSecondary">
-        <button class="btn pill" id="btnMap">Level Map</button>
+        <button class="btn pill" id="btnMap">Adventure Map</button>
         <button class="btn pill" id="btnHowTo">How to Play</button>
       </div>
 
-      <div class="titleProgress" id="titleProgressWrap">
-        <div class="progressTrack"><div class="progressFill" id="progressFill"></div></div>
-        <span id="titleProgress"></span>
-      </div>
     </div>
   </section>
 
   <!-- ============ level map ============ -->
   <section id="screen-map" class="screen hidden">
     <div class="mapHeader">
-      <button class="btn back" data-nav="title"><svg class="icon"><use href="#i-back"/></svg><span>Title</span></button>
+      <button class="btn back" data-nav="title"><svg class="icon"><use href="#i-back"/></svg><span>Home</span></button>
       <div class="mapTitle">
         <h2>
           <svg class="mtPaw" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-paw"/></svg>
@@ -174,14 +170,14 @@
     <div class="modal">
       <div class="winCat" style="opacity:0.55" id="failCat"></div>
       <h2>No more hearts!</h2>
-      <p id="failText">The cats need a little more coaxing. Try again?</p>
+      <p id="failText">The cats need a little more coaxing. Start the puzzle over?</p>
       <div class="modalButtons">
         <button class="btn primary adBtn" id="btnFailRevive">
           <svg class="icon" aria-hidden="true"><use href="#i-video"/></svg>
           <span id="failReviveLabel">Watch a video to keep going</span>
         </button>
         <button class="btn" id="btnFailRetry">Start over</button>
-        <button class="btn" id="btnFailMap">Level Map</button>
+        <button class="btn" id="btnFailMap">Adventure Map</button>
       </div>
     </div>
   </div>
@@ -200,7 +196,7 @@
       <p id="winText"></p>
       <div class="modalButtons">
         <button class="btn primary" id="btnWinNext">Next level</button>
-        <button class="btn" id="btnWinMap">Level Map</button>
+        <button class="btn" id="btnWinMap">Adventure Map</button>
       </div>
     </div>
   </div>

@@ -59,7 +59,7 @@ export const CHAPTERS: ChapterDef[] = [
       L(5, 2, 1),
       L(5, 2, 2, 'A patch squeezed inside one row must keep its cat in that row, so the rest of that row is free of cats.'),
       L(5, 1, 2),
-      L(5, 1, 3.1, 'If a cat on a square would block every spot left in some row, column or patch, no cat can sit there.'),
+      L(5, 1, 3.1, 'If a cat on one square would leave a row, column or patch with no spot at all, no cat can sit there.'),
       L(5, 0, 3.2),
       L(5, 0, 3.4),
     ],
@@ -88,7 +88,7 @@ export const CHAPTERS: ChapterDef[] = [
     name: 'Garden Fence',
     blurb: 'A wider perch, and trickier company.',
     accent: '#a0e7b4',
-    intro: 'Out to the Garden Fence! Free cats are rarer from here on, so look for rows and patches with only one spot left.',
+    intro: 'Out to the Garden Fence! One-square patches are rare from here on, so look for rows and patches with only one spot left.',
     levels: [
       L(6, 0, 3.1),
       L(6, 0, 3.3),

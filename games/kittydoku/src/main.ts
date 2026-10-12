@@ -112,15 +112,6 @@ function renderTitle() {
     done === 0 || !next ? 'Play' : allDone ? 'Play again' : `Level ${next.index + 1}`;
   $('playSub').textContent = '';
   $('playSub').classList.add('hidden');
-
-  $('progressFill').style.width = `${Math.round((done / TOTAL_LEVELS) * 100)}%`;
-  $('titleProgressWrap').classList.toggle('empty', done === 0);
-  $('titleProgress').textContent =
-    done === 0
-      ? `${TOTAL_LEVELS} cosy puzzles to solve`
-      : allDone
-        ? `All ${TOTAL_LEVELS} cats are cosy`
-        : `${done} of ${TOTAL_LEVELS} cats cosy`;
 }
 
 function seedTitleFloat() {
@@ -534,7 +525,7 @@ function showFailModal() {
   $('btnFailRetry').classList.toggle('primary', !canRevive);
   $('failText').textContent = canRevive
     ? 'Keep your progress on this board and get all your hearts back, or start the puzzle over.'
-    : 'The cats need a little more coaxing. Try again?';
+    : 'The cats need a little more coaxing. Start the puzzle over?';
   $('failOverlay').classList.remove('hidden');
 }
 
@@ -633,7 +624,7 @@ async function watchForRevive() {
   const earned = await earnReward();
   btn.disabled = false;
   if (!earned || !g || game !== g) {
-    $('failText').textContent = 'The video didn’t finish, so no hearts this time. You can try again or start over.';
+    $('failText').textContent = 'The video didn’t finish, so no hearts this time. Watch it again, or start the puzzle over.';
     return;
   }
   g.revive();
