@@ -1,3 +1,5 @@
 node_modules
 dist
 *.local
+arkadium-build
+kittydoku-arkadium-*.zip
