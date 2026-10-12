@@ -235,30 +235,29 @@
 
       <figure class="htDemo">
         <div class="demoBoard" id="demoBoard"></div>
-        <figcaption>Two cats have found their spots. The faded paws mark the squares they rule out.</figcaption>
       </figure>
 
-      <ol class="howToList">
-        <li>
-          <span class="howToNum" aria-hidden="true">1</span>
-          <span><b class="htHead">One of each</b>Place exactly one cat in every <b>row</b>, every <b>column</b> and every <b>colour patch</b>.</span>
-        </li>
-        <li>
-          <span class="howToNum" aria-hidden="true">2</span>
-          <span><b class="htHead">No touching</b>Cats never sit next to each other, not side by side and not corner to corner.</span>
-        </li>
-        <li>
-          <span class="howToNum" aria-hidden="true">3</span>
-          <span><b class="htHead">Paws are free notes</b><b>Tap</b> a square to leave a paw meaning "no cat here", or <b>hold and drag</b> to paint paws. Tap a paw again to clear it.</span>
-        </li>
-        <li>
-          <span class="howToNum" aria-hidden="true">4</span>
-          <span><b class="htHead">Place a cat</b><b>Double-tap</b> a square when you're sure. A right square and the cat settles in. A wrong one costs a heart.</span>
-        </li>
-      </ol>
+      <!-- The whole game in three rules, then the two controls. -->
+      <div class="htBody">
+        <ul class="htRules">
+          <li>
+            <svg class="htIcon" viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="3" width="12" height="12" rx="3" fill="#ffd6a5"/><rect x="17" y="3" width="12" height="12" rx="3" fill="#d7c7ff"/><rect x="3" y="17" width="12" height="12" rx="3" fill="#b8ebc8"/><rect x="17" y="17" width="12" height="12" rx="3" fill="#bfe3ff"/></svg>
+            <span>One cat per <b>colour</b></span>
+          </li>
+          <li>
+            <svg class="htIcon" viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="12" width="26" height="8" rx="4" fill="#ffc9d9"/><rect x="12" y="3" width="8" height="26" rx="4" fill="#ffc9d9"/><circle cx="16" cy="16" r="5" fill="#e0687f"/></svg>
+            <span>One per <b>row</b> and <b>column</b></span>
+          </li>
+          <li>
+            <svg class="htIcon" viewBox="0 0 32 32" aria-hidden="true"><circle cx="9" cy="16" r="6" fill="#b0a2d6"/><circle cx="23" cy="16" r="6" fill="#f2a65e"/><path d="M13 9 L19 23 M19 9 L13 23" stroke="#4a3b34" stroke-width="2.6" stroke-linecap="round"/></svg>
+            <span>Cats never <b>touch</b>, not even at corners</span>
+          </li>
+        </ul>
+        <p class="htControls"><b>Double-tap</b> to place a cat · <b>Tap</b> to mark a paw</p>
+      </div>
 
       <div class="htFooter">
-        <p class="htNote">Every puzzle has exactly one answer and can always be worked out by logic. No guessing needed.</p>
+        <p class="htNote">A wrong cat costs a heart. No guessing needed: every puzzle can be solved by logic.</p>
         <div class="modalButtons">
           <button class="btn primary" id="btnHowToClose">Got it</button>
           <button class="btn" id="btnReplayTutorial">Replay tutorial</button>

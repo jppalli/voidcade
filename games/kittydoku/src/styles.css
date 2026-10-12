@@ -1816,6 +1816,37 @@ body.paused *, body.paused *::before, body.paused *::after { animation-play-stat
   .howToModal .demoBoard { width: 136px; height: 136px; }
 }
 
+/* The three rules, big and simple, then one line of controls. */
+.htBody { display: flex; flex-direction: column; justify-content: center; gap: 12px; margin-bottom: 14px; }
+.htRules { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.htRules li {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  background: var(--bg);
+  border: 2px solid var(--line);
+  font-size: 17px; font-weight: 800; color: var(--ink-soft); line-height: 1.25;
+}
+.htRules b { color: var(--ink); font-weight: 900; }
+.htIcon { width: 30px; height: 30px; flex-shrink: 0; display: block; }
+.htControls {
+  text-align: center;
+  font-size: 14px; font-weight: 700; color: var(--ink-soft);
+}
+.htControls b { color: var(--accent-deep); font-weight: 900; }
+.howToModal .htDemo { margin-bottom: 12px; }
+
+@media (min-width: 768px) {
+  .howToModal { max-width: 640px; }
+  .htBody { grid-area: steps; margin: 0; }
+  .htRules li { font-size: 18px; padding: 12px 16px; }
+}
+@media (max-height: 640px) {
+  .htRules li { padding: 7px 12px; font-size: 15px; }
+  .htIcon { width: 24px; height: 24px; }
+  .htBody { gap: 8px; }
+}
+
 .howToNum {
   flex-shrink: 0;
   width: 24px; height: 24px;
