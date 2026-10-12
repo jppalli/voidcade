@@ -111,6 +111,17 @@
       <div class="board" id="board"></div>
     </div>
 
+    <!-- Tutorial: the cat talks here, in the space the buttons normally use,
+         so it never covers the board (the buttons come back when it is done). -->
+    <div class="coachDock hidden" id="coachDock" role="status" aria-live="polite">
+      <div class="coachDockCat" id="coachDockCat" aria-hidden="true"></div>
+      <div class="coachDockBubble">
+        <span class="coachCaption" id="coachCaption"></span><span class="coachCount hidden" id="coachCount"></span>
+        <span class="coachSub hidden" id="coachSub"></span>
+      </div>
+      <button class="coachSkip" id="btnCoachSkip">Skip</button>
+    </div>
+
     <!-- Undo and Hint are the everyday buttons; Start over is a small icon
          that asks for a second tap, so a stray tap can't wipe the board. -->
     <div class="controls">
@@ -131,11 +142,6 @@
       <svg viewBox="0 0 24 24"><g fill="#ffffff" stroke="#4a3b34" stroke-width="1.4"><ellipse cx="12" cy="15.5" rx="5" ry="4.2"/><circle cx="6.2" cy="10.4" r="2.1"/><circle cx="10" cy="7.4" r="2.2"/><circle cx="14" cy="7.4" r="2.2"/><circle cx="17.8" cy="10.4" r="2.1"/></g></svg>
       <span class="coachRipple"></span><span class="coachRipple r2"></span>
     </div>
-    <div class="coachTip" id="coachTip" role="status" aria-live="polite">
-      <span class="coachCaption" id="coachCaption"></span><span class="coachCount hidden" id="coachCount"></span>
-      <span class="coachSub hidden" id="coachSub"></span>
-    </div>
-    <button class="coachSkip" id="btnCoachSkip">Skip tutorial</button>
   </div>
 
   <!-- ============ tip: the cat talks, text types out ============ -->

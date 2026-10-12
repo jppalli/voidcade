@@ -1,4 +1,5 @@
 import { playTap } from '../audio/sound';
+import { mascotSvg, type Coat } from '../render/art';
 
 /**
  * Tutorial coach, "show, don't tell":
@@ -60,55 +61,33 @@ function clearHold() {
   holdTimer = null;
 }
 
-/** Place the dim hole, ring, paw and caption around the current target. */
+/** Place the ring and the paw on the current target. The words live in the
+ *  dock under the board (see show()), so nothing floats over the board. */
 function layout() {
   const s = steps[index];
   if (!s) return;
   const dim = $('coachDim');
   const ring = $('coachRing');
   const hand = $('coachHand');
-  const tip = $('coachTip');
   const el = current;
+
+  if (!el || s.marks) {
+    dim.classList.add('hidden');
+    ring.classList.add('hidden');
+    hand.classList.add('hidden');
+    return;
+  }
+
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-
-  if (s.marks) {
-    // Squares glow on the board itself; the caption sits above the board.
-    dim.classList.add('hidden');
-    ring.classList.add('hidden');
-    hand.classList.add('hidden');
-    const board = document.getElementById('board')?.getBoundingClientRect();
-    const above = !!board && board.top > 130;
-    tip.classList.toggle('above', above);
-    tip.classList.toggle('below', !above);
-    tip.style.left = `${vw / 2}px`;
-    tip.style.top = `${board ? (above ? board.top - 12 : board.bottom + 12) : vh * 0.2}px`;
-    return;
-  }
-
-  if (!el) {
-    // No target: caption floats over the board's upper part.
-    const board = document.getElementById('board')?.getBoundingClientRect();
-    dim.classList.add('hidden');
-    ring.classList.add('hidden');
-    hand.classList.add('hidden');
-    const y = board ? board.top + board.height * 0.18 : vh * 0.3;
-    tip.classList.remove('below', 'above');
-    tip.style.left = `${vw / 2}px`;
-    tip.style.top = `${y}px`;
-    return;
-  }
-
   const r = el.getBoundingClientRect();
-  const pad = 6;
+  const pad = 4;
   const L = Math.max(0, r.left - pad);
   const T = Math.max(0, r.top - pad);
   const R = Math.min(vw, r.right + pad);
   const B = Math.min(vh, r.bottom + pad);
 
   dim.classList.toggle('hidden', !s.dim);
-  // A donut: the whole screen with the target cut out. It's also what blocks
-  // taps elsewhere, since clip-path limits where it can be hit.
   dim.style.clipPath =
     `polygon(0 0, ${vw}px 0, ${vw}px ${vh}px, 0 ${vh}px, 0 0, ` +
     `${L}px ${T}px, ${L}px ${B}px, ${R}px ${B}px, ${R}px ${T}px, ${L}px ${T}px)`;
@@ -120,13 +99,11 @@ function layout() {
   hand.dataset.gesture = s.gesture ?? '';
   hand.style.left = `${r.left + r.width * 0.55}px`;
   hand.style.top = `${r.top + r.height * 0.55}px`;
+}
 
-  // Caption above the target if there's room, otherwise below.
-  const above = r.top > 110;
-  tip.classList.toggle('above', above);
-  tip.classList.toggle('below', !above);
-  tip.style.left = `${Math.min(vw - 16, Math.max(16, r.left + r.width / 2))}px`;
-  tip.style.top = `${above ? r.top - 14 : r.bottom + 14 + (s.gesture ? 34 : 0)}px`;
+/** Measure again once the board has resized around the dock. */
+function relayout() {
+  requestAnimationFrame(() => requestAnimationFrame(layout));
 }
 
 /** Glow the squares still to do, dim the rest of the board. */
@@ -156,14 +133,15 @@ function show(i: number) {
   $('coachCount').classList.add('hidden');
   paintMarks();
 
-  const tip = $('coachTip');
-  tip.classList.remove('pop');
-  void tip.offsetWidth;
-  tip.classList.add('pop');
+  // The cat "says" each new line: the bubble pops, the cat bobs.
+  const dock = $('coachDock');
+  dock.classList.remove('pop');
+  void dock.offsetWidth;
+  dock.classList.add('pop');
 
   s.onEnter?.();
-  // Let the board settle (e.g. a cat landing) before measuring.
-  requestAnimationFrame(layout);
+  // Let the board settle (a cat landing, the dock resizing it) before measuring.
+  relayout();
   if (current instanceof HTMLElement && current.classList.contains('cell')) {
     current.tabIndex = 0;
     current.focus({ preventScroll: true });
@@ -182,13 +160,17 @@ function finish() {
   cb?.();
 }
 
-export function startCoach(script: CoachStep[], opts: { onDone?: () => void } = {}) {
+export function startCoach(script: CoachStep[], opts: { onDone?: () => void; coat?: Coat } = {}) {
   stopCoach();
   if (!script.length) return;
   steps = script;
   onDoneCb = opts.onDone ?? null;
+  $('coachDockCat').innerHTML = mascotSvg(56, opts.coat);
   $('coach').classList.remove('hidden');
   $('coach').classList.toggle('still', reducedMotion());
+  // The dock takes the buttons' place under the board while it talks.
+  $('coachDock').classList.remove('hidden');
+  $('screen-game').classList.add('coaching');
   show(0);
 }
 
@@ -202,6 +184,8 @@ export function stopCoach() {
   current = null;
   onDoneCb = null;
   $('coach').classList.add('hidden');
+  $('coachDock').classList.add('hidden');
+  $('screen-game').classList.remove('coaching');
 }
 
 /** The game reports what the player did; a waiting step may move on. */
@@ -223,6 +207,9 @@ export function wireCoach() {
   // Steps that don't wait for an action also move on with a tap.
   const tapOn = () => { const s = steps[index]; if (s && !s.until) next(); };
   $('coachDim').addEventListener('click', tapOn);
-  $('coachTip').addEventListener('click', tapOn);
-  window.addEventListener('resize', () => { if (index >= 0) layout(); });
+  $('coachDock').addEventListener('click', (e) => {
+    if ((e.target as HTMLElement).closest('#btnCoachSkip')) return;
+    tapOn();
+  });
+  window.addEventListener('resize', () => { if (index >= 0) relayout(); });
 }

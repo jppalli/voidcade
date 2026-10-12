@@ -214,6 +214,7 @@ function runTutorial() {
       }, 500 + i * 300)
     );
   startCoach(tutorialSteps(index, { game: g, cell: cellEl, ripplePaws }), {
+    coat: worldCoat(g.ref.chapterIndex),
     onDone: () => markTutorialDone(index),
   });
 }
