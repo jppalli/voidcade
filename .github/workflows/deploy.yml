@@ -26,10 +26,11 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        # Resolve Vite's platform-specific optional native package on Linux.
-        # npm ci would only install the Windows optional package captured by
-        # the lockfile generated on the development machine.
-        run: npm install --include=optional --no-audit --no-fund
+        # The lockfile is made on Windows and only lists Windows builds of the
+        # native tools (rolldown, lightningcss), so installing from it on this
+        # Linux runner leaves them missing. Drop it here and let npm pick the
+        # Linux builds. (Local development still uses the lockfile.)
+        run: rm -f package-lock.json && npm install --no-audit --no-fund
 
       - name: Build site + games
         run: npm run build
