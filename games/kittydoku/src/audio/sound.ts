@@ -12,27 +12,55 @@ import { getItem, setItem } from '../platform/storage';
 
 const PREFS_KEY = 'kittydoku-sound';
 
-let enabled = true;
+/** Effects (taps, cats, jingles) and music switch on and off separately. */
+let sfxOn = true;
+let musicOn = true;
 
-/** Read the saved on/off setting. Call once storage has loaded. */
+/** Read the saved settings. Call once storage has loaded. Older saves stored
+ *  a single 'on'/'off' for everything. */
 export function loadSoundPref() {
-  enabled = getItem(PREFS_KEY) !== 'off';
+  const raw = getItem(PREFS_KEY);
+  if (raw === 'off') { sfxOn = false; musicOn = false; return; }
+  try {
+    const p = JSON.parse(raw ?? '') as { sfx?: boolean; music?: boolean };
+    sfxOn = p.sfx !== false;
+    musicOn = p.music !== false;
+  } catch {
+    sfxOn = true;
+    musicOn = true;
+  }
 }
 
-export function soundEnabled(): boolean {
-  return enabled;
+function savePrefs() {
+  setItem(PREFS_KEY, JSON.stringify({ sfx: sfxOn, music: musicOn }));
 }
 
-export function setSoundEnabled(on: boolean) {
-  enabled = on;
-  setItem(PREFS_KEY, on ? 'on' : 'off');
-  // Music follows the same toggle as the effects: stop at once when switched
-  // off, fade back in when switched on (if audio has already started).
+export const sfxEnabled = () => sfxOn;
+export const musicEnabled = () => musicOn;
+
+export function setSfxEnabled(on: boolean) {
+  sfxOn = on;
+  savePrefs();
+}
+
+/** Fades the music in or out. Switching it on counts as a user gesture, so
+ *  audio can start right away. */
+export function setMusicEnabled(on: boolean) {
+  musicOn = on;
+  savePrefs();
   if (on) {
-    if (ctx) startMusic();
+    try { audio(); } catch { /* audio unavailable */ }
+    startMusic();
   } else {
     stopMusic();
   }
+}
+
+/** Call on the player's first tap or key press: starts audio (and the music,
+ *  if it's on) even when effects are muted. Never before an interaction. */
+export function unlockAudio() {
+  if (!sfxOn && !musicOn) return;
+  try { audio(); } catch { /* audio unavailable */ }
 }
 
 // ---------------------------------------------------------------- engine
@@ -288,7 +316,7 @@ function glide(f0: number, f1: number, t0: number, dur: number, gain: number, ty
 const humanize = () => 1 + (Math.random() * 2 - 1) * 0.03;
 
 function guard(fn: (c: AudioContext, now: number) => void) {
-  if (!enabled) return;
+  if (!sfxOn) return;
   try {
     const c = audio();
     fn(c, c.currentTime + 0.005);
@@ -416,7 +444,7 @@ function resumeMusicScheduler() {
 }
 
 function startMusic() {
-  if (!ctx || !musicGain || musicRunning) return;
+  if (!ctx || !musicGain || musicRunning || !musicOn) return;
   musicRunning = true;
   const t = ctx.currentTime;
   musicGain.gain.cancelScheduledValues(t);

@@ -269,7 +269,7 @@ export function renderMap(
     const done = !!result?.solved;
     const isNext = ref.index === frontierId;
     const clean = !!result?.clean;
-    const num = ref.levelInChapter + 1;
+    const num = ref.index + 1; // one number 1-100 across the whole game
 
     const stateClass = isNext ? 'next' : done ? 'done' : unlocked ? 'open' : 'locked';
 

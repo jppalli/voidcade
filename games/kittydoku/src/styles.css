@@ -245,7 +245,7 @@ button {
 .playBtn:hover  { box-shadow: 0 10px 0 var(--rose-deep); }
 .playBtn:active { box-shadow: 0 2px 0 var(--rose-deep); }
 
-.playLabel { font-size: 21px; font-weight: 900; letter-spacing: -0.2px; line-height: 1.1; }
+.playLabel { font-size: 24px; font-weight: 900; letter-spacing: -0.3px; line-height: 1.1; }
 .playSub   { font-size: 12.5px; font-weight: 700; opacity: 0.9; line-height: 1.2; }
 
 /* Secondary actions: smaller pills side by side */
@@ -1306,6 +1306,49 @@ button {
 }
 .hintBadge:empty { display: none; }
 .hintBadge svg { width: 12px; height: 12px; }
+
+/* Sound settings: a small card under the speaker button. */
+.soundPanel {
+  position: fixed;
+  z-index: 70;
+  width: 200px;
+  padding: 8px;
+  display: flex; flex-direction: column; gap: 4px;
+  background: var(--card);
+  border: 2px solid var(--line-strong);
+  border-radius: 18px;
+  box-shadow: 0 8px 0 rgba(122, 96, 80, 0.16);
+  animation: pop 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.toggleRow {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border: none; border-radius: 12px;
+  background: transparent;
+  font-size: 14px; font-weight: 800; color: var(--ink);
+  text-align: left;
+}
+.toggleRow:hover, .toggleRow:focus-visible { background: var(--bg); }
+.toggleRow .icon { color: var(--ink-soft); }
+.toggleRow span:nth-of-type(1) { flex: 1; }
+.switch {
+  position: relative;
+  width: 38px; height: 22px;
+  border-radius: 999px;
+  background: var(--line-strong);
+  transition: background 0.18s ease;
+}
+.switch::after {
+  content: '';
+  position: absolute; top: 3px; left: 3px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(74, 59, 52, 0.3);
+  transition: transform 0.18s ease;
+}
+.toggleRow[aria-pressed="true"] .switch { background: var(--mint); }
+.toggleRow[aria-pressed="true"] .switch::after { transform: translateX(16px); }
 
 .adBtn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
 .adBtn .icon { width: 19px; height: 19px; }

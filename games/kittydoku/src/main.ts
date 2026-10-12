@@ -1,3 +1,9 @@
+// Nunito is bundled with the game (no Google Fonts request). Each weight's
+// CSS uses unicode-range, so browsers only download the subsets they need.
+import '@fontsource/nunito/600.css';
+import '@fontsource/nunito/700.css';
+import '@fontsource/nunito/800.css';
+import '@fontsource/nunito/900.css';
 import {
   playCat,
   playHeartLost,
@@ -9,9 +15,12 @@ import {
   playUnhappy,
   playWin,
   loadSoundPref,
+  musicEnabled,
   setAudioHold,
-  setSoundEnabled,
-  soundEnabled,
+  setMusicEnabled,
+  setSfxEnabled,
+  sfxEnabled,
+  unlockAudio,
 } from './audio/sound';
 import { FREE_HINTS_PER_DAY, freeHintsLeft, useFreeHint } from './game/hints';
 import { createPlatform, GAME_VERSION, type Platform } from './platform/platform';
@@ -98,10 +107,11 @@ function renderTitle() {
   const allDone = done >= TOTAL_LEVELS;
   const next = levelAt(nextUnsolvedIndex());
 
-  $('playLabel').textContent = done === 0 ? 'Play' : allDone ? 'Play again' : 'Continue';
-  $('playSub').textContent =
-    allDone || !next ? '' : `${next.chapter.name} · Level ${next.levelInChapter + 1}`;
-  $('playSub').classList.toggle('hidden', allDone || !next);
+  // Simple: "Play" for a new player, then just the level number.
+  $('playLabel').textContent =
+    done === 0 || !next ? 'Play' : allDone ? 'Play again' : `Level ${next.index + 1}`;
+  $('playSub').textContent = '';
+  $('playSub').classList.add('hidden');
 
   $('progressFill').style.width = `${Math.round((done / TOTAL_LEVELS) * 100)}%`;
   $('titleProgressWrap').classList.toggle('empty', done === 0);
@@ -150,7 +160,7 @@ function startLevel(index: number) {
   gameScreen.classList.toggle('night', !!world.night);
 
   $('gameChapter').textContent = ref.chapter.name;
-  $('gameLevelNum').textContent = `Level ${ref.levelInChapter + 1} · ${ref.size}×${ref.size}`;
+  $('gameLevelNum').textContent = `Level ${ref.index + 1} · ${ref.size}×${ref.size}`;
 
   closeTip(false);
   $('btnTipGame').classList.toggle('hidden', !ref.tip);
@@ -247,8 +257,27 @@ function buildBoard(ref: LevelRef) {
       // A click with detail 0 is keyboard (Enter/Space) or assistive-tech
       // activation: toggle the paw. "C" places a cat on the focused cell.
       cell.addEventListener('click', (e) => { if (e.detail === 0) keyTogglePaw(r, c); });
+      // One tab stop for the whole board; arrow keys move between squares.
+      cell.tabIndex = r === 0 && c === 0 ? 0 : -1;
       cell.addEventListener('keydown', (e) => {
-        if (e.key === 'c' || e.key === 'C') { e.preventDefault(); placeCat(r, c, true); }
+        if (e.key === 'c' || e.key === 'C') { e.preventDefault(); placeCat(r, c, true); return; }
+        const move: Record<string, [number, number]> = {
+          ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1],
+        };
+        let nr = r;
+        let nc = c;
+        if (move[e.key]) { nr = r + move[e.key][0]; nc = c + move[e.key][1]; }
+        else if (e.key === 'Home') nc = 0;
+        else if (e.key === 'End') nc = ref.size - 1;
+        else return;
+        e.preventDefault();
+        nr = Math.max(0, Math.min(ref.size - 1, nr));
+        nc = Math.max(0, Math.min(ref.size - 1, nc));
+        const next = cellEl(nr, nc);
+        if (!next) return;
+        cell.tabIndex = -1;
+        next.tabIndex = 0;
+        next.focus();
       });
       board.appendChild(cell);
     }
@@ -800,10 +829,17 @@ function renderDemoBoard() {
 
 // ---------------------------------------------------------------- sound
 
+const SOUND_BUTTONS = ['btnSoundTitle', 'btnSoundMap', 'btnSoundGame'];
+
 function refreshSoundButtons() {
-  const on = soundEnabled();
-  ['btnSoundTitle', 'btnSoundMap', 'btnSoundGame'].forEach((id) => {
+  const on = sfxEnabled() || musicEnabled();
+  ($('tglMusic')).setAttribute('aria-pressed', String(musicEnabled()));
+  ($('tglSfx')).setAttribute('aria-pressed', String(sfxEnabled()));
+  SOUND_BUTTONS.forEach((id) => {
     const btn = $(id);
+    btn.title = 'Sound settings';
+    btn.setAttribute('aria-label', 'Sound settings');
+    btn.setAttribute('aria-haspopup', 'dialog');
     btn.classList.toggle('off', !on);
     btn.innerHTML = `<svg class="icon"><use href="#${on ? 'i-sound-on' : 'i-sound-off'}"/></svg>`;
   });
@@ -888,10 +924,47 @@ function init() {
     show('map');
   });
 
-  // Sound
-  ['btnSoundTitle', 'btnSoundMap', 'btnSoundGame'].forEach((id) =>
-    $(id).addEventListener('click', () => { setSoundEnabled(!soundEnabled()); refreshSoundButtons(); playTap(); })
+  // Sound: each speaker button opens a small panel with Music and Sounds.
+  const panel = $('soundPanel');
+  let panelOpener: HTMLElement | null = null;
+  const closePanel = () => {
+    if (panel.classList.contains('hidden')) return;
+    panel.classList.add('hidden');
+    panelOpener?.setAttribute('aria-expanded', 'false');
+    panelOpener?.focus({ preventScroll: true });
+    panelOpener = null;
+  };
+  SOUND_BUTTONS.forEach((id) =>
+    $(id).addEventListener('click', (e) => {
+      e.stopPropagation();
+      const btn = $(id);
+      if (panelOpener === btn) { closePanel(); return; }
+      playTap();
+      const r = btn.getBoundingClientRect();
+      panel.style.top = `${Math.round(r.bottom + 8)}px`;
+      panel.style.right = `${Math.max(8, Math.round(window.innerWidth - r.right))}px`;
+      panel.classList.remove('hidden');
+      panelOpener = btn;
+      btn.setAttribute('aria-expanded', 'true');
+      $('tglMusic').focus({ preventScroll: true });
+    })
   );
+  $('tglMusic').addEventListener('click', () => { setMusicEnabled(!musicEnabled()); refreshSoundButtons(); playTap(); });
+  $('tglSfx').addEventListener('click', () => { setSfxEnabled(!sfxEnabled()); refreshSoundButtons(); playTap(); });
+  panel.addEventListener('click', (e) => e.stopPropagation());
+  document.addEventListener('click', closePanel);
+  window.addEventListener('resize', closePanel);
+  window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePanel(); });
+
+  // Audio may only start after the first interaction; this also starts the
+  // music when effects are muted.
+  const unlock = () => {
+    unlockAudio();
+    window.removeEventListener('pointerdown', unlock);
+    window.removeEventListener('keydown', unlock);
+  };
+  window.addEventListener('pointerdown', unlock);
+  window.addEventListener('keydown', unlock);
 
   // Keyboard shortcuts
   window.addEventListener('keydown', (e) => {
