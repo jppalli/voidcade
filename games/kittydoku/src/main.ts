@@ -39,7 +39,7 @@ import {
   type Progress,
 } from './game/progress';
 import { Game, MAX_LIVES } from './game/state';
-import { deadCatSvg, mascotSvg, medalSvg, pastel, pawSvg } from './render/art';
+import { COATS, deadCatSvg, mascotSvg, medalSvg, pastel, pawSvg, type Coat } from './render/art';
 import { renderMap, scrollToFrontier, worldCoat } from './ui/map';
 import { worldBackground, worldOf } from './ui/mapScenery';
 import { closeTip, isTipOpen, openTip, wireTip } from './ui/tip';
@@ -904,7 +904,9 @@ function renderDemoBoard() {
     [3, 3, 2, 2],
   ];
   const cats = new Set(['0,1', '2,0']);
-  const blocked = new Set(['0,0', '0,2', '1,0', '1,1', '1,2', '2,1', '3,0', '3,1']);
+  // Every square the two cats rule out: their rows, columns, patches and the
+  // squares touching them. That leaves 3 open squares for the other two cats.
+  const blocked = new Set(['0,0', '0,2', '0,3', '1,0', '1,1', '1,2', '2,1', '2,2', '2,3', '3,0', '3,1']);
 
   let html = '';
   for (let r = 0; r < 4; r++) {
@@ -920,6 +922,17 @@ function renderDemoBoard() {
     }
   }
   $('demoBoard').innerHTML = html;
+
+  // Rule icon for "cats never touch": two cat faces corner to corner, crossed out.
+  const face = (x: number, y: number, coat: Coat) => mascotSvg(18, coat).replace('<svg ', `<svg x="${x}" y="${y}" `);
+  $('htTouchIcon').innerHTML = `<svg viewBox="0 0 32 32" aria-hidden="true">
+    <rect x="1" y="1" width="30" height="30" rx="6" fill="#fff4e6" stroke="#e8d9cc" stroke-width="1.5"/>
+    <line x1="16" y1="1.5" x2="16" y2="30.5" stroke="#e8d9cc" stroke-width="1.2"/>
+    <line x1="1.5" y1="16" x2="30.5" y2="16" stroke="#e8d9cc" stroke-width="1.2"/>
+    ${face(-1, -1, COATS.lilac)}${face(15, 15, COATS.ginger)}
+    <circle cx="16" cy="16" r="6.5" fill="#fff" stroke="#e0687f" stroke-width="2.4"/>
+    <line x1="11.6" y1="20.4" x2="20.4" y2="11.6" stroke="#e0687f" stroke-width="2.4" stroke-linecap="round"/>
+  </svg>`;
 }
 
 // ---------------------------------------------------------------- sound
