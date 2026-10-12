@@ -1249,7 +1249,30 @@ button {
 }
 
 .controls .btn { flex: 1; padding: 12px 8px; font-size: 13px; display: flex;
-  align-items: center; justify-content: center; gap: 7px; }
+  align-items: center; justify-content: center; gap: 7px; position: relative; }
+
+/* Free hints left today, or a video icon once they've run out. */
+.hintBadge {
+  position: absolute;
+  top: -9px; right: -7px;
+  min-width: 22px; height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--rose);
+  color: var(--on-rose);
+  border: 2.5px solid var(--card);
+  font-size: 11.5px; font-weight: 900; line-height: 17px;
+  display: flex; align-items: center; justify-content: center;
+}
+.hintBadge:empty { display: none; }
+.hintBadge svg { width: 12px; height: 12px; }
+
+.adBtn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.adBtn .icon { width: 19px; height: 19px; }
+.btn:disabled { opacity: 0.6; cursor: wait; transform: none; }
+
+/* The Arena paused the game: freeze every animation until it resumes. */
+body.paused *, body.paused *::before, body.paused *::after { animation-play-state: paused !important; }
 
 .helpText {
   margin-top: 14px;

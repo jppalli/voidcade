@@ -1,3 +1,5 @@
+import { getItem, setItem } from '../platform/storage';
+
 const STORAGE_KEY = 'kittydoku-progress-v1';
 
 export interface LevelResult {
@@ -52,7 +54,7 @@ function migrateV1(old: Partial<Progress>): Progress {
 
 export function loadProgress(): Progress {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = getItem(STORAGE_KEY);
     if (!raw) return empty();
     const parsed = JSON.parse(raw) as Partial<Progress>;
     if (parsed.version !== VERSION) {
@@ -67,11 +69,7 @@ export function loadProgress(): Progress {
 }
 
 export function saveProgress(p: Progress) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
-  } catch {
-    // localStorage unavailable — the game still plays, it just won't remember.
-  }
+  setItem(STORAGE_KEY, JSON.stringify(p));
 }
 
 export function recordWin(p: Progress, index: number, clean: boolean, totalLevels: number): Progress {

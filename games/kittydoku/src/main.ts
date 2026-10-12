@@ -8,11 +8,17 @@ import {
   playTap,
   playUnhappy,
   playWin,
+  loadSoundPref,
+  setAudioHold,
   setSoundEnabled,
   soundEnabled,
 } from './audio/sound';
+import { FREE_HINTS_PER_DAY, freeHintsLeft, useFreeHint } from './game/hints';
+import { createPlatform, GAME_VERSION, type Platform } from './platform/platform';
+import { initStorage } from './platform/storage';
 import { CHAPTERS, TOTAL_LEVELS, allLevels, levelAt, type LevelRef } from './game/levels';
 import {
+  cleanCount,
   hasSeenIntro,
   hasSeenTip,
   loadProgress,
@@ -33,7 +39,15 @@ type Screen = 'title' | 'map' | 'game';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 
-let progress: Progress = loadProgress();
+/** Set in boot(), once the platform (Arkadium SDK or local) and storage are ready. */
+let platform: Platform;
+let progress: Progress;
+/** Subscribers get rewards without watching a video. */
+let subscriber = false;
+/** 1-based number of the level currently being played, for onLevelStart/End. */
+let activeLevel: number | null = null;
+/** A rewarded video is on screen: ignore taps and buttons until it's done. */
+let adPlaying = false;
 let game: Game | null = null;
 let winPending = false;
 /** Hearts currently drawn in #livesRow, so the row is only rebuilt when the
@@ -45,6 +59,7 @@ let winTimers: number[] = [];
 // ---------------------------------------------------------------- screens
 
 function show(screen: Screen) {
+  if (screen !== 'game') endActiveLevel();
   (['title', 'map', 'game'] as Screen[]).forEach((s) => {
     const el = $(`screen-${s}`);
     el.classList.toggle('hidden', s !== screen);
@@ -107,6 +122,10 @@ function seedTitleFloat() {
 function startLevel(index: number) {
   const ref = levelAt(index);
   if (!ref) return;
+  endActiveLevel();
+  platform.gameStart(); // only the first call per page load is sent
+  activeLevel = index + 1;
+  platform.levelStart(activeLevel);
   game = new Game(ref);
   winPending = false;
   press = null;
@@ -128,6 +147,7 @@ function startLevel(index: number) {
 
   buildBoard(ref);
   renderBoard();
+  refreshHintBadge();
   show('game');
 
   // First time in a world, its cat says hello; then the level tip (once).
@@ -457,9 +477,132 @@ function wireBoardInput() {
   });
 }
 
+/** Tell the platform the current level attempt is over (won, lost, or left). */
+function endActiveLevel() {
+  if (activeLevel === null) return;
+  platform.levelEnd(activeLevel);
+  activeLevel = null;
+}
+
 function showFailModal() {
   playOutOfLives();
+  // One revive per attempt; after that it's "Start over" or the map.
+  const canRevive = !!game && !game.revived;
+  const revive = $('btnFailRevive') as HTMLButtonElement;
+  revive.classList.toggle('hidden', !canRevive);
+  revive.disabled = false;
+  $('failReviveLabel').textContent = subscriber ? 'Keep going (3 hearts back)' : 'Watch a video for 3 hearts';
+  $('btnFailRetry').classList.toggle('primary', !canRevive);
+  $('failText').textContent = canRevive
+    ? 'Keep your progress on this board and get all your hearts back, or start the puzzle over.'
+    : 'The cats need a little more coaxing. Try again?';
   $('failOverlay').classList.remove('hidden');
+}
+
+// ---------------------------------------------------------------- rewarded ads
+
+/** Minimum gap between interstitials. Any video counts as "the last ad",
+ *  rewarded ones included, and the clock starts at page load because the
+ *  Arena already shows its own preroll before the game. */
+const INTERSTITIAL_GAP_MS = 5 * 60 * 1000;
+let lastAdAt = Date.now();
+
+/** After a win, on the way to the next screen: an interstitial if 5 minutes
+ *  have passed since the last ad. Never for subscribers. */
+async function maybeInterstitial() {
+  if (subscriber || adPlaying || Date.now() - lastAdAt < INTERSTITIAL_GAP_MS) return;
+  adPlaying = true;
+  setAudioHold('ad', true);
+  try {
+    await platform.showInterstitialAd();
+  } finally {
+    lastAdAt = Date.now();
+    setAudioHold('ad', false);
+    adPlaying = false;
+  }
+}
+
+/** Plays a rewarded video (skipped for subscribers). Resolves true if earned.
+ *  Audio and animations pause while the video is up. */
+async function earnReward(): Promise<boolean> {
+  if (subscriber) return true;
+  if (adPlaying) return false;
+  adPlaying = true;
+  setAudioHold('ad', true);
+  try {
+    return await platform.showRewardAd();
+  } finally {
+    lastAdAt = Date.now();
+    setAudioHold('ad', false);
+    adPlaying = false;
+  }
+}
+
+function refreshHintBadge() {
+  const left = freeHintsLeft();
+  const badge = $('hintBadge');
+  const btn = $('btnHint');
+  if (subscriber) {
+    badge.innerHTML = '';
+    btn.setAttribute('aria-label', 'Hint');
+  } else if (left > 0) {
+    badge.textContent = String(left);
+    btn.setAttribute('aria-label', `Hint, ${left} of ${FREE_HINTS_PER_DAY} free left today`);
+  } else {
+    badge.innerHTML = '<svg class="icon"><use href="#i-video"/></svg>';
+    btn.setAttribute('aria-label', 'Hint, watch a video for one more');
+  }
+}
+
+/** Places one correct cat for free and lights it up. */
+function applyHint() {
+  if (!game) return;
+  const spot = game.hint();
+  if (!spot) return;
+  playHint(); renderBoard();
+  const el = cellEl(spot.row, spot.col);
+  if (el) { el.classList.add('hintGlow'); setTimeout(() => el.classList.remove('hintGlow'), 2300); }
+  if (game.isSolved()) finishLevel();
+}
+
+function onHintPressed() {
+  if (!game || winPending || adPlaying) return;
+  lastTap = null;
+  if (subscriber || useFreeHint()) {
+    applyHint();
+    refreshHintBadge();
+    return;
+  }
+  $('hintAdCat').innerHTML = mascotSvg(96);
+  $('hintAdOverlay').classList.remove('hidden');
+}
+
+async function watchForHint() {
+  const btn = $('btnHintAdWatch') as HTMLButtonElement;
+  btn.disabled = true;
+  const g = game;
+  const earned = await earnReward();
+  btn.disabled = false;
+  $('hintAdOverlay').classList.add('hidden');
+  if (earned && g && game === g && !winPending) applyHint();
+}
+
+async function watchForRevive() {
+  const btn = $('btnFailRevive') as HTMLButtonElement;
+  btn.disabled = true;
+  const g = game;
+  const earned = await earnReward();
+  btn.disabled = false;
+  if (!earned || !g || game !== g) {
+    $('failText').textContent = 'The video didn’t finish, so no hearts this time. You can try again or start over.';
+    return;
+  }
+  g.revive();
+  renderedLives = -1;
+  winPending = false;
+  $('failOverlay').classList.add('hidden');
+  renderBoard();
+  playCat(g.correctCount() || 1);
 }
 
 // ---------------------------------------------------------------- win moment
@@ -531,6 +674,12 @@ function finishLevel() {
 
   progress = recordWin(progress, g.ref.index, !g.usedHint, TOTAL_LEVELS);
   saveProgress(progress);
+
+  endActiveLevel();
+  // Score for Arena leaderboards: 10 per solved level, +5 per purrfect.
+  platform.score(solvedCount(progress) * 10 + cleanCount(progress) * 5);
+  // Every level solved: no more content to play this session.
+  if (solvedCount(progress) >= TOTAL_LEVELS) platform.gameEnd();
 
   const isLast = g.ref.index >= TOTAL_LEVELS - 1;
   $('winCat').innerHTML = mascotSvg(96);
@@ -638,18 +787,12 @@ function init() {
     lastTap = null;
     game.reset(); playLift(); renderBoard();
   });
-  $('btnHint').addEventListener('click', () => {
-    if (!game || winPending) return;
-    lastTap = null;
-    const spot = game.hint();
-    if (!spot) return;
-    playHint(); renderBoard();
-    const el = cellEl(spot.row, spot.col);
-    if (el) { el.classList.add('hintGlow'); setTimeout(() => el.classList.remove('hintGlow'), 2300); }
-    if (game.isSolved()) finishLevel();
-  });
+  $('btnHint').addEventListener('click', onHintPressed);
+  $('btnHintAdWatch').addEventListener('click', () => { playTap(); void watchForHint(); });
+  $('btnHintAdCancel').addEventListener('click', () => { playTap(); $('hintAdOverlay').classList.add('hidden'); });
 
   // Fail modal — inject sad mascot on open
+  $('btnFailRevive').addEventListener('click', () => { playTap(); void watchForRevive(); });
   $('btnFailRetry').addEventListener('click', () => { playTap(); retryLevel(); });
   $('btnFailMap').addEventListener('click', () => {
     playTap(); $('failOverlay').classList.add('hidden'); show('map');
@@ -659,13 +802,19 @@ function init() {
   if (failCatEl) failCatEl.innerHTML = mascotSvg(96);
 
   // Win modal
-  $('btnWinNext').addEventListener('click', () => {
+  // Leaving the win screen is the natural break for an interstitial.
+  $('btnWinNext').addEventListener('click', async () => {
+    if (adPlaying) return;
     playTap(); $('winOverlay').classList.add('hidden');
+    await maybeInterstitial();
     const next = (game?.ref.index ?? 0) + 1;
     if (next < TOTAL_LEVELS) startLevel(next); else show('map');
   });
-  $('btnWinMap').addEventListener('click', () => {
-    playTap(); $('winOverlay').classList.add('hidden'); show('map');
+  $('btnWinMap').addEventListener('click', async () => {
+    if (adPlaying) return;
+    playTap(); $('winOverlay').classList.add('hidden');
+    await maybeInterstitial();
+    show('map');
   });
 
   // Sound
@@ -682,7 +831,24 @@ function init() {
     if (e.key === 'h' || e.key === 'H') $('btnHint').click();
   });
 
+  // The Arena can pause the game (e.g. for its own overlays).
+  platform.onPause(() => { document.body.classList.add('paused'); setAudioHold('paused', true); });
+  platform.onResume(() => { document.body.classList.remove('paused'); setAudioHold('paused', false); });
+
   show('title');
 }
 
-init();
+/** Connect to the platform and load saved data before anything is drawn,
+ *  then tell the Arena the game is ready to be shown. */
+async function boot() {
+  console.info(`KittyDoku v${GAME_VERSION}`);
+  platform = await createPlatform();
+  await initStorage(platform);
+  loadSoundPref();
+  progress = loadProgress();
+  subscriber = await platform.isSubscriber();
+  init();
+  platform.ready();
+}
+
+void boot();

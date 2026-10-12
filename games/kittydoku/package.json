@@ -11,7 +11,8 @@
     "generate-levels": "vite-node tools/generate-levels.ts"
   },
   "dependencies": {
-    "@arcade/queens-core": "*"
+    "@arcade/queens-core": "*",
+    "@arkadiuminc/sdk": "2.76.0"
   },
   "devDependencies": {
     "typescript": "~5.8.2",

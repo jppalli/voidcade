@@ -2,16 +2,15 @@
 // soft and short: this is a calm game, so sounds confirm actions rather than
 // celebrate them loudly.
 
+import { getItem, setItem } from '../platform/storage';
+
 const PREFS_KEY = 'kittydoku-sound';
 
-let enabled = load();
+let enabled = true;
 
-function load(): boolean {
-  try {
-    return localStorage.getItem(PREFS_KEY) !== 'off';
-  } catch {
-    return true;
-  }
+/** Read the saved on/off setting. Call once storage has loaded. */
+export function loadSoundPref() {
+  enabled = getItem(PREFS_KEY) !== 'off';
 }
 
 export function soundEnabled(): boolean {
@@ -20,11 +19,7 @@ export function soundEnabled(): boolean {
 
 export function setSoundEnabled(on: boolean) {
   enabled = on;
-  try {
-    localStorage.setItem(PREFS_KEY, on ? 'on' : 'off');
-  } catch {
-    /* ignore */
-  }
+  setItem(PREFS_KEY, on ? 'on' : 'off');
   // Music follows the same single on/off toggle as the SFX: stop it the
   // moment sound is switched off, and let it fade back in if switched on
   // again (only if the context already exists — otherwise it'll start
@@ -72,20 +67,24 @@ function audio(): AudioContext {
     musicGain.connect(bus);
     startMusic();
   }
-  if (ctx.state === 'suspended' && !document.hidden) {
+  if (ctx.state === 'suspended' && holds.size === 0) {
     suspendedByHide = false;
     void ctx.resume();
   }
   return ctx;
 }
 
-// Pause audio with the tab: suspend when hidden, and resume on return only
-// if it was running when we suspended it. The music scheduler's own lookahead
-// timer is paused/resumed here too, so it never ticks while hidden and never
-// has to catch up on missed chords when the tab comes back.
-document.addEventListener('visibilitychange', () => {
+// Audio goes quiet while anything "holds" it: the tab is hidden, the window
+// lost focus (Arkadium requires muting then), the Arena paused the game, or
+// a video ad is playing. It comes back only when every hold is released, and
+// only if it was running when we suspended it. The music scheduler's
+// lookahead timer pauses too, so it never has to catch up on missed chords.
+type Hold = 'hidden' | 'blur' | 'paused' | 'ad';
+const holds = new Set<Hold>();
+
+function applyHolds() {
   if (!ctx) return;
-  if (document.hidden) {
+  if (holds.size > 0) {
     if (ctx.state === 'running') {
       suspendedByHide = true;
       void ctx.suspend();
@@ -98,7 +97,17 @@ document.addEventListener('visibilitychange', () => {
     }
     resumeMusicScheduler();
   }
-});
+}
+
+export function setAudioHold(hold: Hold, on: boolean) {
+  if (on) holds.add(hold);
+  else holds.delete(hold);
+  applyHolds();
+}
+
+document.addEventListener('visibilitychange', () => setAudioHold('hidden', document.hidden));
+window.addEventListener('blur', () => setAudioHold('blur', true));
+window.addEventListener('focus', () => setAudioHold('blur', false));
 
 /** C major pentatonic, C5 up to G6: the tune the cats play. Declared up
  *  here (ahead of the other SFX) because the ambient pad below voices the
