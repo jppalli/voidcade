@@ -92,11 +92,11 @@ export class Game {
   /** True once a revive has been used on this attempt (one per attempt). */
   revived = false;
 
-  /** Rewarded revive after running out of hearts: refills every heart and
+  /** Rewarded revive after running out of hearts: gives back one heart and
    *  clears the dead-cat marks (those squares stay ruled out with a paw). */
   revive() {
     this.revived = true;
-    this.livesLost = 0;
+    this.livesLost = MAX_LIVES - 1;
     this.marks = this.marks.map((row) => row.map((m) => (m === 'wrong' ? 'paw' : m)));
   }
 

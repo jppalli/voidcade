@@ -630,10 +630,10 @@ function showFailModal() {
   const revive = $('btnFailRevive') as HTMLButtonElement;
   revive.classList.toggle('hidden', !canRevive);
   revive.disabled = false;
-  $('failReviveLabel').textContent = subscriber ? 'Keep going (3 hearts back)' : 'Watch a video for 3 hearts';
+  $('failReviveLabel').textContent = subscriber ? 'Keep going (1 more heart)' : 'Watch a video for 1 more heart';
   $('btnFailRetry').classList.toggle('primary', !canRevive);
   $('failText').textContent = canRevive
-    ? 'Keep your progress on this board and get all your hearts back, or start the puzzle over.'
+    ? 'Keep your progress on this board with one more heart, or start the puzzle over.'
     : 'The cats need a little more coaxing. Start the puzzle over?';
   $('failOverlay').classList.remove('hidden');
 }
