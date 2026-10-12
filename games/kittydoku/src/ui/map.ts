@@ -325,9 +325,11 @@ export function scrollToFrontier(): void {
     document.querySelector<HTMLElement>('.mapNode.next') ??
     document.querySelector<HTMLElement>('.mapNode.done');
   if (!target) return;
-  const yAbs = target.getBoundingClientRect().top + window.scrollY;
-  window.scrollTo({
-    top: Math.max(0, yAbs - window.innerHeight * 0.45),
+  // The map scrolls inside its own screen, not the page.
+  const scroller = $('screen-map');
+  const yAbs = target.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop;
+  scroller.scrollTo({
+    top: Math.max(0, yAbs - scroller.clientHeight * 0.45),
     behavior: 'instant' as ScrollBehavior,
   });
 }

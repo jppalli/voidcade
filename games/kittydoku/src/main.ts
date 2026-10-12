@@ -74,8 +74,18 @@ function show(screen: Screen) {
     requestAnimationFrame(scrollToFrontier);
     maybeWelcomeOnMap();
   }
-  if (screen === 'title') renderTitle();
-  window.scrollTo({ top: 0 });
+  if (screen === 'title') { renderTitle(); fitTitle(); }
+}
+
+/** Shrink the title stage to fit short embeds (never enlarge it). */
+function fitTitle() {
+  const screen = $('screen-title');
+  const stage = screen.querySelector<HTMLElement>('.titleStage');
+  if (!stage || screen.classList.contains('hidden')) return;
+  const room = screen.clientHeight - 24;
+  const roomW = screen.clientWidth - 16;
+  const fit = Math.min(1, room / stage.offsetHeight, roomW / stage.offsetWidth);
+  screen.style.setProperty('--fit', fit.toFixed(3));
 }
 
 // ---------------------------------------------------------------- title
@@ -834,6 +844,11 @@ function init() {
   // The Arena can pause the game (e.g. for its own overlays).
   platform.onPause(() => { document.body.classList.add('paused'); setAudioHold('paused', true); });
   platform.onResume(() => { document.body.classList.remove('paused'); setAudioHold('paused', false); });
+
+  // The Arena resizes the embed with the window: keep the title fitted. The
+  // board and map size themselves in CSS.
+  window.addEventListener('resize', fitTitle);
+  void document.fonts?.ready.then(fitTitle); // the web font changes text sizes
 
   show('title');
 }

@@ -26,8 +26,14 @@
   --shadow-lift: 0 10px 0 rgba(122, 96, 80, 0.15);
 }
 
+/* The page itself never scrolls: in the Arena the game lives in a fixed-size
+   embed (anything from 2:1 landscape to 1:2 portrait), so every screen is
+   exactly the size of that frame. Only the level map scrolls, inside itself,
+   with its scrollbar hidden (wheel, touch and keyboard still work). */
 html, body {
-  min-height: 100%;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
   background:
     radial-gradient(circle at 12% 6%, rgba(255, 214, 165, 0.45), transparent 42%),
     radial-gradient(circle at 88% 10%, rgba(215, 199, 255, 0.4), transparent 40%),
@@ -48,12 +54,13 @@ button {
 .hidden { display: none !important; }
 
 .screen {
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 20px 16px 36px;
+  overflow: hidden;
 }
 
 /* ---------------- buttons ---------------- */
@@ -102,6 +109,8 @@ button {
 
 /* ---------------- title screen ---------------- */
 #screen-title { justify-content: center; position: relative; overflow: hidden; }
+/* Scaled down by main.ts (--fit) when the embed is too short for it. */
+#screen-title .titleStage { transform: scale(var(--fit, 1)); transform-origin: 50% 50%; flex-shrink: 0; }
 
 /* No card: the cat, logo and buttons sit straight on the warm background. */
 .titleStage {
@@ -321,7 +330,16 @@ button {
 /* ---------------- map screen: worlds along a winding trail -------------- */
 /* overflow-x: clip (not hidden) so the sticky header keeps working while the
    full-width world bands can't cause sideways scrolling. */
-#screen-map { padding: 0 0 0; position: relative; overflow-x: clip; }
+#screen-map {
+  padding: 0;
+  position: relative;
+  display: block;          /* plain block so the map column centres with margin:auto */
+  overflow-x: hidden;
+  overflow-y: auto;        /* the map is the one screen that scrolls, inside itself */
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+#screen-map::-webkit-scrollbar { display: none; }
 
 /* Header: back | centred title + stats | sound. Equal outer columns keep the
    title truly centred. */
@@ -804,7 +822,20 @@ button {
 
 /* ---------------- game screen ---------------- */
 /* The background (world pattern + colours) is set per level in main.ts. */
-#screen-game { justify-content: flex-start; }
+#screen-game { justify-content: flex-start; padding: 14px 16px 16px; }
+#screen-game .gameHeader { flex-shrink: 0; }
+
+/* Short embeds (landscape laptops, small phones): give the board the room. */
+@media (max-height: 680px) {
+  #screen-game { padding: 10px 14px 12px; }
+  #screen-game .gameHeader { margin-bottom: 8px; }
+  #screen-game .helpText { display: none; }
+  .controls { margin-top: 10px; }
+  .controls .btn { padding: 9px 8px; }
+}
+@media (max-height: 460px) {
+  .controls .btn span { display: none; }
+}
 
 /* Night worlds (Rooftop Moon, Lantern Festival): light text on the dark sky.
    Buttons and the board keep their own cream cards, so they need nothing. */
@@ -1192,17 +1223,25 @@ button {
   .tipText { font-size: 14px; }
 }
 
-/* Board */
+/* Board: takes whatever height is left between the header and the buttons
+   and stays a square that fits both ways (container query units), so it is
+   never cut off or stretched, in landscape or portrait. */
 .boardWrap {
+  flex: 1 1 auto;
+  min-height: 0;
   width: 100%;
-  max-width: 520px;
-  aspect-ratio: 1;
+  max-width: 560px;
   position: relative;
+  container-type: size;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .board {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  width: min(100cqw, 100cqh - 10px);
+  aspect-ratio: 1;
   display: grid;
   gap: 0;
   background: var(--ink);
@@ -1241,11 +1280,12 @@ button {
 }
 
 .controls {
+  flex-shrink: 0;
   width: 100%;
   max-width: 520px;
   display: flex;
   gap: 10px;
-  margin-top: 16px;
+  margin-top: 14px;
 }
 
 .controls .btn { flex: 1; padding: 12px 8px; font-size: 13px; display: flex;
@@ -1275,7 +1315,8 @@ button {
 body.paused *, body.paused *::before, body.paused *::after { animation-play-state: paused !important; }
 
 .helpText {
-  margin-top: 14px;
+  flex-shrink: 0;
+  margin-top: 12px;
   max-width: 460px;
   text-align: center;
   font-size: 12.5px;
@@ -1307,9 +1348,22 @@ body.paused *, body.paused *::before, body.paused *::after { animation-play-stat
   padding: 28px 24px 22px;
   width: 100%;
   max-width: 380px;
+  /* Never taller than the embed: long content scrolls inside the card. */
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  scrollbar-width: thin;
   text-align: center;
   box-shadow: 0 14px 0 rgba(122, 96, 80, 0.16);
   animation: pop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Short embeds: smaller mascot and padding so modals fit without scrolling. */
+@media (max-height: 560px) {
+  .overlay { padding: 10px; }
+  .modal { padding: 16px 20px 14px; max-height: calc(100dvh - 20px); }
+  .modal .winCat { width: 64px; height: 64px; }
+  .modal h2 { font-size: 20px; }
+  .modal p { margin-bottom: 12px; }
 }
 
 @keyframes pop {
