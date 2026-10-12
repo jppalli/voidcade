@@ -28,18 +28,24 @@ const rand = (n: number) => {
 
 // ---------------------------------------------------------------- testing unlock
 
-/** Track clicks on locked levels for testing purposes */
-const lockedLevelClicks = new Map<number, number>();
+/**
+ * Debug: tap a locked level 10 times in a row (no more than 1.5s between
+ * taps) to play it anyway. Kept in production builds on purpose, for testing.
+ * Nothing is unlocked up front; it just opens that one level. Winning it
+ * counts like any other win.
+ */
+const DEBUG_TAPS = 10;
+const DEBUG_GAP_MS = 1500;
+let debugTaps = { level: -1, count: 0, last: 0 };
 
 function handleLockedLevelClick(levelIndex: number, onPick: (index: number) => void): void {
-  const newClicks = (lockedLevelClicks.get(levelIndex) || 0) + 1;
-  if (newClicks >= 5) {
-    lockedLevelClicks.delete(levelIndex);
-    console.log(`🐱 Testing mode: Level ${levelIndex} unlocked after 5 clicks`);
+  const now = Date.now();
+  const same = debugTaps.level === levelIndex && now - debugTaps.last <= DEBUG_GAP_MS;
+  debugTaps = { level: levelIndex, count: same ? debugTaps.count + 1 : 1, last: now };
+  if (debugTaps.count >= DEBUG_TAPS) {
+    debugTaps = { level: -1, count: 0, last: 0 };
+    console.info(`[kittydoku] debug: opening locked level ${levelIndex + 1}`);
     onPick(levelIndex);
-  } else {
-    lockedLevelClicks.set(levelIndex, newClicks);
-    console.log(`🐾 Testing: ${newClicks}/5 clicks on locked level ${levelIndex}`);
   }
 }
 
@@ -299,7 +305,7 @@ export function renderMap(
       `;
       node.addEventListener('click', () => onPick(ref.index));
     } else {
-      // Locked, but still clickable 5x for testing.
+      // Locked; 10 quick taps open it anyway (debug, see handleLockedLevelClick).
       node.innerHTML = `<svg class="icon mnLock"><use href="#i-lock"/></svg>`;
       node.addEventListener('click', () => handleLockedLevelClick(ref.index, onPick));
     }
