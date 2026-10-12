@@ -2,14 +2,10 @@ import type { CoachEvent, CoachStep } from '../ui/coach';
 import type { Game } from './state';
 
 /**
- * Level 1's guided moment. Everything else is explained by the How to Play
- * card (shown once on first launch) and by one-time notes when hearts or
+ * Level 1's guided moment: double-tap the one-square patch, the cat lands,
+ * then "Now place the other cats". Everything else is explained by the How to
+ * Play card (shown once on first launch) and by one-time notes when hearts or
  * hints first matter (see main.ts).
- *
- *  1. Double-tap the one-square patch: the cat lands.
- *  2. Mark every square that cat rules out with a paw, by tapping them.
- *     Doing it yourself is what makes the rule (and the paw) stick.
- *  3. "Now place the other cats!" and the coach gets out of the way.
  */
 export const TUTORIAL_LEVELS = 1;
 
@@ -46,10 +42,6 @@ export function ruledOutBy(g: Game, p: Pos): Pos[] {
 export function tutorialSteps(levelIndex: number, { game: g, cell }: Hooks): CoachStep[] {
   if (levelIndex !== 0) return [];
   const target = certainCell(g);
-  const blocked = ruledOutBy(g, target);
-  /** Ruled-out squares still waiting for their paw. */
-  const unmarked = () => blocked.filter((p) => g.marks[p.row][p.col] === 'empty');
-  const els = (list: Pos[]) => list.map((p) => cell(p.row, p.col)).filter((x): x is Element => !!x);
 
   return [
     {
@@ -58,14 +50,6 @@ export function tutorialSteps(levelIndex: number, { game: g, cell }: Hooks): Coa
       dim: true,
       gesture: 'double',
       until: (e: CoachEvent) => e.type === 'cat' && e.r === target.row && e.c === target.col,
-    },
-    {
-      caption: 'Tap the glowing squares to mark them',
-      sub: 'No other cat can sit next to this one, or anywhere in its row, column or colour patch.',
-      marks: () => els(unmarked()),
-      keep: () => els([target]),
-      counter: () => unmarked().length,
-      until: () => unmarked().length === 0,
     },
     { caption: 'Lovely! Now place the other cats', hold: 2400 },
   ];
