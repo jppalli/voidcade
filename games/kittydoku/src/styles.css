@@ -1060,7 +1060,7 @@ button {
 
 .coachDim {
   position: absolute; inset: 0;
-  background: rgba(46, 34, 30, 0.55);
+  background: rgba(255, 248, 239, 0.35);
   pointer-events: auto;
   animation: fadeIn 0.25s ease;
 }
@@ -1068,12 +1068,13 @@ button {
 .coachRing {
   position: absolute;
   border-radius: 14px;
-  box-shadow: 0 0 0 4px #ffd35c, 0 0 18px 6px rgba(255, 211, 92, 0.7);
-  animation: coachRing 1.3s ease-in-out infinite;
+  background: rgba(255, 245, 200, 0.28);
+  box-shadow: 0 0 0 3px #ffd35c, 0 0 14px 4px rgba(255, 211, 92, 0.5);
+  animation: coachRing 1.4s ease-in-out infinite;
 }
 @keyframes coachRing {
-  0%, 100% { box-shadow: 0 0 0 4px #ffd35c, 0 0 14px 4px rgba(255, 211, 92, 0.55); }
-  50%      { box-shadow: 0 0 0 6px #ffd35c, 0 0 26px 10px rgba(255, 211, 92, 0.85); }
+  0%, 100% { box-shadow: 0 0 0 3px rgba(255, 211, 92, 0.75), 0 0 10px 2px rgba(255, 211, 92, 0.35); }
+  50%      { box-shadow: 0 0 0 4px #ffd35c, 0 0 20px 7px rgba(255, 211, 92, 0.6); }
 }
 
 /* The paw "finger". Positioned at the target's centre by coach.ts. */
@@ -1160,7 +1161,8 @@ button {
 
 /* "Mark these" steps: the squares to tap glow gold with a faint paw, the
    rest of the board dims so they're unmistakable. */
-.board.coachFocus .cell:not(.coachMark):not(.coachKeep) { filter: brightness(0.62) saturate(0.55); }
+/* Kept light: the rest of the board only fades a touch. */
+.board.coachFocus .cell:not(.coachMark):not(.coachKeep) { filter: saturate(0.8) brightness(0.97); }
 .cell.coachMark {
   z-index: 2;
   outline: 4px solid #ffcf4d; outline-offset: -4px;

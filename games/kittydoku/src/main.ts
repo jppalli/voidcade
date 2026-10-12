@@ -205,7 +205,15 @@ function runTutorial() {
   const g = game;
   if (!g) return;
   const index = g.ref.index;
-  startCoach(tutorialSteps(index, { game: g, cell: cellEl }), {
+  // Paws appear one after another (a gentle ripple), as one undo step.
+  const ripplePaws = (cells: { row: number; col: number }[]) =>
+    cells.forEach((p, i) =>
+      window.setTimeout(() => {
+        if (game !== g || winPending) return;
+        if (g.markPaw(p.row, p.col, i === 0)) { playPaw(i); renderBoard(); }
+      }, 500 + i * 300)
+    );
+  startCoach(tutorialSteps(index, { game: g, cell: cellEl, ripplePaws }), {
     onDone: () => markTutorialDone(index),
   });
 }

@@ -36,6 +36,10 @@ export interface CoachStep {
   keep?: () => Element[];
   /** Shown as "N left" next to the caption. */
   counter?: () => number;
+  /** Skip this step when its situation hasn't come up. */
+  skipIf?: () => boolean;
+  /** Caption worked out when the step appears (after `target`). */
+  captionFn?: () => string;
 }
 
 const $ = (id: string) => document.getElementById(id) as HTMLElement;
@@ -144,8 +148,9 @@ function show(i: number) {
   index = i;
   const s = steps[i];
   if (!s) { finish(); return; }
+  if (s.skipIf?.()) { show(i + 1); return; }
   current = s.target?.() ?? null;
-  $('coachCaption').textContent = s.caption;
+  $('coachCaption').textContent = s.captionFn?.() || s.caption;
   $('coachSub').textContent = s.sub ?? '';
   $('coachSub').classList.toggle('hidden', !s.sub);
   $('coachCount').classList.add('hidden');
