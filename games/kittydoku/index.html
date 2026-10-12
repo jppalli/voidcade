@@ -180,9 +180,15 @@
 
   <!-- ============ win modal ============ -->
   <div id="winOverlay" class="overlay hidden">
-    <div class="modal">
-      <div class="winCat" id="winCat"></div>
+    <div class="winFx" id="winFx" aria-hidden="true"></div>
+    <div class="modal winModal" id="winModal" role="dialog" aria-modal="true" aria-labelledby="winTitle">
+      <div class="winHero">
+        <span class="winRays" aria-hidden="true"></span>
+        <div class="winCat" id="winCat"></div>
+        <span class="winMedal" id="winMedal" aria-hidden="true"></span>
+      </div>
       <h2 id="winTitle">All cosy!</h2>
+      <div class="winChips" id="winChips"></div>
       <p id="winText"></p>
       <div class="modalButtons">
         <button class="btn primary" id="btnWinNext">Next level</button>

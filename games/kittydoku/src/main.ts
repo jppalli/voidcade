@@ -30,7 +30,7 @@ import {
   type Progress,
 } from './game/progress';
 import { Game, MAX_LIVES } from './game/state';
-import { deadCatSvg, mascotSvg, pastel, pawSvg } from './render/art';
+import { deadCatSvg, mascotSvg, medalSvg, pastel, pawSvg } from './render/art';
 import { renderMap, scrollToFrontier, worldCoat } from './ui/map';
 import { worldBackground, worldOf } from './ui/mapScenery';
 import { closeTip, isTipOpen, openTip, wireTip } from './ui/tip';
@@ -633,7 +633,8 @@ function clearCelebration() {
   winTimers.forEach((t) => clearTimeout(t));
   winTimers = [];
   $('board').classList.remove('celebrate');
-  document.querySelectorAll('.confetti').forEach((n) => n.remove());
+  document.querySelectorAll('.confetti, .catHeart').forEach((n) => n.remove());
+  $('winFx').innerHTML = '';
 }
 
 /** Starts the on-board wave; returns its timing for the jingle. */
@@ -648,7 +649,49 @@ function celebrateBoard(g: Game): { step: number; count: number } {
   );
   $('board').classList.add('celebrate');
   winTimers.push(window.setTimeout(burstConfetti, WIN_CONFETTI_MS));
+  // As each cat lands its hop, a little heart floats up from it.
+  cats.forEach((p, i) =>
+    winTimers.push(window.setTimeout(() => {
+      const cell = cellEl(p.row, p.col);
+      if (!cell) return;
+      const h = document.createElement('span');
+      h.className = 'catHeart';
+      h.setAttribute('aria-hidden', 'true');
+      h.innerHTML = heartSvg(true);
+      cell.appendChild(h);
+    }, (WIN_WAVE_START + i * step + 0.15) * 1000))
+  );
   return { step, count };
+}
+
+/** A four-point twinkle star, for glitter. */
+function sparkleSvg(color: string, size: number): string {
+  return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" aria-hidden="true">
+    <path d="M12 1 Q13.4 10.6 23 12 Q13.4 13.4 12 23 Q10.6 13.4 1 12 Q10.6 10.6 12 1 Z" fill="${color}"/>
+  </svg>`;
+}
+
+/** Glitter and paw prints for the win card: a burst from the card's centre,
+ *  then a few slow risers. Purrfect wins get gold and more of it. */
+function fillWinFx(purrfect: boolean) {
+  const tints = purrfect
+    ? ['#ffd35c', '#ffe9a3', '#ffb84d', '#ff9db0', '#fff6d6']
+    : ['#ff9db0', '#c9b6ff', '#9fd8ff', '#a0e7b4', '#ffd6a5'];
+  const burst = purrfect ? 28 : 18;
+  const parts: string[] = [];
+  for (let i = 0; i < burst; i++) {
+    const a = i * 2.39996;
+    const d = 140 + ((i * 37) % 120);
+    const size = 12 + ((i * 7) % 14);
+    const art = i % 3 === 0 ? pawSvg(tints[i % tints.length], size) : sparkleSvg(tints[i % tints.length], size);
+    parts.push(`<span class="fxBurst" style="--dx:${Math.round(Math.cos(a) * d)}px;--dy:${Math.round(Math.sin(a) * d * 0.8)}px;--rot:${(i * 47) % 180 - 90}deg;animation-delay:${((i % 5) * 0.03).toFixed(2)}s">${art}</span>`);
+  }
+  for (let i = 0; i < (purrfect ? 12 : 7); i++) {
+    const size = 14 + ((i * 5) % 12);
+    const art = i % 2 ? pawSvg(tints[i % tints.length], size) : sparkleSvg(tints[i % tints.length], size);
+    parts.push(`<span class="fxRise" style="left:${(8 + ((i * 29) % 84))}%;animation-duration:${(5 + (i % 4)).toFixed(1)}s;animation-delay:${(0.4 + i * 0.35).toFixed(2)}s">${art}</span>`);
+  }
+  $('winFx').innerHTML = parts.join('');
 }
 
 /** Pastel paw prints flying out from the middle of the board. */
@@ -659,7 +702,7 @@ function burstConfetti() {
   const host = document.createElement('div');
   host.className = 'confetti';
   host.setAttribute('aria-hidden', 'true');
-  host.innerHTML = Array.from({ length: 18 }, (_, i) => {
+  host.innerHTML = Array.from({ length: 24 }, (_, i) => {
     const angle = i * 2.39996; // golden angle spreads them evenly
     const dist = w * (0.24 + ((i * 7) % 5) * 0.05);
     const dx = Math.round(Math.cos(angle) * dist);
@@ -668,7 +711,9 @@ function burstConfetti() {
     const rot = ((i * 53) % 120) - 60;
     const delay = ((i % 4) * 0.04).toFixed(2);
     return `<span style="--dx:${dx}px;--dy:${dy}px;--rot:${rot}deg;margin:${-size / 2}px 0 0 ${-size / 2}px;animation-delay:${delay}s">
-      ${pawSvg(CONFETTI_TINTS[i % CONFETTI_TINTS.length], size)}
+      ${i % 3 === 0
+        ? sparkleSvg(CONFETTI_TINTS[i % CONFETTI_TINTS.length], size * 0.8)
+        : pawSvg(CONFETTI_TINTS[i % CONFETTI_TINTS.length], size)}
     </span>`;
   }).join('');
   wrap.appendChild(host);
@@ -692,18 +737,34 @@ function finishLevel() {
   if (solvedCount(progress) >= TOTAL_LEVELS) platform.gameEnd();
 
   const isLast = g.ref.index >= TOTAL_LEVELS - 1;
-  $('winCat').innerHTML = mascotSvg(96);
-  $('winTitle').textContent = g.usedHint ? 'All cosy!' : 'Purrfect!';
+  const purrfect = !g.usedHint;
+  const flawless = g.livesLost === 0;
+  $('winModal').classList.toggle('purrfect', purrfect);
+  $('winCat').innerHTML = mascotSvg(96, worldCoat(g.ref.chapterIndex));
+  $('winMedal').innerHTML = purrfect ? medalSvg(34) : '';
+  // Letters bounce in one after another.
+  const title = purrfect ? 'Purrfect!' : 'All cosy!';
+  $('winTitle').setAttribute('aria-label', title);
+  $('winTitle').innerHTML = [...title]
+    .map((ch, i) => `<span aria-hidden="true" style="animation-delay:${(0.15 + i * 0.045).toFixed(3)}s">${ch === ' ' ? '&nbsp;' : ch}</span>`)
+    .join('');
+  const chips: string[] = [];
+  if (purrfect) chips.push(`<span class="winChip gold">${medalSvg(14)}No hints</span>`);
+  if (flawless) chips.push(`<span class="winChip">${heartSvg(true)}No hearts lost</span>`);
+  $('winChips').innerHTML = chips.join('');
   $('winText').textContent = isLast
     ? 'Every cat in the game has found its spot. Thanks for playing!'
-    : g.livesLost === 0 && !g.usedHint
-      ? 'Not a single life lost — gold star!'
-      : 'Every cat has a spot of its own.';
+    : purrfect && flawless
+      ? 'Not a single slip. The cats are very impressed.'
+      : purrfect
+        ? 'Solved all on your own!'
+        : 'Every cat has a spot of its own.';
   ($('btnWinNext') as HTMLButtonElement).classList.toggle('hidden', isLast);
 
   winTimers.push(window.setTimeout(() => {
     // Skip if the player has left this board during the celebration.
     if (game === g && !$('screen-game').classList.contains('hidden')) {
+      fillWinFx(purrfect);
       $('winOverlay').classList.remove('hidden');
     }
   }, WIN_MODAL_MS));
