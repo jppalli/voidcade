@@ -1163,15 +1163,17 @@ button {
    rest of the board dims so they're unmistakable. */
 /* Kept light: the rest of the board only fades a touch. */
 .board.coachFocus .cell:not(.coachMark):not(.coachKeep) { filter: saturate(0.8) brightness(0.97); }
+/* Squares to mark: a thin, soft gold edge and a faint inner light that
+   breathes gently. Noticeable, not shouty. */
 .cell.coachMark {
   z-index: 2;
-  outline: 4px solid #ffcf4d; outline-offset: -4px;
-  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.55) 0 40%, rgba(255, 255, 255, 0) 70%);
-  animation: markGlow 1.2s ease-in-out infinite;
+  outline: 2px solid rgba(240, 190, 70, 0.55); outline-offset: -3px;
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.28) 0 35%, rgba(255, 255, 255, 0) 65%);
+  animation: markGlow 2s ease-in-out infinite;
 }
 @keyframes markGlow {
-  0%, 100% { outline-color: rgba(255, 207, 77, 0.55); filter: brightness(1.02); }
-  50%      { outline-color: rgba(255, 207, 77, 1); filter: brightness(1.14); }
+  0%, 100% { outline-color: rgba(240, 190, 70, 0.35); }
+  50%      { outline-color: rgba(240, 190, 70, 0.8); }
 }
 
 /* One-time notes: a small label next to the hearts or the Hint button. */
