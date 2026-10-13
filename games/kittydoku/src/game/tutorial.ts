@@ -124,6 +124,8 @@ export function tutorialSteps(levelIndex: number, { game: g, cell, ripplePaws }:
         return aha ? cell(aha.at.row, aha.at.col) : null;
       },
       captionFn: () => (aha ? `Only one square is left in the ${aha.colour} patch…` : ''),
+      sizeHint: 'Only one square is left in the coloured patch…', // longest colour word
+
       gesture: 'double',
       until: (e) => !!aha && catAt(aha.at)(e),
       skipIf: () => !lastSquare(),

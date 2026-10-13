@@ -1186,7 +1186,14 @@ button {
 /* "Mark these" steps: the squares to tap glow gold with a faint paw, the
    rest of the board dims so they're unmistakable. */
 /* Kept light: the rest of the board only fades a touch. */
-.board.coachFocus .cell:not(.coachMark):not(.coachKeep) { filter: saturate(0.8) brightness(0.97); }
+/* A see-through cream layer, not a CSS filter: filters re-render every square
+   and made the grid flicker (and its seams shimmer) when a step began. */
+.board.coachFocus .cell:not(.coachMark):not(.coachKeep)::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: rgba(255, 248, 239, 0.22);
+  pointer-events: none;
+}
 /* Squares to mark: a thin, soft gold edge and a faint inner light that
    breathes gently. Noticeable, not shouty. */
 /* Same soft yellow glow as the single-square spotlight (.coachRing), drawn

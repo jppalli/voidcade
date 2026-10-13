@@ -41,6 +41,8 @@ export interface CoachStep {
   skipIf?: () => boolean;
   /** Caption worked out when the step appears (after `target`). */
   captionFn?: () => string;
+  /** Longest text `captionFn` can produce, used to size the dock up front. */
+  sizeHint?: string;
 }
 
 const $ = (id: string) => document.getElementById(id) as HTMLElement;
@@ -101,6 +103,29 @@ function layout() {
   hand.style.top = `${r.top + r.height * 0.55}px`;
 }
 
+/** Fill the dock with one step's words (caption, sub, counter). */
+function fillDock(caption: string, sub: string | undefined, count: string) {
+  $('coachCaption').textContent = caption;
+  $('coachSub').textContent = sub ?? '';
+  $('coachSub').classList.toggle('hidden', !sub);
+  $('coachCount').textContent = count;
+  $('coachCount').classList.toggle('hidden', !count);
+}
+
+/** The board is sized by the room left under it, so a dock that grows or
+ *  shrinks between steps would make the board jump. Measure every step's
+ *  words once and hold the dock at the tallest, so the board stays put. */
+function lockDockHeight() {
+  const dock = $('coachDock');
+  dock.style.minHeight = '';
+  let tallest = 0;
+  for (const s of steps) {
+    fillDock(s.sizeHint || s.caption, s.sub, s.counter ? '99 left' : '');
+    tallest = Math.max(tallest, dock.offsetHeight);
+  }
+  dock.style.minHeight = `${tallest}px`;
+}
+
 /** Measure again once the board has resized around the dock. */
 function relayout() {
   requestAnimationFrame(() => requestAnimationFrame(layout));
@@ -127,10 +152,7 @@ function show(i: number) {
   if (!s) { finish(); return; }
   if (s.skipIf?.()) { show(i + 1); return; }
   current = s.target?.() ?? null;
-  $('coachCaption').textContent = s.captionFn?.() || s.caption;
-  $('coachSub').textContent = s.sub ?? '';
-  $('coachSub').classList.toggle('hidden', !s.sub);
-  $('coachCount').classList.add('hidden');
+  fillDock(s.captionFn?.() || s.caption, s.sub, '');
   paintMarks();
 
   // The cat "says" each new line: the bubble pops, the cat bobs.
@@ -156,8 +178,16 @@ function next() {
 
 function finish() {
   const cb = onDoneCb;
-  stopCoach();
+  stopCoach(true);
   cb?.();
+}
+
+const boardWrap = () => document.querySelector<HTMLElement>('#screen-game .boardWrap');
+
+/** Let the board size itself from the free space again. */
+function unfreezeBoard() {
+  const wrap = boardWrap();
+  if (wrap) wrap.style.flex = '';
 }
 
 export function startCoach(script: CoachStep[], opts: { onDone?: () => void; coat?: Coat } = {}) {
@@ -171,11 +201,20 @@ export function startCoach(script: CoachStep[], opts: { onDone?: () => void; coa
   // The dock takes the buttons' place under the board while it talks.
   $('coachDock').classList.remove('hidden');
   $('screen-game').classList.add('coaching');
+  lockDockHeight();
   show(0);
 }
 
-/** Hide without running onDone (e.g. leaving the level). */
-export function stopCoach() {
+/** Hide without running onDone (e.g. leaving the level).
+ *  `keepBoard`: the player stays on this board (the tutorial just ended, or
+ *  they solved it), so hold the board at its size while the buttons take the
+ *  dock's place, instead of it jumping mid-play or mid-celebration. Starting
+ *  any level (or leaving) releases it. */
+export function stopCoach(keepBoard = false) {
+  const wasActive = index >= 0;
+  const wrap = boardWrap();
+  const before = wrap?.clientHeight ?? 0;
+  if (!keepBoard) unfreezeBoard();
   clearHold();
   document.querySelectorAll('.coachMark, .coachKeep').forEach((n) => n.classList.remove('coachMark', 'coachKeep'));
   document.getElementById('board')?.classList.remove('coachFocus');
@@ -185,7 +224,14 @@ export function stopCoach() {
   onDoneCb = null;
   $('coach').classList.add('hidden');
   $('coachDock').classList.add('hidden');
+  $('coachDock').style.minHeight = '';
   $('screen-game').classList.remove('coaching');
+  if (keepBoard && wasActive && wrap && before > 0) {
+    // Same frame, before any paint: measure the natural size with the
+    // buttons back, and keep the smaller of the two (never overflow).
+    const after = wrap.clientHeight;
+    wrap.style.flex = `0 0 ${Math.min(before, after)}px`;
+  }
 }
 
 /** The game reports what the player did; a waiting step may move on. */
@@ -211,5 +257,14 @@ export function wireCoach() {
     if ((e.target as HTMLElement).closest('#btnCoachSkip')) return;
     tapOn();
   });
-  window.addEventListener('resize', () => { if (index >= 0) relayout(); });
+  window.addEventListener('resize', () => {
+    if (index < 0) { unfreezeBoard(); return; } // a frozen size is stale now
+    // Text wraps differently at the new width: re-measure, then restore this step.
+    const s = steps[index];
+    const caption = $('coachCaption').textContent ?? '';
+    const count = $('coachCount').textContent ?? '';
+    lockDockHeight();
+    fillDock(caption, s?.sub, count);
+    relayout();
+  });
 }

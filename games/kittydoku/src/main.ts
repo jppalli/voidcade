@@ -859,7 +859,7 @@ function finishLevel() {
   const g = game!;
   winPending = true; // blocks all board input until the next level starts
   // Solved before the tutorial's last step: it's done, quietly.
-  if (isCoachActive()) { stopCoach(); markTutorialDone(g.ref.index); }
+  if (isCoachActive()) { stopCoach(true); markTutorialDone(g.ref.index); }
   clearCelebration();
   const { step, count } = celebrateBoard(g);
   playWin(WIN_WAVE_START, step, count);
