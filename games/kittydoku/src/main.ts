@@ -71,6 +71,7 @@ let winTimers: number[] = [];
 // ---------------------------------------------------------------- screens
 
 function show(screen: Screen) {
+  hideWelcomeToast();
   if (screen !== 'game') { endActiveLevel(); stopCoach(); hideNote(); if (idleTimer !== null) clearTimeout(idleTimer); idleTimer = null; }
   (['title', 'map', 'game'] as Screen[]).forEach((s) => {
     const el = $(`screen-${s}`);
@@ -171,13 +172,14 @@ function startLevel(index: number, forceTutorial = false) {
 
   // Very first launch: the How to Play card opens before level 1 (instead of
   // the world welcome, so there's only one thing to read), then level 1's
-  // guided moment. Otherwise: world welcome first time in a world, then the
-  // guided moment (level 1, once or on request) or the level's tip (once).
+  // guided moment. Otherwise: a non-blocking world welcome the first time in
+  // a world, and the guided moment on level 1 (once or on request).
   const firstLaunch = ref.index === 0 && !hasSeenIntro(progress, HOWTO_SEEN);
   const needsIntro = !firstLaunch && !hasSeenIntro(progress, ref.chapter.id);
   const tutorial = ref.index < TUTORIAL_LEVELS && (forceTutorial || !hasSeenTip(progress, ref.index));
-  const needsTip = !tutorial && !!ref.tip && !hasSeenTip(progress, ref.index);
-  const next = tutorial ? runTutorial : needsTip ? showLevelTip : undefined;
+  // Level tips no longer pop up on their own (they broke the flow); they
+  // live in the ☰ menu as "Level tip" for anyone who wants one.
+  const next = tutorial ? runTutorial : undefined;
   if (firstLaunch || needsIntro || next) {
     const g = game;
     setTimeout(() => {
@@ -188,8 +190,10 @@ function startLevel(index: number, forceTutorial = false) {
           saveProgress(progress);
           if (game === g) next?.();
         });
-      } else if (needsIntro) speakWorld(ref.chapterIndex, next);
-      else next?.();
+      } else {
+        if (needsIntro) welcomeToast(ref.chapterIndex);
+        next?.();
+      }
     }, 380 + (irisBusy() ? IRIS_OPEN_MS : 0)); // pop-ups wait for the iris to open
   }
   armIdleNudge();
@@ -299,6 +303,43 @@ function speakWorld(chapterIndex: number, then?: () => void) {
   });
 }
 
+/** Non-blocking world welcome: a small card with the world's cat slides in
+ *  at the top, then fades by itself. Taps go straight through to the game
+ *  (tapping the card itself just closes it). The full talking bubble is
+ *  still there when the player taps a world sign on the map. */
+let toastTimer: number | null = null;
+function welcomeToast(chapterIndex: number) {
+  const ch = CHAPTERS[chapterIndex];
+  if (!ch) return;
+  progress = markIntroSeen(progress, ch.id);
+  saveProgress(progress);
+  let el = document.getElementById('worldToast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'worldToast';
+    el.className = 'worldToast hidden';
+    el.setAttribute('role', 'status');
+    el.addEventListener('click', hideWelcomeToast);
+    document.body.appendChild(el);
+  }
+  el.innerHTML = `<span class="wtCat" aria-hidden="true">${mascotSvg(44, worldCoat(chapterIndex))}</span>
+    <span class="wtText"><b></b><span></span></span>`;
+  el.querySelector('b')!.textContent = ch.name;
+  el.querySelector('.wtText > span')!.textContent = ch.intro;
+  el.classList.remove('hidden', 'out');
+  if (toastTimer !== null) clearTimeout(toastTimer);
+  toastTimer = window.setTimeout(hideWelcomeToast, 5200);
+}
+
+function hideWelcomeToast() {
+  if (toastTimer !== null) clearTimeout(toastTimer);
+  toastTimer = null;
+  const el = document.getElementById('worldToast');
+  if (!el || el.classList.contains('hidden')) return;
+  el.classList.add('out');
+  window.setTimeout(() => { if (el.classList.contains('out')) el.classList.add('hidden'); }, 300);
+}
+
 /** On the map, greet the player the first time they reach a new world. */
 function maybeWelcomeOnMap() {
   if (solvedCount(progress) >= TOTAL_LEVELS) return;
@@ -306,7 +347,7 @@ function maybeWelcomeOnMap() {
   if (!ref || hasSeenIntro(progress, ref.chapter.id)) return;
   setTimeout(() => {
     if ($('screen-map').classList.contains('hidden') || isTipOpen()) return;
-    speakWorld(ref.chapterIndex);
+    welcomeToast(ref.chapterIndex);
   }, 450 + (irisBusy() ? IRIS_OPEN_MS : 0));
 }
 
@@ -543,9 +584,9 @@ function onTap(r: number, c: number) {
     placeCat(r, c, false);
     return;
   }
-  // Only a tap that put a paw on an empty cell arms a double-tap. Clearing a
-  // paw leaves lastTap null, so a fast follow-up tap is a fresh single tap.
-  if (togglePaw(r, c) === 'paw') lastTap = { r, c, time: now };
+  // Any tap that changed the square arms a double-tap: on a paw the first tap
+  // lifts it and the second places the cat (one undo step, like an empty one).
+  if (togglePaw(r, c)) lastTap = { r, c, time: now };
 }
 
 function cellAtPoint(x: number, y: number): { r: number; c: number } | null {

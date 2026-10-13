@@ -9,7 +9,8 @@
     "build:arkadium": "tsc && vite build --outDir arkadium-build --emptyOutDir",
     "preview": "vite preview",
     "verify-levels": "vite-node tools/verify-levels.ts",
-    "generate-levels": "vite-node tools/generate-levels.ts"
+    "generate-levels": "vite-node tools/generate-levels.ts",
+    "promo": "vite-node tools/promo.ts"
   },
   "dependencies": {
     "@arcade/queens-core": "*",
