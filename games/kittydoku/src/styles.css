@@ -820,6 +820,30 @@ button {
 .screen.entering { animation: screenIn 0.28s cubic-bezier(0.22,1,0.36,1); }
 @keyframes screenIn { from { opacity:0; transform:scale(0.98); } to { opacity:1; transform:none; } }
 
+/* Screen-to-screen iris (ui/iris.ts): warm cream closes into a soft-edged
+   circle around the tap, a faint pink paw appears, then it opens on the next
+   screen. The hole is a mask set per frame; this layer sits above everything
+   and eats taps. Same paper colours as the page, so it feels like a breath,
+   not a flash. */
+.iris {
+  position: fixed; inset: 0; z-index: 90;
+  background:
+    radial-gradient(circle at 50% 45%, #fffaf3, transparent 70%),
+    linear-gradient(160deg, #fff3e6, #fde6e3);
+  pointer-events: auto;
+  touch-action: none;
+}
+.irisPaw {
+  position: absolute; width: 46px; height: 46px; margin: -23px 0 0 -23px;
+  display: grid; place-items: center;
+  transform: scale(0.7); opacity: 0;
+}
+.irisPaw svg { display: block; }
+.irisPaw.pop { animation: irisPawPop 0.3s ease-out forwards; }
+.irisPaw.pop.out { animation: irisPawOut 0.3s ease-in forwards; }
+@keyframes irisPawPop { from { transform: scale(0.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes irisPawOut { from { transform: scale(1); opacity: 1; } to { transform: scale(0.4); opacity: 0; } }
+
 /* ---------------- game screen ---------------- */
 /* The background (world pattern + colours) is set per level in main.ts. */
 #screen-game { justify-content: flex-start; padding: 14px 16px 16px; }

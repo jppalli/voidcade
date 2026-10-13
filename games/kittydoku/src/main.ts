@@ -45,6 +45,7 @@ import { worldBackground, worldOf } from './ui/mapScenery';
 import { closeTip, isTipOpen, openTip, wireTip } from './ui/tip';
 import { coachNotify, isCoachActive, startCoach, stopCoach, wireCoach } from './ui/coach';
 import { TUTORIAL_LEVELS, tutorialSteps } from './game/tutorial';
+import { IRIS_OPEN_MS, irisBusy, irisTo, wireIris } from './ui/iris';
 
 type Screen = 'title' | 'map' | 'game';
 
@@ -74,19 +75,23 @@ function show(screen: Screen) {
   (['title', 'map', 'game'] as Screen[]).forEach((s) => {
     const el = $(`screen-${s}`);
     el.classList.toggle('hidden', s !== screen);
-    if (s === screen) {
+    // Under the iris the circle is the entrance; no extra fade.
+    if (s === screen && !irisBusy()) {
       el.classList.remove('entering');
       void el.offsetWidth;
       el.classList.add('entering');
     }
   });
   if (screen === 'map') {
-    renderMap(progress, startLevel, (k) => { playTap(); speakWorld(k); });
+    renderMap(progress, (i) => go(() => startLevel(i)), (k) => { playTap(); speakWorld(k); });
     requestAnimationFrame(scrollToFrontier);
     maybeWelcomeOnMap();
   }
   if (screen === 'title') { renderTitle(); fitTitle(); }
 }
+
+/** Move to another screen (or a new level) through the iris transition. */
+function go(swap: () => void) { void irisTo(swap); }
 
 /** Shrink the title stage to fit short embeds (never enlarge it). */
 function fitTitle() {
@@ -185,7 +190,7 @@ function startLevel(index: number, forceTutorial = false) {
         });
       } else if (needsIntro) speakWorld(ref.chapterIndex, next);
       else next?.();
-    }, 380);
+    }, 380 + (irisBusy() ? IRIS_OPEN_MS : 0)); // pop-ups wait for the iris to open
   }
   armIdleNudge();
 }
@@ -302,7 +307,7 @@ function maybeWelcomeOnMap() {
   setTimeout(() => {
     if ($('screen-map').classList.contains('hidden') || isTipOpen()) return;
     speakWorld(ref.chapterIndex);
-  }, 450);
+  }, 450 + (irisBusy() ? IRIS_OPEN_MS : 0));
 }
 
 function showLevelTip() {
@@ -974,8 +979,8 @@ function nextUnsolvedIndex(): number {
 
 function retryLevel() {
   if (!game) return;
-  $('failOverlay').classList.add('hidden');
-  startLevel(game.ref.index);
+  const index = game.ref.index;
+  go(() => { $('failOverlay').classList.add('hidden'); startLevel(index); });
 }
 
 function init() {
@@ -984,11 +989,12 @@ function init() {
   refreshSoundButtons();
   renderTitle();
 
-  $('btnPlay').addEventListener('click', () => { playTap(); startLevel(nextUnsolvedIndex()); });
-  $('btnMap').addEventListener('click', () => { playTap(); show('map'); });
+  wireIris();
+  $('btnPlay').addEventListener('click', () => { playTap(); go(() => startLevel(nextUnsolvedIndex())); });
+  $('btnMap').addEventListener('click', () => { playTap(); go(() => show('map')); });
 
   document.querySelectorAll<HTMLElement>('[data-nav]').forEach((el) =>
-    el.addEventListener('click', () => { playTap(); show(el.dataset.nav as Screen); })
+    el.addEventListener('click', () => { playTap(); go(() => show(el.dataset.nav as Screen)); })
   );
 
   // How-to modal
@@ -1013,7 +1019,7 @@ function init() {
     $('howToOverlay').classList.add('hidden');
     $('failOverlay').classList.add('hidden');
     $('winOverlay').classList.add('hidden');
-    startLevel(0, true);
+    go(() => startLevel(0, true));
   });
 
   // Tutorial coach and one-time notes
@@ -1057,7 +1063,7 @@ function init() {
   $('btnFailRevive').addEventListener('click', () => { playTap(); void watchForRevive(); });
   $('btnFailRetry').addEventListener('click', () => { playTap(); retryLevel(); });
   $('btnFailMap').addEventListener('click', () => {
-    playTap(); $('failOverlay').classList.add('hidden'); show('map');
+    playTap(); go(() => { $('failOverlay').classList.add('hidden'); show('map'); });
   });
   // Pre-populate the fail cat now so it's ready
   const failCatEl = document.getElementById('failCat');
@@ -1070,13 +1076,13 @@ function init() {
     playTap(); $('winOverlay').classList.add('hidden');
     await maybeInterstitial();
     const next = (game?.ref.index ?? 0) + 1;
-    if (next < TOTAL_LEVELS) startLevel(next); else show('map');
+    go(() => { if (next < TOTAL_LEVELS) startLevel(next); else show('map'); });
   });
   $('btnWinMap').addEventListener('click', async () => {
     if (adPlaying) return;
     playTap(); $('winOverlay').classList.add('hidden');
     await maybeInterstitial();
-    show('map');
+    go(() => show('map'));
   });
 
   // Sound: each speaker button opens a small panel with Music and Sounds.
