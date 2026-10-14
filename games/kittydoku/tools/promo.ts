@@ -175,7 +175,21 @@ const tall = () => page(280, 600, `
     <span class="pill" style="font-size:16px;padding:8px 16px">${pawSvg('#5a2333', 16)} 100 cosy levels</span>
   </div>`);
 
+/** 592x400 graphic: title left, board and cats right. */
+const graphic = () => page(592, 400, `
+  ${scatter(592, 400, 14, 14, 28, (x, y) => (x > 24 && x < 320 && y > 90 && y < 320) || (x > 300 && x < 580 && y > 40 && y < 390))}
+  <div class="t" style="left:38px;top:118px">
+    ${logo(58)}
+    <p class="tag" style="font-size:18px;margin:12px 0 20px">A gentle cat logic puzzle</p>
+    <span class="pill" style="font-size:15px;padding:8px 15px">${pawSvg('#5a2333', 15)} 100 cosy levels</span>
+  </div>
+  ${board(240, 330, 62, -4, [0, 2, 3])}
+  ${medal(44, 306, 44, -14)}
+  ${cat(124, COATS.lilac, 456, 250, 8)}
+  ${cat(84, COATS.ginger, 300, 300, -10)}`);
+
 const posters: [string, number, number, () => string][] = [
+  ['kittydoku-graphic-592x400', 592, 400, graphic],
   ['kittydoku-tile-384x216', 384, 216, small],
   ['kittydoku-tall-280x600', 280, 600, tall],
   ['kittydoku-promo-1080x400', 1080, 400, promo],
