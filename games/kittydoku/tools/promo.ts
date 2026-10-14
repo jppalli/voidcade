@@ -149,7 +149,35 @@ const secondary = () => page(600, 270, `
   ${board(178, 394, 40, -5, [0, 2, 3])}
   ${cat(100, COATS.lilac, 486, 158, 8)}`);
 
+/** 384x216 (16:9) small tile: board left, title right. */
+const small = () => page(384, 216, `
+  ${scatter(384, 216, 8, 10, 18, (x, y) => x < 380 && y > 14 && y < 206)}
+  ${board(150, 18, 33, -5, [0, 2, 3])}
+  ${cat(70, COATS.lilac, 124, 128, 8)}
+  <div class="t" style="left:178px;right:14px;top:64px;text-align:center">
+    ${logo(34)}
+    <p class="tag" style="font-size:13.5px;margin:8px 0 12px">A gentle cat logic puzzle</p>
+    <span class="pill" style="font-size:12px;padding:6px 12px">${pawSvg('#5a2333', 12)} 100 cosy levels</span>
+  </div>`);
+
+/** 280x600 tall tile: title on top, board in the middle, cats at the bottom. */
+const tall = () => page(280, 600, `
+  ${scatter(280, 600, 12, 14, 26, (x, y) => x > 10 && x < 270 && y > 20 && y < 590 && !(y > 470 && (x < 40 || x > 240)))}
+  <div class="t" style="left:0;right:0;top:48px;text-align:center">
+    ${logo(54)}
+    <p class="tag" style="font-size:16px;margin-top:10px">A gentle cat logic puzzle</p>
+  </div>
+  ${board(214, 33, 168, -5, [0, 2, 3])}
+  ${medal(46, 14, 146, -14)}
+  ${cat(120, COATS.lilac, 140, 380, 8)}
+  ${cat(92, COATS.ginger, 22, 412, -10)}
+  <div class="t" style="left:0;right:0;top:532px;text-align:center">
+    <span class="pill" style="font-size:16px;padding:8px 16px">${pawSvg('#5a2333', 16)} 100 cosy levels</span>
+  </div>`);
+
 const posters: [string, number, number, () => string][] = [
+  ['kittydoku-tile-384x216', 384, 216, small],
+  ['kittydoku-tall-280x600', 280, 600, tall],
   ['kittydoku-promo-1080x400', 1080, 400, promo],
   ['kittydoku-thumb-600x600', 600, 600, thumb],
   ['kittydoku-secondary-600x270', 600, 270, secondary],
