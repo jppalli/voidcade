@@ -13,6 +13,14 @@ export interface Entry {
   category: string;
 }
 
+/** A level: one topic, five words (easiest first), plus spares that stand in
+ *  for a word the player lost, so a retry never shows a known answer. */
+export interface Topic {
+  name: string;
+  words: Entry[];
+  spares: Entry[];
+}
+
 export interface World {
   id: string;
   name: string;
@@ -20,35 +28,46 @@ export interface World {
   blurb: string;
   /** Board colour (chalkboard tint) for this world. */
   board: string;
-  levels: Entry[];
+  levels: Topic[];
 }
+
+export const WORDS_PER_LEVEL = 5;
 
 const e = (category: string, ...texts: string[]): Entry[] => texts.map((text) => ({ text, category }));
 
+/** Five words and their spares; the five are sorted so the last is hardest. */
+const topic = (name: string, words: string[], spares: string[]): Topic => ({
+  name,
+  words: e(name, ...words).sort(byDifficulty),
+  spares: e(name, ...spares),
+});
+
 // ---------------------------------------------------------------- worlds
 
-const WORLD_1: Entry[] = [
-  ...e('Fruit', 'APPLE', 'BANANA'),
-  ...e('Animals', 'TIGER', 'MONKEY'),
-  ...e('Around the House', 'WINDOW'),
-  ...e('Weather', 'RAINBOW'),
-  ...e('School', 'PENCIL'),
-  ...e('Transportation', 'TRAIN'),
-  ...e('Colors', 'ORANGE'),
-  ...e('Jobs', 'DOCTOR'),
+const WORLD_1 = (): Topic[] => [
+  topic('Fruit', ['APPLE', 'BANANA', 'ORANGE', 'GRAPE', 'LEMON'], ['CHERRY', 'PEACH', 'MANGO']),
+  topic('Animals', ['TIGER', 'MONKEY', 'ZEBRA', 'LION', 'HORSE'], ['RABBIT', 'PANDA', 'BEAR']),
+  topic('Colors', ['PURPLE', 'YELLOW', 'GREEN', 'SILVER', 'BROWN'], ['PINK', 'BLACK', 'WHITE']),
+  topic('Weather', ['RAINBOW', 'THUNDER', 'CLOUDY', 'SUNNY', 'STORM'], ['WINDY', 'FOGGY', 'SNOW']),
+  topic('School', ['PENCIL', 'ERASER', 'RULER', 'CRAYON', 'NOTEBOOK'], ['BACKPACK', 'MARKER', 'GLUE']),
+  topic('At Home', ['WINDOW', 'KITCHEN', 'PILLOW', 'LAMP', 'SOFA'], ['MIRROR', 'CANDLE', 'DOOR']),
+  topic('Farm', ['TRACTOR', 'CHICKEN', 'BARN', 'COW', 'PIG'], ['GOAT', 'SHEEP', 'DUCK']),
+  topic('Vegetables', ['CARROT', 'POTATO', 'TOMATO', 'ONION', 'PEPPER'], ['BROCCOLI', 'CELERY', 'PEAS']),
+  topic('Toys', ['DOLL', 'KITE', 'BALLOON', 'ROBOT', 'YO-YO'], ['BLOCKS', 'MARBLES', 'PUZZLE']),
+  topic('Breakfast', ['PANCAKE', 'WAFFLE', 'CEREAL', 'TOAST', 'BACON'], ['MUFFIN', 'YOGURT', 'OATMEAL']),
 ];
 
-const WORLD_2: Entry[] = [
-  ...e('Animals', 'BUTTERFLY'),
-  ...e('Desserts', 'ICE CREAM'),
-  ...e('Plants', 'SUNFLOWER'),
-  ...e('Food', 'HOT DOG'),
-  ...e('Sports', 'BASKETBALL'),
-  ...e('Transportation', 'FIRE TRUCK'),
-  ...e('Party Time', 'BIRTHDAY CAKE'),
-  ...e('Adventure', 'TREASURE MAP'),
-  ...e('Winter', 'SNOWMAN'),
-  ...e('Greetings', 'GOOD MORNING'),
+const WORLD_2 = (): Topic[] => [
+  topic('Flowers', ['ROSE', 'TULIP', 'DAISY', 'SUNFLOWER', 'LILY'], ['ORCHID', 'DAFFODIL', 'POPPY']),
+  topic('Sports', ['SOCCER', 'TENNIS', 'BASEBALL', 'HOCKEY', 'GOLF'], ['BASKETBALL', 'BOWLING', 'KARATE']),
+  topic('Desserts', ['ICE CREAM', 'APPLE PIE', 'CUPCAKE', 'BROWNIE', 'FUDGE'], ['CHEESECAKE', 'PUDDING', 'COOKIE']),
+  topic('Music', ['GUITAR', 'PIANO', 'VIOLIN', 'TRUMPET', 'DRUMS'], ['FLUTE', 'BANJO', 'XYLOPHONE']),
+  topic('Ocean', ['DOLPHIN', 'OCTOPUS', 'JELLYFISH', 'WHALE', 'SHARK'], ['STARFISH', 'CRAB', 'SEAHORSE']),
+  topic('Jobs', ['DOCTOR', 'TEACHER', 'FIREFIGHTER', 'PILOT', 'CHEF'], ['NURSE', 'FARMER', 'DENTIST']),
+  topic('Space', ['PLANET', 'ROCKET', 'COMET', 'GALAXY', 'ASTRONAUT'], ['MOON', 'STAR', 'METEOR']),
+  topic('Birds', ['OWL', 'EAGLE', 'PARROT', 'PENGUIN', 'FLAMINGO'], ['ROBIN', 'PEACOCK', 'SWAN']),
+  topic('Party Time', ['BIRTHDAY CAKE', 'BALLOONS', 'PRESENTS', 'PARTY HAT', 'CONFETTI'], ['CANDLES', 'GAMES', 'MUSIC']),
+  topic('Camping', ['CAMPFIRE', 'TENT', 'FLASHLIGHT', 'MARSHMALLOW', 'SLEEPING BAG'], ['HIKING', 'LANTERN', 'COMPASS']),
 ];
 
 // ---------------------------------------------------------------- endless pool
@@ -128,40 +147,45 @@ const byDifficulty = (a: Entry, b: Entry) => difficulty(a.text) - difficulty(b.t
 export const WORLDS: World[] = [
   {
     id: 'first-lesson', name: 'First Lesson', blurb: 'Everyday words to warm up your chalk.',
-    board: '#2f4b3c', levels: [...WORLD_1].sort(byDifficulty),
+    board: '#2f4b3c', levels: WORLD_1(),
   },
   {
     id: 'recess', name: 'Recess', blurb: 'Longer words and your first phrases.',
-    board: '#2b3a48', levels: [...WORLD_2].sort(byDifficulty),
+    board: '#2b3a48', levels: WORLD_2(),
   },
 ];
 
-export interface LevelRef { index: number; world: number; worldLevel: number; entry: Entry; }
+export interface LevelRef { index: number; world: number; worldLevel: number; topic: Topic; }
 
 export const LEVELS: LevelRef[] = WORLDS.flatMap((w, wi) =>
-  w.levels.map((entry, li) => ({ index: 0, world: wi, worldLevel: li, entry })),
+  w.levels.map((topic, li) => ({ index: 0, world: wi, worldLevel: li, topic })),
 ).map((l, i) => ({ ...l, index: i }));
 
 export const TOTAL_LEVELS = LEVELS.length;
 
-const LEVEL_TEXTS = new Set(LEVELS.map((l) => l.entry.text));
-
 /** Everything playable in Endless, easiest first. */
-export const ENDLESS_POOL: Entry[] = [...POOL, ...WORLD_1, ...WORLD_2]
+export const ENDLESS_POOL: Entry[] = [...POOL, ...LEVELS.flatMap((l) => [...l.topic.words, ...l.topic.spares])]
   .filter((x, i, all) => all.findIndex((y) => y.text === x.text) === i)
   .sort(byDifficulty);
 
 /**
- * A fresh entry close in difficulty to a level the player just lost, so
- * "Try another word" never replays an answer they've already seen.
+ * Stand-in for a word the player lost: an unseen word from the same topic,
+ * the closest in difficulty.
  */
-export function replacementFor(level: Entry, seen: Set<string>): Entry {
-  const phrase = level.text.includes(' ');
-  const target = difficulty(level.text);
-  const options = POOL.filter((x) => !LEVEL_TEXTS.has(x.text) && !seen.has(x.text) && x.text.includes(' ') === phrase);
-  const pick = (options.length ? options : POOL)
-    .map((x) => ({ x, d: Math.abs(difficulty(x.text) - target) }))
-    .sort((a, b) => a.d - b.d)
-    .slice(0, 5);
-  return pick[Math.floor(Math.random() * pick.length)].x;
+export function replacementFor(topic: Topic, lost: Entry, seen: Set<string>): Entry | null {
+  const target = difficulty(lost.text);
+  const inTopic = new Set(topic.words.map((w) => w.text));
+  // Spares first, then Endless words filed under the same topic name.
+  let options = topic.spares.filter((x) => !seen.has(x.text));
+  if (!options.length) options = POOL.filter((x) => x.category === topic.name && !seen.has(x.text) && !inTopic.has(x.text));
+  // Everything has been seen this session: reuse a spare (never the word just lost).
+  if (!options.length) options = topic.spares.filter((x) => x.text !== lost.text);
+  if (!options.length) return null;
+  return [...options].sort((a, b) => Math.abs(difficulty(a.text) - target) - Math.abs(difficulty(b.text) - target))[0];
+}
+
+/** Level stars from the misses across all five words; help caps it at 2. */
+export function levelStars(totalMisses: number, helped: boolean): number {
+  const raw = totalMisses <= 2 ? 3 : totalMisses <= 6 ? 2 : 1;
+  return helped ? Math.min(2, raw) : raw;
 }

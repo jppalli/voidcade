@@ -72,11 +72,4 @@ export class Round {
     this.maxMisses = this.misses + 1;
   }
 
-  /** 3 stars for a clean solve (0-1 misses, no help); hints or a second
-   *  chance cap it at 2. */
-  get stars(): number {
-    if (!this.solved) return 0;
-    const raw = this.misses <= 1 ? 3 : this.misses <= 3 ? 2 : 1;
-    return this.hinted.size || this.revived ? Math.min(2, raw) : raw;
-  }
 }

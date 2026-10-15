@@ -5,7 +5,7 @@ import '@fontsource/patrick-hand/latin-400.css';
 import { createPlatform, type Platform } from './platform/platform';
 import { initStorage, resyncStorage, setSignedOut } from './platform/storage';
 import { initSound, playErase, playHit, playLose, playMiss, playTap, playWin, resumeSound, setSound, soundOn, suspendSound } from './audio/sound';
-import { ENDLESS_POOL, LEVELS, TOTAL_LEVELS, WORLDS, replacementFor, type Entry } from './game/words';
+import { ENDLESS_POOL, LEVELS, TOTAL_LEVELS, WORDS_PER_LEVEL, WORLDS, levelStars, replacementFor, type Entry } from './game/words';
 import { MAX_MISSES, Round } from './game/round';
 import { bestEndless, loadProgress, nextLevel, recordSolve, saveBestEndless, saveProgress, solvedCount, starCount, type Progress } from './game/progress';
 import { freeHintsLeft, useFreeHint } from './game/hints';
@@ -27,6 +27,12 @@ let locked = false;
 let adPlaying = false;
 /** Answers already shown this session, so a retry never repeats one. */
 const seen = new Set<string>();
+
+// Level session: five words on one topic.
+let levelWords: Entry[] = [];
+let wordIndex = 0;
+let levelMisses = 0;
+let levelHelped = false;
 
 // Endless run
 let score = 0;
@@ -89,7 +95,7 @@ function renderMap() {
     sec.style.setProperty('--board', w.board);
     const first = offset;
     const open = progress.unlocked >= first;
-    sec.innerHTML = `<div class="worldHead"><span class="worldNum">Lesson ${wi + 1}</span><h3>${w.name}</h3><p>${open ? w.blurb : 'Finish the lesson before to open this one.'}</p></div>
+    sec.innerHTML = `<div class="worldHead"><span class="worldNum">Lesson ${wi + 1}</span><h3>${w.name}</h3><p>${open ? w.blurb : `Finish ${WORLDS[wi - 1]?.name ?? 'the lesson before'} to open this one.`}</p></div>
       <div class="levelGrid"></div>`;
     const grid = sec.querySelector('.levelGrid')!;
     w.levels.forEach((_, li) => {
@@ -99,10 +105,12 @@ function renderMap() {
       const b = document.createElement('button');
       b.className = `levelBtn${stars ? ' done' : ''}${index === next && unlocked ? ' next' : ''}${unlocked ? '' : ' locked'}`;
       b.disabled = !unlocked;
-      b.setAttribute('aria-label', unlocked ? `Level ${index + 1}${stars ? `, ${stars} stars` : ''}` : `Level ${index + 1}, locked`);
+      const name = w.levels[li].name;
+      b.setAttribute('aria-label', unlocked ? `Level ${index + 1}, ${name}${stars ? `, ${stars} stars` : ''}` : `Level ${index + 1}, locked`);
+      // The topic stays a surprise until the level is open.
       b.innerHTML = unlocked
-        ? `<span class="lvNum">${index + 1}</span><span class="lvStars">${starsHtml(stars, 12)}</span>`
-        : `<svg class="icon"><use href="#i-lock"/></svg>`;
+        ? `<span class="lvNum">${index + 1}</span><span class="lvTopic">${name}</span><span class="lvStars">${starsHtml(stars, 12)}</span>`
+        : `<span class="lvNum">${index + 1}</span><svg class="icon"><use href="#i-lock"/></svg>`;
       if (unlocked) b.addEventListener('click', () => { playTap(); go(() => startLevel(index)); });
       grid.appendChild(b);
     });
@@ -121,7 +129,7 @@ function endActiveLevel() {
   activeLevel = null;
 }
 
-function startLevel(index: number, entry?: Entry) {
+function startLevel(index: number) {
   const ref = LEVELS[index];
   if (!ref) return;
   mode = { kind: 'level', index };
@@ -131,14 +139,31 @@ function startLevel(index: number, entry?: Entry) {
   activeLevel = index + 1;
   platform.levelStart(activeLevel);
   const w = WORLDS[ref.world];
+  levelWords = [...ref.topic.words];
+  wordIndex = 0;
+  levelMisses = 0;
+  levelHelped = false;
   $('gameTitle').textContent = `Level ${index + 1}`;
-  $('gameSub').textContent = w.name;
   $('screen-game').style.setProperty('--board', w.board);
-  beginRound(entry ?? ref.entry);
+  startLevelWord();
   // First word ever: one short line under the word, never a pop-up.
   const firstTime = index === 0 && !progress.stars[0];
   $('coachLine').textContent = 'Tap a letter to guess. Six wrong letters and the drawing is done.';
   $('coachLine').classList.toggle('hidden', !firstTime);
+}
+
+/** The current word of the level (the drawing starts fresh for each one). */
+function startLevelWord() {
+  beginRound(levelWords[wordIndex]);
+  renderLevelHeader();
+}
+
+/** "Word 2 of 5" with a dot per word: done, current, still to come. */
+function renderLevelHeader(complete = false) {
+  const done = complete ? WORDS_PER_LEVEL : wordIndex;
+  const dots = Array.from({ length: WORDS_PER_LEVEL }, (_, i) =>
+    `<i class="wDot${i < done ? ' done' : i === wordIndex ? ' now' : ''}"></i>`).join('');
+  $('gameSub').innerHTML = `<span class="wDots" aria-hidden="true">${dots}</span>${complete ? 'All words solved' : `Word ${wordIndex + 1} of ${WORDS_PER_LEVEL}`}`;
 }
 
 function startEndless() {
@@ -339,20 +364,37 @@ function onSolved() {
     return;
   }
   const index = mode.index;
-  const stars = r.stars;
+  levelMisses += r.misses;
+  levelHelped ||= r.hinted.size > 0 || r.revived;
+
+  // More words to go: a short "next word" beat, then a fresh board.
+  if (wordIndex < WORDS_PER_LEVEL - 1) {
+    wordIndex++;
+    renderLevelHeader();
+    toast(wordIndex === WORDS_PER_LEVEL - 1 ? 'Last word!' : `Word ${wordIndex + 1} of ${WORDS_PER_LEVEL}`);
+    setTimeout(() => {
+      if (round !== r || mode.kind !== 'level') return;
+      playErase();
+      go(startLevelWord);
+    }, 1500);
+    return;
+  }
+
+  renderLevelHeader(true);
+  const stars = levelStars(levelMisses, levelHelped);
   progress = recordSolve(progress, index, stars);
   saveProgress(progress);
   endActiveLevel();
   setTimeout(() => {
     if (round !== r) return;
-    $('winTitle').textContent = stars === 3 ? 'Perfect!' : 'Solved!';
+    $('winTitle').textContent = stars === 3 ? 'Perfect!' : 'Level complete!';
     $('winStars').innerHTML = starsHtml(stars, 40);
-    $('winAnswer').textContent = r.entry.text;
+    $('winAnswer').textContent = levelWords.map((w) => w.text).join(' · ');
     $('winText').textContent = stars === 3
-      ? 'Not a single line wasted. Nicely done.'
-      : r.hinted.size || r.revived
-        ? 'Solved with a little help. Try it clean for 3 stars.'
-        : `${r.misses} ${r.misses === 1 ? 'miss' : 'misses'}. Solve with one miss or fewer for 3 stars.`;
+      ? `All ${WORDS_PER_LEVEL} ${LEVELS[index].topic.name.toLowerCase()} words with barely a line drawn.`
+      : levelHelped
+        ? 'Solved with a little help. Try it without for 3 stars.'
+        : `${levelMisses} misses in total. Two or fewer earns 3 stars.`;
     const last = index >= TOTAL_LEVELS - 1;
     $('btnWinNext').textContent = last ? 'Play Endless' : 'Next level';
     $('winOverlay').classList.remove('hidden');
@@ -374,9 +416,10 @@ function onLost() {
     $('btnRetry').classList.toggle('primary', !canRevive);
     if (mode.kind === 'level') {
       $('loseTitle').textContent = 'So close!';
+      const topicName = LEVELS[mode.index].topic.name.toLowerCase();
       $('loseText').textContent = canRevive
-        ? 'Get one more guess on this word, or try a new word of the same level.'
-        : 'Try a new word of the same level.';
+        ? `Get one more guess on this word, or try a different ${topicName} word. Your other words stay solved.`
+        : `Try a different ${topicName} word. Your other words stay solved.`;
       $('loseAnswer').textContent = '';
       $('loseAnswer').classList.add('hidden');
       $('btnRetry').textContent = 'Try another word';
@@ -427,9 +470,14 @@ function onRetry() {
     go(() => { hideOverlays(); startEndless(); });
     return;
   }
-  const index = mode.index;
-  const fresh = replacementFor(LEVELS[index].entry, seen);
-  go(() => { hideOverlays(); startLevel(index, fresh); });
+  // Swap only the lost word; the level carries on from here. Its misses
+  // still count toward the level's stars.
+  const r = round;
+  if (r) { levelMisses += r.misses; levelHelped ||= r.hinted.size > 0 || r.revived; }
+  const lost = levelWords[wordIndex];
+  const fresh = replacementFor(LEVELS[mode.index].topic, lost, seen);
+  if (fresh) levelWords[wordIndex] = fresh;
+  go(() => { hideOverlays(); startLevelWord(); });
 }
 
 function leaveGame(to: Screen) {

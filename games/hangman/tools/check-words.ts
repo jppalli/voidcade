@@ -3,7 +3,7 @@
  *
  *   npm run check-words
  */
-import { ENDLESS_POOL, LEVELS, WORLDS, difficulty } from '../src/game/words';
+import { ENDLESS_POOL, LEVELS, WORDS_PER_LEVEL, WORLDS, difficulty } from '../src/game/words';
 
 let problems = 0;
 const fail = (msg: string) => { problems++; console.error('  x ' + msg); };
@@ -20,11 +20,24 @@ for (const e of all) {
 }
 for (const [t, n] of texts) if (n > 1) fail(`duplicate: "${t}"`);
 
+// Every level word and spare must be unique across all levels.
+const levelTexts = new Map<string, string>();
+for (const l of LEVELS) {
+  if (l.topic.words.length !== WORDS_PER_LEVEL) fail(`level ${l.index + 1} (${l.topic.name}) has ${l.topic.words.length} words`);
+  if (l.topic.spares.length < 2) fail(`level ${l.index + 1} (${l.topic.name}) needs at least 2 spares`);
+  for (const w of [...l.topic.words, ...l.topic.spares]) {
+    const other = levelTexts.get(w.text);
+    if (other) fail(`"${w.text}" is in both ${other} and ${l.topic.name}`);
+    levelTexts.set(w.text, l.topic.name);
+  }
+}
+
 console.log(`Endless pool: ${all.length} entries (${all.filter((e) => e.text.includes(' ')).length} phrases)`);
 for (const [wi, w] of WORLDS.entries()) {
   console.log(`\nWorld ${wi + 1}: ${w.name}`);
   for (const l of LEVELS.filter((x) => x.world === wi)) {
-    console.log(`  ${String(l.index + 1).padStart(3)}  ${String(difficulty(l.entry.text)).padStart(2)}  ${l.entry.text}  (${l.entry.category})`);
+    const words = l.topic.words.map((x) => `${x.text}(${difficulty(x.text)})`).join(' ');
+    console.log(`  ${String(l.index + 1).padStart(3)}  ${l.topic.name.padEnd(11)} ${words}`);
   }
 }
 if (problems) throw new Error(`${problems} problem(s) in the word list`);
