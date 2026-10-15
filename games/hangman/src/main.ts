@@ -7,6 +7,7 @@ import { initStorage, resyncStorage, setSignedOut } from './platform/storage';
 import { initSound, musicOn, playErase, playHit, playLose, playMiss, playStar, playTap, playWin, playWordDone, resumeSound, setMusic, setSound, soundOn, startMusic, suspendSound } from './audio/sound';
 import { levelDone, wordDone } from './ui/celebrate';
 import { setDoodles } from './ui/doodles';
+import { initStage, stageHeight, stageWidth, toStage } from './ui/stage';
 import { ENDLESS_POOL, LEVELS, TOTAL_LEVELS, WORDS_PER_LEVEL, WORLDS, levelStars, pickLevelWords, type Entry } from './game/words';
 import { MAX_MISSES, Round } from './game/round';
 import { bestEndless, loadProgress, nextLevel, recordSolve, saveBestEndless, saveProgress, solvedCount, starCount, type Progress } from './game/progress';
@@ -280,7 +281,7 @@ function fitPhrase() {
   const room = (host.clientWidth || 320) - 4;
   // Long sayings must not push the keyboard off a phone: allow about a
   // quarter of the frame for the phrase (more on tall screens).
-  const maxH = Math.max(110, window.innerHeight * 0.24);
+  const maxH = Math.max(110, stageHeight() * 0.24);
   // Largest tile where the words, wrapped like the flex row wraps them, fit
   // both the width and that height. Tile ~1.14 x wide with its gap; word
   // gaps 0.7 x; line height 1.25 x plus a 10px row gap.
@@ -632,9 +633,10 @@ function wire() {
       e.stopPropagation();
       playTap();
       if (!panel.classList.contains('hidden')) { closePanel(); return; }
-      const r = b.getBoundingClientRect();
+      // The panel lives in the (possibly scaled) stage: place it in stage units.
+      const r = toStage(b.getBoundingClientRect());
       panel.style.top = `${r.bottom + 10}px`;
-      panel.style.right = `${Math.max(8, window.innerWidth - r.right)}px`;
+      panel.style.right = `${Math.max(8, stageWidth() - r.right)}px`;
       panel.classList.remove('hidden');
       $('btnMusic').focus();
     }));
@@ -700,6 +702,9 @@ function wire() {
 }
 
 async function boot() {
+  // First, before anything measures itself: fixed design scaled to the frame
+  // (desktop / embeds) or the adaptive layout (phones).
+  initStage();
   platform = await createPlatform();
   await initStorage(platform);
   initSound();

@@ -29,6 +29,22 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* The stage holds the whole game (see src/ui/stage.ts). In stage mode it is
+   a fixed design size, scaled and centred; the page around it is a warm,
+   dim classroom wall so the board looks hung on it. */
+#stage {
+  position: fixed; left: 0; top: 0;
+  transform-origin: 0 0;
+  overflow: hidden;
+}
+html.staged body {
+  background:
+    radial-gradient(ellipse at 50% 40%, rgba(255, 214, 165, 0.08), transparent 70%),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.05) 0 2px, transparent 2px 90px),
+    #3a2c24;
+}
+html.staged #stage { box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45); }
+
 button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 .hidden { display: none !important; }
 .icon { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
@@ -36,8 +52,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-high
 /* ---------------- the board ---------------- */
 .screen {
   position: relative;
-  height: 100vh;
-  height: 100dvh;
+  height: var(--app-h, 100dvh);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -72,7 +87,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-high
 /* .play becomes display:contents on wide screens, so lift its children too. */
 .play > * { position: relative; z-index: 1; }
 .doodles { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
-.dd { position: absolute; width: clamp(50px, 15vw, 96px); aspect-ratio: 1; color: var(--chalk); opacity: 0.2; line-height: 0; }
+.dd { position: absolute; width: clamp(50px, calc(var(--app-w, 100vw) * 0.15), 96px); aspect-ratio: 1; color: var(--chalk); opacity: 0.2; line-height: 0; }
 .dd svg { width: 100%; height: 100%; overflow: visible; }
 .dd.s0 { left: 3%; top: 14%; rotate: -8deg; }
 .dd.s1 { right: 3%; top: 12%; rotate: 7deg; }
@@ -130,7 +145,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-high
 @keyframes wave { 0%, 100% { transform: rotate(-4deg) translateY(0); } 50% { transform: rotate(4deg) translateY(-4px); } }
 .logo {
   font-family: var(--sketch); font-weight: 700;
-  font-size: clamp(64px, 18vw, 96px); line-height: 0.95; letter-spacing: 1px;
+  font-size: clamp(64px, calc(var(--app-w, 100vw) * 0.18), 96px); line-height: 0.95; letter-spacing: 1px;
   color: var(--chalk);
   text-shadow: 0 0 10px rgba(244, 241, 232, 0.25);
 }
@@ -273,8 +288,8 @@ button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-high
 .kRow { display: flex; justify-content: center; gap: 6px; }
 .key {
   /* Key size follows the frame height, so three rows always fit. */
-  flex: 1 1 0; max-width: 56px; min-width: 0; height: clamp(34px, 7.4vh, 50px);
-  font-size: clamp(18px, 4.3vh, 25px); line-height: 1;
+  flex: 1 1 0; max-width: 56px; min-width: 0; height: clamp(34px, calc(var(--app-h, 100vh) * 0.074), 50px);
+  font-size: clamp(18px, calc(var(--app-h, 100vh) * 0.043), 25px); line-height: 1;
   background: rgba(244, 241, 232, 0.05); color: var(--chalk);
   border: 2px solid var(--chalk-soft);
   border-radius: 10px 12px 9px 11px / 11px 9px 12px 10px;
@@ -338,7 +353,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-high
 .modal {
   width: 100%; max-width: 380px;
   /* Short embeds: the card scrolls inside itself rather than being cut off. */
-  max-height: calc(100dvh - 40px); overflow-y: auto; scrollbar-width: none;
+  max-height: calc(var(--app-h, 100dvh) - 40px); overflow-y: auto; scrollbar-width: none;
   display: flex; flex-direction: column; align-items: stretch; gap: 10px; text-align: center;
   padding: 24px 22px 20px;
   background: var(--dust), #263a30;
@@ -380,7 +395,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-high
   0% { transform: translate(0, 0) rotate(0); opacity: 0; }
   8% { opacity: 1; }
   85% { opacity: 1; }
-  100% { transform: translate(var(--drift), 108vh) rotate(var(--spin)); opacity: 0; }
+  100% { transform: translate(var(--drift), calc(var(--app-h, 100vh) * 1.08)) rotate(var(--spin)); opacity: 0; }
 }
 /* The five dots bounce once the level is done. */
 .wDots.party .wDot { animation: dotHop 0.5s ease both; }
@@ -450,7 +465,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-high
   filter: blur(6px);
 }
 .eraser {
-  position: absolute; top: 50%; right: -30px; width: 74px; height: min(56vh, 300px);
+  position: absolute; top: 50%; right: -30px; width: 74px; height: min(calc(var(--app-h, 100vh) * 0.56), 300px);
   transform: translateY(-50%) rotate(-4deg);
   display: flex; border-radius: 10px; overflow: hidden;
   box-shadow: 6px 8px 18px rgba(0, 0, 0, 0.35);
@@ -471,7 +486,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-high
 /* Any landscape frame with a little width (the Arkadium embed is often about
    700x525): drawing on the left, word and keyboard on the right. Stacking
    everything in one column doesn't fit a short frame. */
-@media (min-aspect-ratio: 9/8) and (min-width: 600px) {
+html.wide {
   /* Rows: bar, space, word, keyboard, space: the word and keys stay together
      in the middle of the right half. */
   #screen-game { display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); grid-template-rows: auto 1fr auto auto 1fr; column-gap: 28px; justify-items: center; }
@@ -484,12 +499,12 @@ button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-high
   #screen-game .keyboard { grid-column: 2; grid-row: 4; margin-top: 26px; }
   /* Doodles: top corners, above the word, and under the keyboard. */
   #screen-game .doodles { grid-column: 1 / -1; grid-row: 1 / -1; }
-  #screen-game .dd { width: clamp(64px, 8vw, 104px); }
+  #screen-game .dd { width: clamp(64px, calc(var(--app-w, 100vw) * 0.08), 104px); }
   #screen-game .dd.s0 { left: 3%; top: 14%; }
   #screen-game .dd.s1 { right: 4%; top: 13%; }
   #screen-game .dd.s2 { left: 50%; top: 12%; }
   #screen-game .dd.s3 { right: 4%; top: auto; bottom: 5%; }
-  .onTitle .dd { width: clamp(80px, 9vw, 120px); }
+  .onTitle .dd { width: clamp(80px, calc(var(--app-w, 100vw) * 0.09), 120px); }
   .onTitle .dd.s0 { left: 12%; top: 14%; }
   .onTitle .dd.s1 { right: 12%; top: 16%; }
   .onTitle .dd.s2 { left: 14%; bottom: 14%; }
@@ -497,7 +512,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-high
 }
 
 /* Short frames: tighter everything. */
-@media (max-height: 640px) {
+html.short {
   .screen { padding: 12px 14px 10px; }
   .topBar { margin-bottom: 4px; }
   .topTitle h2 { font-size: 25px; }
@@ -507,8 +522,8 @@ button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-high
   .category { font-size: 18px; }
   .puzzle { gap: 6px; }
 }
-/* Very short frames (embeds around 500px tall). */
-@media (max-height: 560px) {
+/* Very short frames (phones in landscape, around 500px tall). */
+html.tiny {
   .screen { padding: 8px 12px 8px; border-width: 7px; }
   .iconBtn { width: 40px; height: 40px; }
   .topBar { grid-template-columns: 40px 1fr 40px; margin-bottom: 2px; }
@@ -518,7 +533,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-high
   .hintBtn { min-height: 36px; font-size: 18px; }
   .btn.big { min-height: 52px; font-size: 26px; }
   .btn { min-height: 44px; font-size: 20px; }
-  @media (min-aspect-ratio: 9/8) and (min-width: 600px) {
+  &.wide {
     #screen-game .keyboard { margin-top: 12px; }
     #screen-game .statusRow { margin-top: 4px; }
     /* No room under the keyboard for a doodle here. */
@@ -526,7 +541,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-high
   }
 }
 
-@media (max-width: 420px) {
+html.narrow {
   .screen { border-width: 7px; padding-left: 10px; padding-right: 10px; }
   .kRow { gap: 4px; }
   .key { font-size: 22px; }

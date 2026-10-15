@@ -1,3 +1,5 @@
+import { stageEl, toStage } from './stage';
+
 /**
  * Celebrations, all drawn in chalk:
  *  - wordDone: the letters hop in a wave and a little burst of chalk stars
@@ -27,7 +29,8 @@ export function wordDone(phrase: HTMLElement) {
 
 /** Chalk stars flying out from the middle of an element. */
 export function burst(from: HTMLElement, count: number, spread = 1) {
-  const r = from.getBoundingClientRect();
+  // Effects live in the (possibly scaled) stage: measure in stage units.
+  const r = toStage(from.getBoundingClientRect());
   const layer = document.createElement('div');
   layer.className = 'fxLayer';
   layer.setAttribute('aria-hidden', 'true');
@@ -39,7 +42,7 @@ export function burst(from: HTMLElement, count: number, spread = 1) {
     const size = 16 + ((i * 7) % 14);
     return `<span class="fxStar" style="left:${cx}px;top:${cy}px;--dx:${Math.round(Math.cos(a) * d)}px;--dy:${Math.round(Math.sin(a) * d * 0.7)}px;--rot:${(i * 53) % 180}deg;animation-delay:${(i % 4) * 25}ms">${starSvg(CHALK[i % CHALK.length], size)}</span>`;
   }).join('');
-  document.body.appendChild(layer);
+  stageEl().appendChild(layer);
   setTimeout(() => layer.remove(), 1300);
 }
 
@@ -62,6 +65,6 @@ export function levelDone() {
     pieces.push(`<span class="fxConfetti" style="left:${left}%;--drift:${drift}px;--spin:${((i % 2) ? 1 : -1) * (180 + (i * 41) % 360)}deg;animation-duration:${dur}s;animation-delay:${delay}s">${body}</span>`);
   }
   layer.innerHTML = pieces.join('');
-  document.body.appendChild(layer);
+  stageEl().appendChild(layer);
   setTimeout(() => layer.remove(), 3600);
 }

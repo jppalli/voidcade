@@ -1,3 +1,5 @@
+import { stageEl } from './stage';
+
 /**
  * Screen-to-screen "eraser" wipe: a chalk-dusty sweep of board covers the
  * screen, the next screen is swapped in underneath, and the sweep carries on
@@ -21,7 +23,7 @@ function overlay(): HTMLDivElement {
   el.setAttribute('aria-hidden', 'true');
   // A felt board eraser rides the leading edge; chalk dust trails behind it.
   el.innerHTML = '<span class="wipeDust"></span><span class="eraser"><i class="eraserTop"></i><i class="eraserFelt"></i></span>';
-  document.body.appendChild(el);
+  stageEl().appendChild(el); // inside the stage, so it scales with the game
   return el;
 }
 
