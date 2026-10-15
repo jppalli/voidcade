@@ -72,7 +72,18 @@ function refreshSoundButtons() {
 
 // ---------------------------------------------------------------- title
 
+/** Shrink the title stage to fit short embeds (never enlarge it). */
+function fitTitle() {
+  const screen = $('screen-title');
+  const stage = screen.querySelector<HTMLElement>('.titleStage');
+  if (!stage || screen.classList.contains('hidden')) return;
+  stage.style.setProperty('--fit', '1');
+  const fit = Math.min(1, (screen.clientHeight - 24) / stage.offsetHeight, (screen.clientWidth - 16) / stage.offsetWidth);
+  stage.style.setProperty('--fit', fit.toFixed(3));
+}
+
 function renderTitle() {
+  requestAnimationFrame(fitTitle);
   const done = solvedCount(progress);
   const next = nextLevel(progress);
   const all = done >= TOTAL_LEVELS;
@@ -668,7 +679,8 @@ function wire() {
     if ($('screen-game').classList.contains('hidden')) return;
     if (/^[a-z]$/i.test(e.key)) { e.preventDefault(); guess(e.key.toUpperCase()); }
   });
-  window.addEventListener('resize', () => { if (round) fitPhrase(); });
+  window.addEventListener('resize', () => { if (round) fitPhrase(); fitTitle(); });
+  void document.fonts?.ready.then(fitTitle); // the web fonts change text sizes
 
   platform.onPause(suspendSound);
   platform.onResume(resumeSound);
