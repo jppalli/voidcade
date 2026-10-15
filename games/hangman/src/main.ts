@@ -7,7 +7,7 @@ import { initStorage, resyncStorage, setSignedOut } from './platform/storage';
 import { initSound, playErase, playHit, playLose, playMiss, playStar, playTap, playWin, playWordDone, resumeSound, setSound, soundOn, suspendSound } from './audio/sound';
 import { levelDone, wordDone } from './ui/celebrate';
 import { setDoodles } from './ui/doodles';
-import { ENDLESS_POOL, LEVELS, TOTAL_LEVELS, WORDS_PER_LEVEL, WORLDS, levelStars, replacementFor, type Entry } from './game/words';
+import { ENDLESS_POOL, LEVELS, TOTAL_LEVELS, WORDS_PER_LEVEL, WORLDS, levelStars, pickLevelWords, type Entry } from './game/words';
 import { MAX_MISSES, Round } from './game/round';
 import { bestEndless, loadProgress, nextLevel, recordSolve, saveBestEndless, saveProgress, solvedCount, starCount, type Progress } from './game/progress';
 import { freeHintsLeft, useFreeHint } from './game/hints';
@@ -141,7 +141,7 @@ function startLevel(index: number) {
   activeLevel = index + 1;
   platform.levelStart(activeLevel);
   const w = WORLDS[ref.world];
-  levelWords = [...ref.topic.words];
+  levelWords = pickLevelWords(ref.topic, seen);
   wordIndex = 0;
   levelMisses = 0;
   levelHelped = false;
@@ -459,27 +459,26 @@ function onLost() {
   setTimeout(playLose, 200);
   setTimeout(() => {
     if (round !== r) return;
-    renderPhrase(true);
     const canRevive = mode.kind === 'level' ? !r.revived : !runRevived;
+    // While one more guess is on offer, the answer stays hidden: showing it
+    // would make the extra guess a free win.
+    if (!canRevive) renderPhrase(true);
     $('btnRevive').classList.toggle('hidden', !canRevive);
     ($('btnRevive') as HTMLButtonElement).disabled = false;
     $('reviveLabel').textContent = subscriber ? 'Keep going (one more guess)' : 'Watch a video for one more guess';
     $('btnRetry').classList.toggle('primary', !canRevive);
+    $('loseAnswer').classList.add('hidden');
     if (mode.kind === 'level') {
-      $('loseTitle').textContent = 'So close!';
-      const topicName = LEVELS[mode.index].topic.name.toLowerCase();
+      $('loseTitle').textContent = canRevive ? 'Out of guesses!' : 'So close!';
       $('loseText').textContent = canRevive
-        ? `Get one more guess on this word, or try a different ${topicName} word. Your other words stay solved.`
-        : `Try a different ${topicName} word. Your other words stay solved.`;
-      $('loseAnswer').textContent = '';
-      $('loseAnswer').classList.add('hidden');
-      $('btnRetry').textContent = 'Try another word';
+        ? 'Get one more guess on this word, or start the level over with new words.'
+        : 'Start the level over with new words, or pick another level.';
+      $('btnRetry').textContent = 'Start over';
       $('btnLoseMenu').textContent = 'Levels';
     } else {
       const best = bestEndless();
       $('loseTitle').textContent = 'Run over';
       $('loseText').textContent = `Score ${score.toLocaleString('en-US')} · ${solvedInRun} ${solvedInRun === 1 ? 'word' : 'words'} solved${score > best ? ' · New best!' : best ? ` · Best ${best.toLocaleString('en-US')}` : ''}`;
-      $('loseAnswer').classList.add('hidden');
       $('btnRetry').textContent = 'Play again';
       $('btnLoseMenu').textContent = 'Menu';
       // The score can only grow from here (a second chance), so save it now.
@@ -521,14 +520,10 @@ function onRetry() {
     go(() => { hideOverlays(); startEndless(); });
     return;
   }
-  // Swap only the lost word; the level carries on from here. Its misses
-  // still count toward the level's stars.
-  const r = round;
-  if (r) { levelMisses += r.misses; levelHelped ||= r.hinted.size > 0 || r.revived; }
-  const lost = levelWords[wordIndex];
-  const fresh = replacementFor(LEVELS[mode.index].topic, lost, seen);
-  if (fresh) levelWords[wordIndex] = fresh;
-  go(() => { hideOverlays(); startLevelWord(); });
+  // Start the whole level over. It deals words not seen yet where it can, so
+  // a replay is a fresh puzzle rather than a memory test.
+  const index = mode.index;
+  go(() => { hideOverlays(); startLevel(index); });
 }
 
 function leaveGame(to: Screen) {

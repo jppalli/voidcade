@@ -35,12 +35,42 @@ export const WORDS_PER_LEVEL = 5;
 
 const e = (category: string, ...texts: string[]): Entry[] => texts.map((text) => ({ text, category }));
 
-/** Five words and their spares; the five are sorted so the last is hardest. */
+/** Five words and their spares; the five are sorted so the last is hardest.
+ *  With five spares, starting a level over deals five words not seen yet. */
 const topic = (name: string, words: string[], spares: string[]): Topic => ({
   name,
   words: e(name, ...words).sort(byDifficulty),
-  spares: e(name, ...spares),
+  spares: e(name, ...spares, ...(MORE_SPARES[name] ?? [])),
 });
+
+/** Two more spares per topic, kept apart so the level lists stay readable. */
+const MORE_SPARES: Record<string, string[]> = {
+  Fruit: ['PLUM', 'KIWI'], Animals: ['CAMEL', 'GIRAFFE'], Colors: ['GOLD', 'NAVY'],
+  Weather: ['HAIL', 'BREEZE'], School: ['STAPLER', 'FOLDER'], 'At Home': ['CLOSET', 'STAIRS'],
+  Farm: ['ROOSTER', 'HAYSTACK'], Vegetables: ['SPINACH', 'CUCUMBER'], Toys: ['TEDDY BEAR', 'SPINNING TOP'],
+  Breakfast: ['FRENCH TOAST', 'HASH BROWNS'],
+  Flowers: ['VIOLET', 'MARIGOLD'], Sports: ['RUGBY', 'FENCING'], Desserts: ['DONUT', 'MILKSHAKE'],
+  Music: ['HARP', 'CELLO'], Ocean: ['SEA TURTLE', 'CLAM'], Jobs: ['BARBER', 'JUDGE'],
+  Space: ['SUNSPOT', 'BLACK HOLE'], Birds: ['HUMMINGBIRD', 'PELICAN'], 'Party Time': ['PINATA', 'GOODY BAG'],
+  Camping: ['BUG SPRAY', 'FISHING ROD'],
+  'At the Zoo': ['LEMUR', 'TORTOISE'], Museum: ['GIFT SHOP', 'TOUR GUIDE'], Airport: ['SECURITY', 'GATE'],
+  'Beach Day': ['UMBRELLA', 'SAND'], 'Big City': ['APARTMENT', 'PARKING LOT'], 'National Park': ['MOOSE', 'LOOKOUT'],
+  'Theme Park': ['ARCADE', 'TEACUPS'], Landmarks: ['STONEHENGE', 'COLOSSEUM'], 'Road Trip': ['SPEED LIMIT', 'TRUCK STOP'],
+  'Farmers Market': ['SWEET CORN', 'JAM'],
+  'Human Body': ['ANKLE', 'EYEBROW'], 'Weather Lab': ['SLEET', 'MONSOON'], Rocks: ['SANDSTONE', 'OBSIDIAN'],
+  Inventions: ['STEAM ENGINE', 'TYPEWRITER'], Bugs: ['DRAGONFLY', 'FIREFLY'], 'Deep Sea': ['SHIPWRECK', 'EEL'],
+  Chemistry: ['ATOM', 'CARBON'], Dinosaurs: ['ANKYLOSAURUS', 'DINO EGG'], Energy: ['POWER PLANT', 'NUCLEAR'],
+  'Odd Animals': ['TAPIR', 'PANGOLIN'],
+  'Fairy Tales': ['THUMBELINA', 'JACK AND THE BEANSTALK'], Castle: ['KING', 'QUEEN'],
+  'Nursery Rhymes': ['TWINKLE TWINKLE', 'ITSY BITSY SPIDER'], Magic: ['MAGIC CARPET', 'TOP HAT'],
+  Pirates: ['BURIED GOLD', 'SPYGLASS'], 'Classic Tales': ['HEIDI', 'MOBY DICK'], Myths: ['YETI', 'KRAKEN'],
+  Heroes: ['COMIC BOOK', 'SHIELD'], 'Book Words': ['GLOSSARY', 'BOOKWORM'], 'Spooky Stories': ['COBWEB', 'WITCH'],
+  'Weather Sayings': ['STORM IN A TEACUP', 'FAIR WEATHER FRIEND'], 'Animal Sayings': ['CAT NAP', 'BIRDS OF A FEATHER'],
+  'Food Sayings': ['BUTTER UP', 'TOP BANANA'], 'Time Sayings': ['TIME IS MONEY', 'FROM DAWN TO DUSK'],
+  'Body Sayings': ['CHIN UP', 'HEART OF GOLD'], 'Money Sayings': ['MONEY TO BURN', 'PENNY PINCHER'],
+  'Famous Pairs': ['CATS AND DOGS', 'KNIFE AND FORK'], Proverbs: ['EASY COME EASY GO', 'ALL IS WELL THAT ENDS WELL'],
+  'Tricky Spelling': ['SPHINX', 'ZEPHYR'], Graduation: ['TASSEL', 'GRADUATE'],
+};
 
 // ---------------------------------------------------------------- worlds
 
@@ -241,19 +271,29 @@ export const ENDLESS_POOL: Entry[] = [...POOL, ...LEVELS.flatMap((l) => [...l.to
   .sort(byDifficulty);
 
 /**
- * Stand-in for a word the player lost: an unseen word from the same topic,
- * the closest in difficulty.
+ * The five words for an attempt at a level. The first attempt gets the
+ * designed set. A restart prefers words the player hasn't seen yet (the
+ * level's spares, then Endless words filed under the same topic), so a
+ * replay can't be won from memory; seen words only fill gaps. The five are
+ * always ordered easiest to hardest.
  */
-export function replacementFor(topic: Topic, lost: Entry, seen: Set<string>): Entry | null {
-  const target = difficulty(lost.text);
-  const inTopic = new Set(topic.words.map((w) => w.text));
-  // Spares first, then Endless words filed under the same topic name.
-  let options = topic.spares.filter((x) => !seen.has(x.text));
-  if (!options.length) options = POOL.filter((x) => x.category === topic.name && !seen.has(x.text) && !inTopic.has(x.text));
-  // Everything has been seen this session: reuse a spare (never the word just lost).
-  if (!options.length) options = topic.spares.filter((x) => x.text !== lost.text);
-  if (!options.length) return null;
-  return [...options].sort((a, b) => Math.abs(difficulty(a.text) - target) - Math.abs(difficulty(b.text) - target))[0];
+export function pickLevelWords(topic: Topic, seen: Set<string>): Entry[] {
+  if (!topic.words.some((w) => seen.has(w.text))) return [...topic.words];
+  const own = [...topic.words, ...topic.spares];
+  const owned = new Set(own.map((w) => w.text));
+  const extra = POOL.filter((x) => x.category === topic.name && !owned.has(x.text));
+  const all = [...own, ...extra];
+  const fresh = all.filter((w) => !seen.has(w.text)).sort(byDifficulty);
+  let picked: Entry[];
+  if (fresh.length >= WORDS_PER_LEVEL) {
+    // Spread across the difficulty range so the level still ramps up.
+    picked = Array.from({ length: WORDS_PER_LEVEL }, (_, i) =>
+      fresh[Math.round((i * (fresh.length - 1)) / (WORDS_PER_LEVEL - 1))]);
+  } else {
+    const fill = all.filter((w) => seen.has(w.text)).sort(() => Math.random() - 0.5);
+    picked = [...fresh, ...fill.slice(0, WORDS_PER_LEVEL - fresh.length)];
+  }
+  return picked.sort(byDifficulty);
 }
 
 /** Level stars from the misses across all five words; help caps it at 2. */

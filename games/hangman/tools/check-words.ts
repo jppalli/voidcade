@@ -25,7 +25,8 @@ for (const [t, n] of texts) if (n > 1) fail(`duplicate: "${t}"`);
 const levelTexts = new Map<string, string>();
 for (const l of LEVELS) {
   if (l.topic.words.length !== WORDS_PER_LEVEL) fail(`level ${l.index + 1} (${l.topic.name}) has ${l.topic.words.length} words`);
-  if (l.topic.spares.length < 2) fail(`level ${l.index + 1} (${l.topic.name}) needs at least 2 spares`);
+  // Five spares: starting a level over can then deal five unseen words.
+  if (l.topic.spares.length < WORDS_PER_LEVEL) fail(`level ${l.index + 1} (${l.topic.name}) needs ${WORDS_PER_LEVEL} spares, has ${l.topic.spares.length}`);
   for (const w of [...l.topic.words, ...l.topic.spares]) {
     const other = levelTexts.get(w.text);
     if (other) fail(`"${w.text}" is in both ${other} and ${l.topic.name}`);
