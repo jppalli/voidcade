@@ -162,10 +162,10 @@ button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-high
   border-radius: 16px 20px 15px 19px / 19px 15px 20px 16px;
 }
 .levelBtn .lvNum { font-size: 26px; line-height: 1; }
-/* Topic name: wraps to two lines on narrow tiles rather than overflowing. */
+/* Topic name: wraps between words only (never mid-word), up to two lines. */
 .levelBtn .lvTopic {
   font-size: 15px; line-height: 1.05; color: var(--chalk-soft); text-align: center;
-  max-width: 100%; overflow-wrap: anywhere;
+  max-width: 100%; overflow-wrap: normal; word-break: normal; hyphens: none;
 }
 .levelBtn.next .lvTopic { color: var(--yellow); }
 .levelBtn.locked .icon { width: 18px; height: 18px; }
@@ -388,7 +388,10 @@ button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-high
   .screen { border-width: 7px; padding-left: 10px; padding-right: 10px; }
   .kRow { gap: 4px; }
   .key { font-size: 22px; }
-  .levelGrid { gap: 9px; }
+  .levelGrid { gap: 7px; }
+  .world { padding: 14px 10px 16px; }
+  .levelBtn { padding: 8px 2px 7px; }
+  .levelBtn .lvTopic { font-size: 13px; letter-spacing: -0.2px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -70,6 +70,62 @@ const WORLD_2 = (): Topic[] => [
   topic('Camping', ['CAMPFIRE', 'TENT', 'FLASHLIGHT', 'MARSHMALLOW', 'SLEEPING BAG'], ['HIKING', 'LANTERN', 'COMPASS']),
 ];
 
+/** Places and outings: mostly two-word phrases, less obvious topics. */
+const WORLD_3 = (): Topic[] => [
+  topic('At the Zoo', ['SEA LION', 'POLAR BEAR', 'PETTING ZOO', 'GORILLA', 'HIPPO'], ['REPTILE HOUSE', 'KOALA', 'ZOOKEEPER']),
+  topic('Museum', ['DINOSAUR', 'MUMMY', 'STATUE', 'PAINTING', 'FOSSIL'], ['MAMMOTH', 'EXHIBIT', 'SCULPTURE']),
+  topic('Airport', ['SUITCASE', 'PASSPORT', 'BOARDING PASS', 'RUNWAY', 'TICKET'], ['JET LAG', 'BAGGAGE', 'TERMINAL']),
+  topic('Beach Day', ['SUNSCREEN', 'BEACH TOWEL', 'SEASHELL', 'LIFEGUARD', 'WAVES'], ['SANDCASTLE', 'FLIP FLOPS', 'SURFBOARD']),
+  topic('Big City', ['SKYSCRAPER', 'SUBWAY', 'TAXI CAB', 'CROSSWALK', 'BRIDGE'], ['TRAFFIC LIGHT', 'SIDEWALK', 'ELEVATOR']),
+  topic('National Park', ['GEYSER', 'CAMPGROUND', 'HIKING TRAIL', 'RANGER', 'CANYON'], ['BISON', 'VISITOR CENTER', 'PICNIC TABLE']),
+  topic('Theme Park', ['ROLLER COASTER', 'FERRIS WHEEL', 'BUMPER CARS', 'COTTON CANDY', 'CAROUSEL'], ['LOG FLUME', 'FUNNEL CAKE', 'WATER SLIDE']),
+  topic('Landmarks', ['STATUE OF LIBERTY', 'GRAND CANYON', 'EIFFEL TOWER', 'BIG BEN', 'MOUNT RUSHMORE'], ['GOLDEN GATE BRIDGE', 'GREAT WALL', 'PYRAMIDS']),
+  topic('Road Trip', ['GAS STATION', 'ROAD MAP', 'MOTEL', 'BILLBOARD', 'HIGHWAY'], ['REST STOP', 'SNACKS', 'CAR WASH']),
+  topic('Farmers Market', ['APPLE CIDER', 'FRESH EGGS', 'PUMPKIN', 'HONEY', 'BAKED GOODS'], ['MAPLE SYRUP', 'ZUCCHINI', 'KALE']),
+];
+
+/** Rarer letters and tricky spelling: Q, X, Z, J and silent letters. */
+const WORLD_4 = (): Topic[] => [
+  topic('Human Body', ['HEART', 'LUNGS', 'SKULL', 'KNUCKLE', 'ELBOW'], ['KIDNEY', 'SPINE', 'STOMACH']),
+  topic('Weather Lab', ['HURRICANE', 'HUMIDITY', 'DROUGHT', 'FORECAST', 'HAILSTORM'], ['BAROMETER', 'DRIZZLE', 'TYPHOON']),
+  topic('Rocks', ['QUARTZ', 'CRYSTAL', 'GRANITE', 'MAGMA', 'GEODE'], ['MARBLE', 'LAVA', 'JADE']),
+  topic('Inventions', ['TELEPHONE', 'LIGHT BULB', 'COMPUTER', 'MICROSCOPE', 'ZIPPER'], ['PRINTING PRESS', 'CAMERA', 'TELEVISION']),
+  topic('Bugs', ['BEETLE', 'LADYBUG', 'GRASSHOPPER', 'MOSQUITO', 'WASP'], ['CATERPILLAR', 'ANT', 'CRICKET']),
+  topic('Deep Sea', ['CORAL REEF', 'SUBMARINE', 'ANGLERFISH', 'PLANKTON', 'SQUID'], ['STINGRAY', 'KELP', 'SEA URCHIN']),
+  topic('Chemistry', ['OXYGEN', 'HYDROGEN', 'MOLECULE', 'BEAKER', 'ACID'], ['ELEMENT', 'LIQUID', 'VAPOR']),
+  topic('Dinosaurs', ['TRICERATOPS', 'STEGOSAURUS', 'RAPTOR', 'JURASSIC', 'T-REX'], ['PTERODACTYL', 'BRONTOSAURUS', 'VELOCIRAPTOR']),
+  topic('Energy', ['SOLAR PANEL', 'WINDMILL', 'ELECTRICITY', 'MAGNET', 'VOLTAGE'], ['BATTERY', 'GENERATOR', 'FUEL']),
+  topic('Odd Animals', ['PLATYPUS', 'AXOLOTL', 'ARMADILLO', 'CHAMELEON', 'SLOTH'], ['NARWHAL', 'YAK', 'OKAPI']),
+];
+
+/** Stories and legends: longer phrases and names to recall. */
+const WORLD_5 = (): Topic[] => [
+  topic('Fairy Tales', ['CINDERELLA', 'SNOW WHITE', 'RAPUNZEL', 'SLEEPING BEAUTY', 'GOLDILOCKS'], ['THREE LITTLE PIGS', 'HANSEL AND GRETEL', 'LITTLE RED RIDING HOOD']),
+  topic('Castle', ['DRAGON', 'KNIGHT', 'PRINCESS', 'DRAWBRIDGE', 'MOAT'], ['THRONE', 'TOWER', 'JESTER']),
+  topic('Nursery Rhymes', ['HUMPTY DUMPTY', 'JACK AND JILL', 'LITTLE BO PEEP', 'OLD MOTHER HUBBARD', 'BAA BAA BLACK SHEEP'], ['HICKORY DICKORY DOCK', 'MARY HAD A LITTLE LAMB', 'ROW ROW ROW YOUR BOAT']),
+  topic('Magic', ['WIZARD', 'MAGIC WAND', 'SPELL BOOK', 'POTION', 'CRYSTAL BALL'], ['UNICORN', 'FAIRY DUST', 'CAULDRON']),
+  topic('Pirates', ['TREASURE CHEST', 'PIRATE SHIP', 'EYE PATCH', 'CAPTAIN', 'WALK THE PLANK'], ['CANNON', 'ANCHOR', 'JOLLY ROGER']),
+  topic('Classic Tales', ['ROBIN HOOD', 'PETER PAN', 'ALICE IN WONDERLAND', 'TREASURE ISLAND', 'PINOCCHIO'], ['THE JUNGLE BOOK', 'OLIVER TWIST', 'BLACK BEAUTY']),
+  topic('Myths', ['MERMAID', 'GIANT', 'TROLL', 'PHOENIX', 'CENTAUR'], ['GRIFFIN', 'CYCLOPS', 'MINOTAUR']),
+  topic('Heroes', ['CAPE', 'MASK', 'SECRET IDENTITY', 'SUPERPOWER', 'SIDEKICK'], ['HERO', 'VILLAIN', 'X-RAY VISION']),
+  topic('Book Words', ['CHAPTER', 'BOOKMARK', 'AUTHOR', 'LIBRARY CARD', 'PLOT TWIST'], ['HAPPY ENDING', 'ONCE UPON A TIME', 'PAPERBACK']),
+  topic('Spooky Stories', ['HAUNTED HOUSE', 'GHOST', 'WEREWOLF', 'VAMPIRE', 'ZOMBIE'], ['SKELETON', 'BLACK CAT', 'FULL MOON']),
+];
+
+/** Sayings and idioms: full phrases behind vaguer clues. */
+const WORLD_6 = (): Topic[] => [
+  topic('Weather Sayings', ['RAINING CATS AND DOGS', 'CALM BEFORE THE STORM', 'STEAL MY THUNDER', 'UNDER THE WEATHER', 'ON CLOUD NINE'], ['A BREEZE', 'IT NEVER RAINS BUT IT POURS', 'EVERY CLOUD HAS A SILVER LINING']),
+  topic('Animal Sayings', ['HOLD YOUR HORSES', 'EARLY BIRD', 'BUSY AS A BEE', 'THE ELEPHANT IN THE ROOM', 'WHEN PIGS FLY'], ['CAT GOT YOUR TONGUE', "LION'S SHARE", 'RAT RACE']),
+  topic('Food Sayings', ['PIECE OF CAKE', 'EASY AS PIE', 'SPILL THE BEANS', 'APPLE OF MY EYE', 'BIG CHEESE'], ['TOUGH COOKIE', 'COOL AS A CUCUMBER', 'IN A NUTSHELL']),
+  topic('Time Sayings', ['TIME FLIES', 'BETTER LATE THAN NEVER', 'IN THE NICK OF TIME', 'ONCE IN A BLUE MOON', 'AROUND THE CLOCK'], ['CALL IT A DAY', 'BEAT THE CLOCK', 'AT THE ELEVENTH HOUR']),
+  topic('Body Sayings', ['BREAK A LEG', 'COLD FEET', 'COST AN ARM AND A LEG', 'ALL EARS', 'KEEP AN EYE ON IT'], ['LEND A HAND', 'TONGUE-TIED', 'SHOULDER TO CRY ON']),
+  topic('Money Sayings', ['MONEY TALKS', 'PENNY FOR YOUR THOUGHTS', 'BREAK THE BANK', 'WORTH EVERY PENNY', 'ON A BUDGET'], ['PAY IT FORWARD', 'NEST EGG', 'BANG FOR YOUR BUCK']),
+  topic('Famous Pairs', ['SALT AND PEPPER', 'PEANUT BUTTER AND JELLY', 'MILK AND COOKIES', 'SOCKS AND SHOES', 'THUNDER AND LIGHTNING'], ['BREAD AND BUTTER', 'ROCK AND ROLL', 'SUN AND MOON']),
+  topic('Proverbs', ['PRACTICE MAKES PERFECT', 'HONESTY IS THE BEST POLICY', 'LOOK BEFORE YOU LEAP', 'NO PLACE LIKE HOME', 'ACTIONS SPEAK LOUDER THAN WORDS'], ['TWO HEADS ARE BETTER THAN ONE', 'SLOW AND STEADY WINS THE RACE', 'BETTER SAFE THAN SORRY']),
+  topic('Tricky Spelling', ['RHYTHM', 'QUEUE', 'JUKEBOX', 'BUZZWORD', 'WALTZ'], ['JINX', 'QUIZ', 'ZIGZAG']),
+  topic('Graduation', ['CAP AND GOWN', 'DIPLOMA', 'YEARBOOK', 'VALEDICTORIAN', 'HONOR ROLL'], ['COMMENCEMENT', 'SCHOLARSHIP', 'CLASS PHOTO']),
+];
+
 // ---------------------------------------------------------------- endless pool
 
 const POOL: Entry[] = [
@@ -152,6 +208,22 @@ export const WORLDS: World[] = [
   {
     id: 'recess', name: 'Recess', blurb: 'Longer words and your first phrases.',
     board: '#2b3a48', levels: WORLD_2(),
+  },
+  {
+    id: 'field-trip', name: 'Field Trip', blurb: 'Out of the classroom: places, rides and famous sights.',
+    board: '#36452f', levels: WORLD_3(),
+  },
+  {
+    id: 'science-class', name: 'Science Class', blurb: 'Tricky spelling and rare letters. Think Q, X and Z.',
+    board: '#24414a', levels: WORLD_4(),
+  },
+  {
+    id: 'library', name: 'Library', blurb: 'Fairy tales, legends and story-time phrases.',
+    board: '#3a3346', levels: WORLD_5(),
+  },
+  {
+    id: 'final-exam', name: 'Final Exam', blurb: 'Sayings and idioms. The toughest test in school.',
+    board: '#3a302b', levels: WORLD_6(),
   },
 ];
 

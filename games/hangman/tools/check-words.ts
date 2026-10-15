@@ -17,6 +17,7 @@ for (const e of all) {
   texts.set(e.text, (texts.get(e.text) ?? 0) + 1);
   const longest = Math.max(...e.text.split(' ').map((w) => w.length));
   if (longest > 13) fail(`word too long for small screens (${longest}): "${e.text}"`);
+  if (e.text.split(' ').length > 6) fail(`phrase longer than 6 words: "${e.text}"`);
 }
 for (const [t, n] of texts) if (n > 1) fail(`duplicate: "${t}"`);
 

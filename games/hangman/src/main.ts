@@ -246,14 +246,24 @@ function renderPhrase(revealAll = false) {
 function fitPhrase() {
   const host = $('phrase');
   const words = round!.entry.text.split(' ');
-  const longest = Math.max(...words.map((w) => w.length));
   const room = (host.clientWidth || 320) - 4;
-  // A tile is about 1.14 x --tile wide (with its gap); word gaps are 0.7 x.
-  const perWord = Math.floor(room / (longest * 1.14));
-  const total = words.reduce((n, w) => n + w.length, 0);
-  const oneLine = Math.floor(room / (total * 1.14 + (words.length - 1) * 0.7));
-  // Keep the whole phrase on one line if it still reads well, else one word per line.
-  const size = Math.max(20, Math.min(46, oneLine >= 30 ? oneLine : perWord));
+  // Long sayings must not push the keyboard off a phone: allow about a
+  // quarter of the frame for the phrase (more on tall screens).
+  const maxH = Math.max(110, window.innerHeight * 0.24);
+  // Largest tile where the words, wrapped like the flex row wraps them, fit
+  // both the width and that height. Tile ~1.14 x wide with its gap; word
+  // gaps 0.7 x; line height 1.25 x plus a 10px row gap.
+  let size = 46;
+  for (; size > 18; size -= 2) {
+    const wordW = (w: string) => w.length * size * 1.14;
+    if (Math.max(...words.map(wordW)) > room) continue;
+    let lines = 1, x = 0;
+    for (const w of words) {
+      const need = (x ? size * 0.7 : 0) + wordW(w);
+      if (x && x + need > room) { lines++; x = wordW(w); } else x += need;
+    }
+    if (lines * size * 1.25 + (lines - 1) * 10 <= maxH) break;
+  }
   host.style.setProperty('--tile', `${size}px`);
 }
 
