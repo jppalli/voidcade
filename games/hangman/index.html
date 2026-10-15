@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hangman – Free Online Word Game</title>
+  <meta name="description" content="Play Hangman free online. Guess the word or phrase one letter at a time on a classic chalkboard, with levels, stars and an Endless mode.">
+  <meta name="theme-color" content="#2f4b3c">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%232f4b3c'/%3E%3Cg fill='none' stroke='%23f4f1e8' stroke-width='6' stroke-linecap='round'%3E%3Cpath d='M18 86h46M30 86V16h40v12'/%3E%3Ccircle cx='70' cy='38' r='9'/%3E%3Cpath d='M70 47v20M70 54l-9 9M70 54l9 9'/%3E%3C/g%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/src/styles.css">
+</head>
+<body>
+
+  <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+    <symbol id="i-sound-on" viewBox="0 0 24 24"><path d="M4 9v6h4l5 5V4L8 9H4Z"/><path d="M17 8a5 5 0 0 1 0 8"/></symbol>
+    <symbol id="i-sound-off" viewBox="0 0 24 24"><path d="M4 9v6h4l5 5V4L8 9H4Z"/><line x1="17" y1="9" x2="22" y2="15"/><line x1="22" y1="9" x2="17" y2="15"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+    <symbol id="i-hint" viewBox="0 0 24 24"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.4.3.7.8.7 1.3V16h5.6v-.8c0-.5.3-1 .7-1.3A6 6 0 0 0 12 3Z"/></symbol>
+    <symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.5v5l4.5-2.5Z" fill="currentColor"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.4 9.2a2.7 2.7 0 1 1 3.6 2.5c-.7.3-1 .9-1 1.6v.3"/><line x1="12" y1="17" x2="12" y2="17.01" stroke-width="2.6"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 2.5l3.09 6.26 6.91 1-5 4.87 1.18 6.87L12 18.27 5.82 21.5 7 14.63l-5-4.87 6.91-1z"/></symbol>
+  </svg>
+
+  <!-- ============ title ============ -->
+  <section id="screen-title" class="screen">
+    <button class="iconBtn cornerBtn" data-sound title="Sound" aria-label="Sound"><svg class="icon"><use href="#i-sound-on"/></svg></button>
+    <div class="titleStage">
+      <div class="titleArt" id="titleArt" aria-hidden="true"></div>
+      <h1 class="logo">Hangman</h1>
+      <p class="tagline">Guess the word, one letter at a time</p>
+      <div class="titleBtns">
+        <button class="btn primary big" id="btnPlay"><span id="playLabel">Play</span></button>
+        <div class="btnRow">
+          <button class="btn" id="btnLevels">Levels</button>
+          <button class="btn" id="btnEndless">Endless</button>
+        </div>
+        <p class="bestLine" id="bestLine"></p>
+        <button class="linkBtn" id="btnHowTo"><svg class="icon"><use href="#i-help"/></svg>How to play</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ levels ============ -->
+  <section id="screen-map" class="screen hidden">
+    <header class="topBar">
+      <button class="iconBtn" data-nav="title" title="Back" aria-label="Back to menu"><svg class="icon"><use href="#i-back"/></svg></button>
+      <div class="topTitle"><h2>Levels</h2><span class="topSub" id="mapStars"></span></div>
+      <button class="iconBtn" data-sound title="Sound" aria-label="Sound"><svg class="icon"><use href="#i-sound-on"/></svg></button>
+    </header>
+    <div class="worlds" id="worlds"></div>
+  </section>
+
+  <!-- ============ game ============ -->
+  <section id="screen-game" class="screen hidden">
+    <header class="topBar">
+      <button class="iconBtn" id="btnGameBack" title="Back" aria-label="Back"><svg class="icon"><use href="#i-back"/></svg></button>
+      <div class="topTitle"><h2 id="gameTitle">Level 1</h2><span class="topSub" id="gameSub"></span></div>
+      <button class="iconBtn" data-sound title="Sound" aria-label="Sound"><svg class="icon"><use href="#i-sound-on"/></svg></button>
+    </header>
+
+    <div class="play">
+      <div class="drawWrap" id="drawWrap"></div>
+      <div class="puzzle">
+        <p class="category">Category: <b id="category"></b></p>
+        <div class="phrase" id="phrase" aria-live="polite"></div>
+        <div class="statusRow">
+          <span class="misses" id="misses" aria-label="Misses left"></span>
+          <button class="btn hintBtn" id="btnHint"><svg class="icon"><use href="#i-hint"/></svg><span>Hint</span><b class="badge" id="hintBadge"></b></button>
+        </div>
+        <p class="coachLine hidden" id="coachLine"></p>
+      </div>
+    </div>
+
+    <div class="keyboard" id="keyboard" role="group" aria-label="Letters"></div>
+  </section>
+
+  <!-- ============ modals ============ -->
+  <div class="overlay hidden" id="winOverlay">
+    <div class="modal" role="dialog" aria-labelledby="winTitle">
+      <h3 id="winTitle">Solved!</h3>
+      <div class="stars" id="winStars"></div>
+      <p class="answer" id="winAnswer"></p>
+      <p class="modalText" id="winText"></p>
+      <button class="btn primary" id="btnWinNext">Next level</button>
+      <button class="btn" id="btnWinLevels">Levels</button>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="loseOverlay">
+    <div class="modal" role="dialog" aria-labelledby="loseTitle">
+      <h3 id="loseTitle">So close!</h3>
+      <p class="modalText" id="loseText"></p>
+      <p class="answer" id="loseAnswer"></p>
+      <button class="btn primary" id="btnRevive"><svg class="icon"><use href="#i-video"/></svg><span id="reviveLabel">Watch a video for one more guess</span></button>
+      <button class="btn" id="btnRetry">Try another word</button>
+      <button class="btn ghost" id="btnLoseMenu">Levels</button>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="howToOverlay">
+    <div class="modal howTo" role="dialog" aria-labelledby="howToTitle">
+      <h3 id="howToTitle">How to play</h3>
+      <ol class="rules">
+        <li>Guess the hidden word or phrase one letter at a time.</li>
+        <li>Each wrong letter adds a line to the drawing. Six misses and the round is over.</li>
+        <li>The category is your clue. Solve it to save the stick figure.</li>
+      </ol>
+      <p class="modalText">Fewer misses earn more stars. In Endless, keep solving to build your score.</p>
+      <button class="btn primary" id="btnHowToClose">Let's play</button>
+    </div>
+  </div>
+
+  <div class="toast hidden" id="toast" role="status"></div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

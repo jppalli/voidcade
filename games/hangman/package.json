@@ -1,0 +1,23 @@
+{
+  "name": "hangman",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "build:arkadium": "tsc && vite build --outDir arkadium-build --emptyOutDir",
+    "preview": "vite preview",
+    "check-words": "vite-node tools/check-words.ts"
+  },
+  "dependencies": {
+    "@arkadiuminc/sdk": "2.76.0",
+    "@fontsource/cabin-sketch": "5.3.0",
+    "@fontsource/patrick-hand": "5.3.0"
+  },
+  "devDependencies": {
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0",
+    "vite-node": "^3.2.4"
+  }
+}
