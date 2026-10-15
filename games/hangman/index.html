@@ -22,8 +22,22 @@
     <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 2.5l3.09 6.26 6.91 1-5 4.87 1.18 6.87L12 18.27 5.82 21.5 7 14.63l-5-4.87 6.91-1z"/></symbol>
   </svg>
 
+  <!-- Shared chalk texture filter. Not display:none, so every screen can use
+       it (filters inside hidden SVGs don't render in some browsers). -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <defs>
+      <filter id="chalk" x="-10%" y="-10%" width="120%" height="120%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed="4" result="n"/>
+        <feDisplacementMap in="SourceGraphic" in2="n" scale="2.6" xChannelSelector="R" yChannelSelector="G" result="d"/>
+        <feComponentTransfer in="n" result="grain"><feFuncA type="table" tableValues="0.55 1"/></feComponentTransfer>
+        <feComposite in="d" in2="grain" operator="in"/>
+      </filter>
+    </defs>
+  </svg>
+
   <!-- ============ title ============ -->
   <section id="screen-title" class="screen">
+    <div class="doodles onTitle" id="titleDoodles" aria-hidden="true"></div>
     <button class="iconBtn cornerBtn" data-sound title="Sound" aria-label="Sound"><svg class="icon"><use href="#i-sound-on"/></svg></button>
     <div class="titleStage">
       <div class="titleArt" id="titleArt" aria-hidden="true"></div>
@@ -53,6 +67,7 @@
 
   <!-- ============ game ============ -->
   <section id="screen-game" class="screen hidden">
+    <div class="doodles" id="gameDoodles" aria-hidden="true"></div>
     <header class="topBar">
       <button class="iconBtn" id="btnGameBack" title="Back" aria-label="Back"><svg class="icon"><use href="#i-back"/></svg></button>
       <div class="topTitle"><h2 id="gameTitle">Level 1</h2><span class="topSub" id="gameSub"></span></div>

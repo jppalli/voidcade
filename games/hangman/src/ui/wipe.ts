@@ -18,6 +18,8 @@ function overlay(): HTMLDivElement {
   el = document.createElement('div');
   el.className = 'wipe hidden';
   el.setAttribute('aria-hidden', 'true');
+  // A felt board eraser rides the leading edge; chalk dust trails behind it.
+  el.innerHTML = '<span class="wipeDust"></span><span class="eraser"><i class="eraserTop"></i><i class="eraserFelt"></i></span>';
   document.body.appendChild(el);
   return el;
 }

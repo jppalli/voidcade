@@ -64,6 +64,26 @@ button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-high
   pointer-events: none;
 }
 
+/* ---------------- doodles ---------------- */
+/* Faint chalk sketches in fixed slots at the board's edges, behind
+   everything (they never take taps). Phone: either side of the drawing. */
+.screen > *:not(.doodles) { position: relative; z-index: 1; }
+.screen > .cornerBtn { position: absolute; z-index: 2; }
+/* .play becomes display:contents on wide screens, so lift its children too. */
+.play > * { position: relative; z-index: 1; }
+.doodles { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.dd { position: absolute; width: clamp(50px, 15vw, 96px); aspect-ratio: 1; color: var(--chalk); opacity: 0.2; line-height: 0; }
+.dd svg { width: 100%; height: 100%; overflow: visible; }
+.dd.s0 { left: 3%; top: 14%; rotate: -8deg; }
+.dd.s1 { right: 3%; top: 12%; rotate: 7deg; }
+.dd.s2 { left: 4%; top: 36%; rotate: 5deg; }
+.dd.s3 { right: 4%; top: 37%; rotate: -6deg; }
+/* Title: the four corners. */
+.onTitle .dd.s0 { left: 6%; top: 9%; }
+.onTitle .dd.s1 { right: 7%; top: 17%; }
+.onTitle .dd.s2 { left: 6%; top: auto; bottom: 9%; }
+.onTitle .dd.s3 { right: 6%; top: auto; bottom: 7%; }
+
 /* ---------------- buttons ---------------- */
 .btn {
   min-height: 48px;
@@ -114,6 +134,18 @@ button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-high
   text-shadow: 0 0 10px rgba(244, 241, 232, 0.25);
 }
 .tagline { font-size: 22px; color: var(--chalk-soft); margin: 10px 0 26px; }
+/* First open: "Hangman" writes itself across the board, then the rest appears. */
+#screen-title.intro .logo { animation: logoWrite 1.25s cubic-bezier(0.55, 0.1, 0.4, 1) 0.15s both; }
+#screen-title.intro .titleArt { animation: introFade 0.5s ease 1.2s both, wave 2.4s ease-in-out 1.7s infinite; }
+#screen-title.intro .tagline { animation: introFade 0.5s ease 1.25s both; }
+#screen-title.intro .titleBtns { animation: introUp 0.5s ease 1.4s both; }
+#screen-title.intro .doodles { animation: introFade 0.8s ease 1.1s both; }
+@keyframes logoWrite {
+  0% { clip-path: inset(-20% 100% -20% 0); }
+  100% { clip-path: inset(-20% -5% -20% 0); }
+}
+@keyframes introFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes introUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 .titleBtns { width: 100%; display: flex; flex-direction: column; gap: 12px; align-items: stretch; }
 .btnRow { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .bestLine { min-height: 24px; color: var(--yellow); font-size: 19px; }
@@ -207,8 +239,13 @@ button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-high
 .tile.punct { border-bottom-color: transparent; width: auto; min-width: calc(var(--tile) * 0.35); }
 .tile.hinted { color: var(--yellow); }
 .tile.missed { color: var(--pink); }
-.tile.pop { animation: tilePop 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
-@keyframes tilePop { from { transform: translateY(6px) scale(0.6); opacity: 0; } to { transform: none; opacity: 1; } }
+.tile .ch { display: inline-block; font-weight: 400; rotate: var(--tilt, 0deg); }
+/* A found letter writes itself in, left to right, like a chalk stroke. */
+.tile.pop .ch { animation: chalkWrite 0.34s ease-out var(--wd, 0ms) both; }
+@keyframes chalkWrite {
+  0% { clip-path: inset(0 100% 0 0); transform: translateY(2px); opacity: 0.4; }
+  100% { clip-path: inset(0 0 0 0); transform: none; opacity: 1; }
+}
 .phrase.shake { animation: shake 0.32s ease; }
 @keyframes shake { 0%, 100% { transform: none; } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
 
@@ -264,8 +301,28 @@ button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-high
 .drawing.won .happy .h6 { transition-delay: 0.8s; }
 .drawing.won .happy { animation: hop 0.6s ease-in-out 1.1s 3; transform-origin: 168px 205px; transform-box: view-box; }
 @keyframes hop { 0%, 100% { transform: none; } 50% { transform: translateY(-10px); } }
-/* Lost: the figure turns pink; the board gets wiped for the next word. */
-.drawing.lost .figure .ln { stroke: var(--pink); }
+/* Faces on the hanging head: one at a time, getting more worried. */
+.drawing .face { stroke: var(--chalk); stroke-width: 3; opacity: 0; transition: opacity 0.25s ease 0.2s; }
+.drawing .face.on { opacity: 1; }
+.drawing.instant .face { transition: none; }
+.drawing.won .face { opacity: 0; transition-delay: 0s; }
+/* A nervous wobble from the rope each time a line lands. */
+.drawing .figure { transform-box: view-box; transform-origin: 140px 18px; }
+.drawing .figure.nudge { animation: nudge 0.7s ease-out; }
+@keyframes nudge {
+  0%, 100% { transform: none; }
+  20% { transform: rotate(5deg); }
+  45% { transform: rotate(-3.5deg); }
+  70% { transform: rotate(1.5deg); }
+}
+/* Lost: the figure turns pink and shrugs before the board is wiped. */
+.drawing.lost .figure .ln, .drawing.lost .face { stroke: var(--pink); }
+.drawing .part.p2, .drawing .part.p3 { transform-box: view-box; transform-origin: 140px 94px; transition: stroke-dashoffset 0.45s ease, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease; }
+.drawing.instant .part.p2, .drawing.instant .part.p3 { transition: none; }
+.drawing.lost .part.p2 { transform: rotate(48deg); transition-delay: 0s, 0.35s; }
+.drawing.lost .part.p3 { transform: rotate(-48deg); transition-delay: 0s, 0.35s; }
+.drawing.lost .figure { animation: shrug 0.9s ease-in-out 0.35s 2; }
+@keyframes shrug { 0%, 100% { transform: none; } 50% { transform: translateY(-3px) rotate(-2deg); } }
 
 /* ---------------- modals ---------------- */
 .overlay {
@@ -297,7 +354,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-high
 
 /* ---------------- celebrations ---------------- */
 /* Word solved: letters hop in a wave and turn to yellow chalk. */
-.tile.cheer { animation: cheer 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both; color: var(--yellow); border-bottom-color: var(--yellow); }
+.tile.cheer { animation: cheer 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) var(--cd, 0ms) both; color: var(--yellow); border-bottom-color: var(--yellow); transition: color 0.2s ease var(--cd, 0ms), border-color 0.2s ease var(--cd, 0ms); }
 @keyframes cheer {
   0% { transform: none; }
   40% { transform: translateY(-14px) rotate(-4deg) scale(1.12); }
@@ -343,19 +400,45 @@ button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-high
 .toast.show { animation: toastUp 1.5s ease forwards; }
 @keyframes toastUp { 0% { opacity: 0; transform: translate(-50%, 10px); } 15% { opacity: 1; transform: translate(-50%, 0); } 75% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -16px); } }
 
-/* Eraser wipe between screens. */
+/* Eraser wipe between screens: a board panel smeared with chalk dust, with a
+   felt eraser on its leading edge. It sweeps on, then carries on off. */
 .wipe {
-  position: fixed; inset: -2%; z-index: 90;
+  position: fixed; top: -2%; bottom: -2%; left: -2%; right: -2%; z-index: 90;
   background:
     var(--dust),
-    repeating-linear-gradient(100deg, rgba(255, 255, 255, 0.05) 0 18px, transparent 18px 46px),
-    #2a3a32;
-  transform: translateX(-105%);
+    /* a few broad, uneven smears, like a fresh rub of the eraser */
+    linear-gradient(178deg,
+      transparent 0 6%, rgba(255, 255, 255, 0.05) 14%, transparent 22%,
+      transparent 30%, rgba(255, 255, 255, 0.065) 41%, rgba(255, 255, 255, 0.04) 50%, transparent 58%,
+      transparent 66%, rgba(255, 255, 255, 0.045) 76%, transparent 86%, rgba(255, 255, 255, 0.03) 93%, transparent),
+    radial-gradient(ellipse at 70% 40%, rgba(255, 255, 255, 0.06), transparent 60%),
+    #2b3b33;
+  transform: translateX(-112%);
   pointer-events: auto; touch-action: none;
 }
-.wipe.start { transition: none; transform: translateX(-105%); }
-.wipe.cover { transition: transform 0.3s cubic-bezier(0.45, 0, 0.55, 1); transform: translateX(0); }
-.wipe.leave { transition: transform 0.38s cubic-bezier(0.45, 0, 0.55, 1); transform: translateX(105%); }
+/* Dust is thickest right behind the eraser and fades out across the panel. */
+.wipeDust {
+  position: absolute; top: 0; bottom: 0; right: 0; width: 46%;
+  background: linear-gradient(90deg, transparent, rgba(244, 241, 232, 0.10) 70%, rgba(244, 241, 232, 0.18));
+  filter: blur(6px);
+}
+.eraser {
+  position: absolute; top: 50%; right: -30px; width: 74px; height: min(56vh, 300px);
+  transform: translateY(-50%) rotate(-4deg);
+  display: flex; border-radius: 10px; overflow: hidden;
+  box-shadow: 6px 8px 18px rgba(0, 0, 0, 0.35);
+}
+.eraserTop { flex: 1 1 58%; background: linear-gradient(90deg, #b07b4f, #d39b67 45%, #a8724a); }
+.eraserFelt {
+  flex: 1 1 42%;
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.10) 0 2px, transparent 2px 5px),
+    linear-gradient(90deg, #5d5d63, #7a7a80);
+  border-left: 2px solid rgba(0, 0, 0, 0.25);
+}
+.wipe.start { transition: none; transform: translateX(-112%); }
+.wipe.cover { transition: transform 0.32s cubic-bezier(0.45, 0, 0.55, 1); transform: translateX(0); }
+.wipe.leave { transition: transform 0.4s cubic-bezier(0.45, 0, 0.55, 1); transform: translateX(112%); }
 
 /* ---------------- layouts ---------------- */
 /* Landscape with room: drawing on the left, word and keyboard on the right. */
@@ -370,6 +453,18 @@ button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-high
   #screen-game .statusRow { grid-column: 1; grid-row: 5; align-self: start; margin-top: 10px; }
   #screen-game .puzzle { grid-column: 2; grid-row: 3; }
   #screen-game .keyboard { grid-column: 2; grid-row: 4; margin-top: 26px; }
+  /* Doodles: top corners, above the word, and under the keyboard. */
+  #screen-game .doodles { grid-column: 1 / -1; grid-row: 1 / -1; }
+  #screen-game .dd { width: clamp(64px, 8vw, 104px); }
+  #screen-game .dd.s0 { left: 3%; top: 14%; }
+  #screen-game .dd.s1 { right: 4%; top: 13%; }
+  #screen-game .dd.s2 { left: 50%; top: 12%; }
+  #screen-game .dd.s3 { right: 4%; top: auto; bottom: 5%; }
+  .onTitle .dd { width: clamp(80px, 9vw, 120px); }
+  .onTitle .dd.s0 { left: 12%; top: 14%; }
+  .onTitle .dd.s1 { right: 12%; top: 16%; }
+  .onTitle .dd.s2 { left: 14%; bottom: 14%; }
+  .onTitle .dd.s3 { right: 13%; bottom: 12%; }
 }
 
 /* Short frames: tighter everything. */
@@ -395,7 +490,10 @@ button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-high
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .titleArt, .levelBtn.next, .drawing.won .happy { animation: none; }
+  .titleArt, .levelBtn.next, .drawing.won .happy, .drawing .figure.nudge, .drawing.lost .figure { animation: none; }
+  #screen-title.intro .logo, #screen-title.intro .titleArt, #screen-title.intro .tagline,
+  #screen-title.intro .titleBtns, #screen-title.intro .doodles, .tile.pop .ch { animation: none; }
+  .drawing.lost .part.p2, .drawing.lost .part.p3 { transform: none; }
   .tile.pop, .phrase.shake, .modal, .modal .stars .star.stamp { animation: fadeIn 0.2s ease; }
   .tile.cheer, .wDots.party .wDot { animation: none; }
   .drawing .ln { transition: opacity 0.2s ease; }

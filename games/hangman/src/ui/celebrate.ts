@@ -14,9 +14,10 @@ const starSvg = (fill: string, size: number) =>
 
 /** Letters hop one after another; chalk stars burst from the word. */
 export function wordDone(phrase: HTMLElement) {
+  // Waits a moment so the last letter finishes writing itself in first.
   phrase.querySelectorAll<HTMLElement>('.tile:not(.punct)').forEach((t, i) => {
-    t.classList.remove('pop', 'cheer');
-    t.style.animationDelay = `${i * 45}ms`;
+    t.classList.remove('cheer');
+    t.style.setProperty('--cd', `${220 + i * 45}ms`);
     void t.offsetWidth;
     t.classList.add('cheer');
   });

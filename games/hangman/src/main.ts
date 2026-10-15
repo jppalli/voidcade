@@ -6,6 +6,7 @@ import { createPlatform, type Platform } from './platform/platform';
 import { initStorage, resyncStorage, setSignedOut } from './platform/storage';
 import { initSound, playErase, playHit, playLose, playMiss, playStar, playTap, playWin, playWordDone, resumeSound, setSound, soundOn, suspendSound } from './audio/sound';
 import { levelDone, wordDone } from './ui/celebrate';
+import { setDoodles } from './ui/doodles';
 import { ENDLESS_POOL, LEVELS, TOTAL_LEVELS, WORDS_PER_LEVEL, WORLDS, levelStars, replacementFor, type Entry } from './game/words';
 import { MAX_MISSES, Round } from './game/round';
 import { bestEndless, loadProgress, nextLevel, recordSolve, saveBestEndless, saveProgress, solvedCount, starCount, type Progress } from './game/progress';
@@ -146,6 +147,7 @@ function startLevel(index: number) {
   levelHelped = false;
   $('gameTitle').textContent = `Level ${index + 1}`;
   $('screen-game').style.setProperty('--board', w.board);
+  setDoodles($('gameDoodles'), w.id);
   startLevelWord();
   // First word ever: one short line under the word, never a pop-up.
   const firstTime = index === 0 && !progress.stars[0];
@@ -178,6 +180,7 @@ function startEndless() {
   score = 0; streak = 0; solvedInRun = 0; runRevived = false;
   usedInRun.clear();
   $('screen-game').style.setProperty('--board', '#33333d');
+  setDoodles($('gameDoodles'), 'endless');
   $('coachLine').classList.add('hidden');
   nextEndlessWord();
 }
@@ -221,11 +224,14 @@ function renderPhrase(revealAll = false) {
   const r = round!;
   const host = $('phrase');
   host.innerHTML = '';
+  let pos = 0;
   for (const word of r.entry.text.split(' ')) {
     const w = document.createElement('span');
     w.className = 'word';
     for (const ch of word) {
       const t = document.createElement('span');
+      // A small fixed tilt per square, so the letters look handwritten.
+      const tilt = (((pos++ * 7) % 5) - 2) * 1.1;
       if (!/[A-Z]/.test(ch)) {
         t.className = 'tile punct';
         t.textContent = ch;
@@ -233,12 +239,23 @@ function renderPhrase(revealAll = false) {
         const shown = r.isRevealed(ch);
         t.className = `tile${shown ? ' shown' : ''}${!shown && revealAll ? ' missed' : ''}${r.hinted.has(ch) ? ' hinted' : ''}`;
         t.dataset.ch = ch;
-        t.textContent = shown || revealAll ? ch : '';
+        if (shown || revealAll) {
+          const b = document.createElement('b');
+          b.className = 'ch';
+          b.style.setProperty('--tilt', `${tilt}deg`);
+          b.textContent = ch;
+          t.appendChild(b);
+        }
       }
       w.appendChild(t);
     }
     host.appendChild(w);
   }
+  // After a loss the missing letters write themselves in, one after another.
+  if (revealAll) host.querySelectorAll<HTMLElement>('.tile.missed').forEach((t, i) => {
+    t.style.setProperty('--wd', `${i * 70}ms`);
+    t.classList.add('pop');
+  });
   host.setAttribute('aria-label', r.entry.text.split('').map((ch) => (/[A-Z]/.test(ch) && !r.isRevealed(ch) && !revealAll ? 'blank' : ch)).join(' '));
 }
 
@@ -317,7 +334,7 @@ function guess(ch: string) {
     markKey(ch, 'hit');
     renderPhrase();
     document.querySelectorAll<HTMLElement>(`.tile[data-ch="${ch}"]`).forEach((t, i) => {
-      t.style.animationDelay = `${i * 60}ms`;
+      t.style.setProperty('--wd', `${i * 60}ms`);
       t.classList.add('pop');
     });
     playHit(count);
@@ -663,9 +680,13 @@ async function boot() {
   // A small free stick figure decorates the title.
   $('titleArt').innerHTML = `<svg viewBox="0 0 120 120" aria-hidden="true"><g filter="url(#chalk)" fill="none" stroke="#f4f1e8" stroke-width="4.5" stroke-linecap="round">
     <circle cx="60" cy="26" r="13"/><path d="M53 27 Q60 33 67 27"/><path d="M60 39v38M60 52l-20-18M60 52l20-18M60 77l-14 32M60 77l14 32"/></g></svg>`;
+  setDoodles($('titleDoodles'), 'title');
   refreshSoundButtons();
   wire();
   show('title');
+  // First open only: "Hangman" writes itself in, then the menu appears.
+  $('screen-title').classList.add('intro');
+  setTimeout(() => $('screen-title').classList.remove('intro'), 2200);
   platform.ready();
 }
 
