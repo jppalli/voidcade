@@ -88,9 +88,26 @@ export function playMiss() {
   chalk(0.22, 1800, 0.3, 0.05);
 }
 
+/** A word solved: a bright little two-step and a sparkle on top. */
+export function playWordDone() {
+  tone(784, 0.4, 0.16, 0);
+  tone(1046.5, 0.55, 0.16, 0.1);
+  tone(1568, 0.35, 0.07, 0.22);
+  chalk(0.05, 4200, 0.12, 0.2);
+  chalk(0.05, 4600, 0.1, 0.3);
+}
+
+/** A level solved: a rising run that lands on a held chord. */
 export function playWin() {
-  [523.3, 659.3, 784, 1046.5].forEach((f, i) => tone(f, 0.6, 0.16, i * 0.11));
-  tone(1318.5, 0.9, 0.1, 0.48);
+  [523.3, 659.3, 784, 1046.5, 1318.5].forEach((f, i) => tone(f, 0.55, 0.15, i * 0.09));
+  [1046.5, 1318.5, 1568].forEach((f) => tone(f, 1.4, 0.07, 0.5));
+  for (let i = 0; i < 5; i++) chalk(0.04, 4000 + i * 300, 0.08, 0.55 + i * 0.12);
+}
+
+/** One star stamping onto the result card; climbs with each star. */
+export function playStar(i: number) {
+  chalk(0.08, 2200, 0.3);
+  tone([880, 1108.7, 1318.5][i] ?? 1318.5, 0.5, 0.15, 0.02);
 }
 
 export function playLose() {

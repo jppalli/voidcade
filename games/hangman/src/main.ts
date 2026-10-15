@@ -4,7 +4,8 @@ import '@fontsource/patrick-hand/latin-400.css';
 
 import { createPlatform, type Platform } from './platform/platform';
 import { initStorage, resyncStorage, setSignedOut } from './platform/storage';
-import { initSound, playErase, playHit, playLose, playMiss, playTap, playWin, resumeSound, setSound, soundOn, suspendSound } from './audio/sound';
+import { initSound, playErase, playHit, playLose, playMiss, playStar, playTap, playWin, playWordDone, resumeSound, setSound, soundOn, suspendSound } from './audio/sound';
+import { levelDone, wordDone } from './ui/celebrate';
 import { ENDLESS_POOL, LEVELS, TOTAL_LEVELS, WORDS_PER_LEVEL, WORLDS, levelStars, replacementFor, type Entry } from './game/words';
 import { MAX_MISSES, Round } from './game/round';
 import { bestEndless, loadProgress, nextLevel, recordSolve, saveBestEndless, saveProgress, solvedCount, starCount, type Progress } from './game/progress';
@@ -345,7 +346,14 @@ function onSolved() {
   const r = round!;
   locked = true;
   drawingWon();
-  setTimeout(playWin, 180);
+  wordDone($('phrase'));
+  const levelOver = mode.kind === 'level' && wordIndex >= WORDS_PER_LEVEL - 1;
+  if (levelOver) {
+    // The big one: confetti and a fanfare just after the word's own cheer.
+    setTimeout(() => { if (round === r) { levelDone(); playWin(); } }, 450);
+  } else {
+    playWordDone();
+  }
   if (mode.kind === 'endless') {
     const clean = r.misses <= 1 && !r.hinted.size;
     streak = clean ? streak + 1 : 0;
@@ -372,6 +380,7 @@ function onSolved() {
 
   // This word's dot fills in while the solved word is still on the board.
   renderLevelHeader(true);
+  if (levelOver) $('gameSub').querySelector('.wDots')?.classList.add('party');
 
   // More words to go: enjoy the solve, wipe the board, and only then
   // announce the next word, once it's actually there.
@@ -394,7 +403,16 @@ function onSolved() {
   setTimeout(() => {
     if (round !== r) return;
     $('winTitle').textContent = stars === 3 ? 'Perfect!' : 'Level complete!';
-    $('winStars').innerHTML = starsHtml(stars, 40);
+    // Stars start blank and stamp in one by one once the card is up.
+    $('winStars').innerHTML = starsHtml(0, 40);
+    $('winStars').querySelectorAll<SVGElement>('.star').forEach((s, i) => {
+      if (i >= stars) { s.classList.add('dim'); return; }
+      setTimeout(() => {
+        if (round !== r) return;
+        s.classList.add('on', 'stamp');
+        playStar(i);
+      }, 380 + i * 300);
+    });
     $('winAnswer').textContent = levelWords.map((w) => w.text).join(' · ');
     $('winText').textContent = stars === 3
       ? `All ${WORDS_PER_LEVEL} ${LEVELS[index].topic.name.toLowerCase()} words with barely a line drawn.`
