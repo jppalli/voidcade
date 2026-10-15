@@ -249,8 +249,10 @@ function renderStatus() {
   // Lines shown = misses, minus any rubbed out by a second chance.
   setParts(MAX_MISSES - r.missesLeft);
   $('misses').innerHTML = Array.from({ length: MAX_MISSES }, (_, i) =>
-    `<i class="tally${i < r.missesLeft ? ' left' : ''}"></i>`).join('') + `<span>${r.missesLeft} ${r.missesLeft === 1 ? 'miss' : 'misses'} left</span>`;
-  $('misses').setAttribute('aria-label', `${r.missesLeft} misses left`);
+    `<i class="tally${i < r.missesLeft ? ' left' : ''}"></i>`).join('');
+  const label = `${r.missesLeft} ${r.missesLeft === 1 ? 'miss' : 'misses'} left`;
+  $('misses').setAttribute('aria-label', label);
+  $('misses').title = label;
   refreshHintBadge();
 }
 

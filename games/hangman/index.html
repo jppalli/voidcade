@@ -64,11 +64,12 @@
       <div class="puzzle">
         <p class="category">Category: <b id="category"></b></p>
         <div class="phrase" id="phrase" aria-live="polite"></div>
-        <div class="statusRow">
-          <span class="misses" id="misses" aria-label="Misses left"></span>
-          <button class="btn hintBtn" id="btnHint"><svg class="icon"><use href="#i-hint"/></svg><span>Hint</span><b class="badge" id="hintBadge"></b></button>
-        </div>
         <p class="coachLine hidden" id="coachLine"></p>
+      </div>
+      <!-- Under the word on phones, under the drawing on wide screens. -->
+      <div class="statusRow">
+        <span class="misses" id="misses" role="img" aria-label="Misses left"></span>
+        <button class="btn hintBtn" id="btnHint"><svg class="icon"><use href="#i-hint"/></svg><span>Hint</span><b class="badge" id="hintBadge"></b></button>
       </div>
     </div>
 
