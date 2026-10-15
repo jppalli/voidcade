@@ -159,8 +159,11 @@ function startLevelWord() {
 }
 
 /** "Word 2 of 5" with a dot per word: done, current, still to come. */
-function renderLevelHeader(complete = false) {
-  const done = complete ? WORDS_PER_LEVEL : wordIndex;
+/** `solvedCurrent`: the word on the board is solved (its dot turns green)
+ *  but the next one hasn't appeared yet, so the label stays on this word. */
+function renderLevelHeader(solvedCurrent = false) {
+  const done = wordIndex + (solvedCurrent ? 1 : 0);
+  const complete = done >= WORDS_PER_LEVEL;
   const dots = Array.from({ length: WORDS_PER_LEVEL }, (_, i) =>
     `<i class="wDot${i < done ? ' done' : i === wordIndex ? ' now' : ''}"></i>`).join('');
   $('gameSub').innerHTML = `<span class="wDots" aria-hidden="true">${dots}</span>${complete ? 'All words solved' : `Word ${wordIndex + 1} of ${WORDS_PER_LEVEL}`}`;
@@ -367,20 +370,23 @@ function onSolved() {
   levelMisses += r.misses;
   levelHelped ||= r.hinted.size > 0 || r.revived;
 
-  // More words to go: a short "next word" beat, then a fresh board.
+  // This word's dot fills in while the solved word is still on the board.
+  renderLevelHeader(true);
+
+  // More words to go: enjoy the solve, wipe the board, and only then
+  // announce the next word, once it's actually there.
   if (wordIndex < WORDS_PER_LEVEL - 1) {
-    wordIndex++;
-    renderLevelHeader();
-    toast(wordIndex === WORDS_PER_LEVEL - 1 ? 'Last word!' : `Word ${wordIndex + 1} of ${WORDS_PER_LEVEL}`);
     setTimeout(() => {
       if (round !== r || mode.kind !== 'level') return;
       playErase();
-      go(startLevelWord);
-    }, 1500);
+      void wipeTo(() => { wordIndex++; startLevelWord(); }).then(() => {
+        if (mode.kind !== 'level' || round?.entry !== levelWords[wordIndex]) return;
+        toast(wordIndex === WORDS_PER_LEVEL - 1 ? 'Last word!' : `Word ${wordIndex + 1} of ${WORDS_PER_LEVEL}`);
+      });
+    }, 1400);
     return;
   }
 
-  renderLevelHeader(true);
   const stars = levelStars(levelMisses, levelHelped);
   progress = recordSolve(progress, index, stars);
   saveProgress(progress);
