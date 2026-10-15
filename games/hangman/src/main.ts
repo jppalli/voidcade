@@ -4,7 +4,7 @@ import '@fontsource/patrick-hand/latin-400.css';
 
 import { createPlatform, type Platform } from './platform/platform';
 import { initStorage, resyncStorage, setSignedOut } from './platform/storage';
-import { initSound, playErase, playHit, playLose, playMiss, playStar, playTap, playWin, playWordDone, resumeSound, setSound, soundOn, suspendSound } from './audio/sound';
+import { initSound, musicOn, playErase, playHit, playLose, playMiss, playStar, playTap, playWin, playWordDone, resumeSound, setMusic, setSound, soundOn, startMusic, suspendSound } from './audio/sound';
 import { levelDone, wordDone } from './ui/celebrate';
 import { setDoodles } from './ui/doodles';
 import { ENDLESS_POOL, LEVELS, TOTAL_LEVELS, WORDS_PER_LEVEL, WORLDS, levelStars, pickLevelWords, type Entry } from './game/words';
@@ -60,10 +60,13 @@ function hideOverlays() {
 }
 
 function refreshSoundButtons() {
+  const any = soundOn() || musicOn();
+  $('btnMusic').setAttribute('aria-checked', String(musicOn()));
+  $('btnSfx').setAttribute('aria-checked', String(soundOn()));
   document.querySelectorAll<HTMLElement>('[data-sound]').forEach((b) => {
-    b.querySelector('use')?.setAttribute('href', soundOn() ? '#i-sound-on' : '#i-sound-off');
-    b.setAttribute('aria-label', soundOn() ? 'Sound on' : 'Sound off');
-    b.setAttribute('aria-pressed', String(soundOn()));
+    b.querySelector('use')?.setAttribute('href', any ? '#i-sound-on' : '#i-sound-off');
+    b.setAttribute('aria-label', 'Sound settings');
+    b.setAttribute('aria-haspopup', 'dialog');
   });
 }
 
@@ -610,8 +613,27 @@ function wire() {
   });
   document.querySelectorAll<HTMLElement>('[data-nav]').forEach((b) =>
     b.addEventListener('click', () => { playTap(); go(() => show(b.dataset.nav as Screen)); }));
+  // Speaker buttons open a small panel with Music and Sounds switches.
+  const panel = $('soundPanel');
+  const closePanel = () => panel.classList.add('hidden');
   document.querySelectorAll<HTMLElement>('[data-sound]').forEach((b) =>
-    b.addEventListener('click', () => { setSound(!soundOn()); refreshSoundButtons(); playTap(); }));
+    b.addEventListener('click', (e) => {
+      e.stopPropagation();
+      playTap();
+      if (!panel.classList.contains('hidden')) { closePanel(); return; }
+      const r = b.getBoundingClientRect();
+      panel.style.top = `${r.bottom + 10}px`;
+      panel.style.right = `${Math.max(8, window.innerWidth - r.right)}px`;
+      panel.classList.remove('hidden');
+      $('btnMusic').focus();
+    }));
+  $('btnMusic').addEventListener('click', (e) => { e.stopPropagation(); setMusic(!musicOn()); refreshSoundButtons(); });
+  $('btnSfx').addEventListener('click', (e) => { e.stopPropagation(); setSound(!soundOn()); refreshSoundButtons(); playTap(); });
+  document.addEventListener('click', (e) => { if (!panel.contains(e.target as Node)) closePanel(); });
+  window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePanel(); });
+  // Browsers only allow audio after a tap: the music starts on the first one.
+  window.addEventListener('pointerdown', () => startMusic(), { once: true });
+  window.addEventListener('keydown', () => startMusic(), { once: true });
 
   $('btnGameBack').addEventListener('click', () => { playTap(); leaveGame(mode.kind === 'endless' ? 'title' : 'map'); });
   $('keyboard').addEventListener('click', (e) => {

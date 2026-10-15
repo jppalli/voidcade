@@ -129,6 +129,12 @@
 
   <div class="toast hidden" id="toast" role="status"></div>
 
+  <!-- Opened by any speaker button: separate Music and Sounds switches. -->
+  <div class="soundPanel hidden" id="soundPanel" role="dialog" aria-label="Sound settings">
+    <button class="spRow" id="btnMusic" role="switch" aria-checked="true"><span>Music</span><i class="sw" aria-hidden="true"></i></button>
+    <button class="spRow" id="btnSfx" role="switch" aria-checked="true"><span>Sounds</span><i class="sw" aria-hidden="true"></i></button>
+  </div>
+
   <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

@@ -5,8 +5,9 @@
  * swaps.
  */
 
-const IN_MS = 300;
-const OUT_MS = 380;
+// Unhurried on purpose: a calm sweep reads as cosy, a fast one as abrupt.
+const IN_MS = 560;
+const OUT_MS = 700;
 
 let el: HTMLDivElement | null = null;
 let busy = false;

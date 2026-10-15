@@ -389,6 +389,27 @@ button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-high
 .modal .stars .star.dim { opacity: 1; }
 @keyframes stamp { 0% { transform: scale(2.4) rotate(-25deg); opacity: 0; } 100% { transform: none; opacity: 1; } }
 
+/* Sound panel: two chalk switches under the speaker button. */
+.soundPanel {
+  position: fixed; z-index: 70; width: 190px; padding: 8px;
+  display: flex; flex-direction: column; gap: 4px;
+  background: var(--dust), #263a30;
+  border: 2.5px solid var(--chalk-soft); border-radius: 16px;
+  box-shadow: 0 0 0 5px var(--wood), 0 10px 24px rgba(0, 0, 0, 0.4);
+  animation: modalIn 0.22s ease;
+}
+.spRow {
+  display: flex; align-items: center; justify-content: space-between;
+  min-height: 44px; padding: 6px 10px; border: none; border-radius: 10px;
+  background: transparent; font-size: 21px; color: var(--chalk);
+}
+.spRow:hover { background: rgba(244, 241, 232, 0.08); }
+.spRow:focus-visible { outline: 3px dashed var(--yellow); outline-offset: 1px; }
+.sw { position: relative; width: 44px; height: 24px; border-radius: 12px; border: 2px solid var(--chalk-soft); transition: background-color 0.2s ease; }
+.sw::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--chalk-soft); transition: transform 0.2s ease, background-color 0.2s ease; }
+.spRow[aria-checked="true"] .sw { background: rgba(246, 226, 122, 0.25); border-color: var(--yellow); }
+.spRow[aria-checked="true"] .sw::after { transform: translateX(20px); background: var(--yellow); }
+
 /* Floating "+120" after an Endless solve. */
 .toast {
   position: fixed; z-index: 55; left: 50%; top: 22%;
@@ -437,8 +458,8 @@ button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-high
   border-left: 2px solid rgba(0, 0, 0, 0.25);
 }
 .wipe.start { transition: none; transform: translateX(-112%); }
-.wipe.cover { transition: transform 0.32s cubic-bezier(0.45, 0, 0.55, 1); transform: translateX(0); }
-.wipe.leave { transition: transform 0.4s cubic-bezier(0.45, 0, 0.55, 1); transform: translateX(112%); }
+.wipe.cover { transition: transform 0.56s cubic-bezier(0.65, 0, 0.35, 1); transform: translateX(0); }
+.wipe.leave { transition: transform 0.7s cubic-bezier(0.65, 0, 0.35, 1); transform: translateX(112%); }
 
 /* ---------------- layouts ---------------- */
 /* Landscape with room: drawing on the left, word and keyboard on the right. */
