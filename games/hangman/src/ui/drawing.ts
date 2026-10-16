@@ -44,6 +44,7 @@ const HAPPY = [
   'M168 168 L154 205',
   'M168 168 L182 205',
   'M161 109 Q168 116 175 109',     // smile
+  'M162.5 101 v0.5 M173.5 101 v0.5', // eyes
 ];
 
 const path = (d: string, cls: string) =>

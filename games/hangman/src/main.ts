@@ -7,7 +7,7 @@ import { initStorage, resyncStorage, setSignedOut } from './platform/storage';
 import { initSound, musicOn, playErase, playHit, playLose, playMiss, playStar, playTap, playWin, playWordDone, resumeSound, setMusic, setSound, soundOn, startMusic, suspendSound } from './audio/sound';
 import { levelDone, wordDone } from './ui/celebrate';
 import { setDoodles } from './ui/doodles';
-import { initStage, stageHeight, stageWidth, toStage } from './ui/stage';
+import { initStage, isStaged, stageHeight, stageWidth, toStage } from './ui/stage';
 import { ENDLESS_POOL, LEVELS, TOTAL_LEVELS, WORDS_PER_LEVEL, WORLDS, levelStars, pickLevelWords, type Entry } from './game/words';
 import { MAX_MISSES, Round } from './game/round';
 import { bestEndless, loadProgress, nextLevel, recordSolve, saveBestEndless, saveProgress, solvedCount, starCount, type Progress } from './game/progress';
@@ -79,7 +79,7 @@ function fitTitle() {
   const stage = screen.querySelector<HTMLElement>('.titleStage');
   if (!stage || screen.classList.contains('hidden')) return;
   stage.style.setProperty('--fit', '1');
-  const fit = Math.min(1, (screen.clientHeight - 24) / stage.offsetHeight, (screen.clientWidth - 16) / stage.offsetWidth);
+  const fit = Math.min(1, (screen.clientHeight - 2 * 66) / stage.offsetHeight, (screen.clientWidth - 16) / stage.offsetWidth);
   stage.style.setProperty('--fit', fit.toFixed(3));
 }
 
@@ -126,7 +126,7 @@ function renderMap() {
       b.setAttribute('aria-label', unlocked ? `Level ${index + 1}, ${name}${stars ? `, ${stars} stars` : ''}` : `Level ${index + 1}, locked`);
       // The topic stays a surprise until the level is open.
       b.innerHTML = unlocked
-        ? `<span class="lvNum">${index + 1}</span><span class="lvTopic">${name}</span><span class="lvStars">${starsHtml(stars, 12)}</span>`
+        ? `<span class="lvNum">${index + 1}</span><span class="lvTopic">${name}</span><span class="lvStars">${starsHtml(stars, 18)}</span>`
         : `<span class="lvNum">${index + 1}</span><svg class="icon"><use href="#i-lock"/></svg>`;
       if (unlocked) b.addEventListener('click', () => { playTap(); go(() => startLevel(index)); });
       grid.appendChild(b);
@@ -285,7 +285,8 @@ function fitPhrase() {
   // Largest tile where the words, wrapped like the flex row wraps them, fit
   // both the width and that height. Tile ~1.14 x wide with its gap; word
   // gaps 0.7 x; line height 1.25 x plus a 10px row gap.
-  let size = 46;
+  // Phones: bigger tiles on tall screens, but short ones keep room for the drawing.
+  let size = isStaged() ? 46 : Math.max(40, Math.min(56, Math.round(stageHeight() * 0.065 / 2) * 2));
   for (; size > 18; size -= 2) {
     const wordW = (w: string) => w.length * size * 1.14;
     if (Math.max(...words.map(wordW)) > room) continue;
@@ -711,9 +712,9 @@ async function boot() {
   progress = loadProgress();
   subscriber = await platform.isSubscriber().catch(() => false);
   mountDrawing($('drawWrap'));
-  // A small free stick figure decorates the title.
-  $('titleArt').innerHTML = `<svg viewBox="0 0 120 120" aria-hidden="true"><g filter="url(#chalk)" fill="none" stroke="#f4f1e8" stroke-width="4.5" stroke-linecap="round">
-    <circle cx="60" cy="26" r="13"/><path d="M53 27 Q60 33 67 27"/><path d="M60 39v38M60 52l-20-18M60 52l20-18M60 77l-14 32M60 77l14 32"/></g></svg>`;
+  // The title is lettering only: each letter is its own span so it can
+  // bob in a slow wave (see .logoWord in styles.css).
+  $('logoWord').innerHTML = [...'Hangman'].map((ch, i) => `<span style="--i:${i}">${ch}</span>`).join('');
   setDoodles($('titleDoodles'), 'title');
   refreshSoundButtons();
   wire();
