@@ -279,7 +279,8 @@ function noteFirstWrongCat() {
   if (hasSeenIntro(progress, NOTE_HEART)) return;
   progress = markIntroSeen(progress, NOTE_HEART);
   saveProgress(progress);
-  showNote('A wrong cat costs a heart. You have 3!', $('livesRow'));
+  const left = game?.livesRemaining ?? 0;
+  showNote(`Oops! A wrong cat costs a heart. ${left} ${left === 1 ? 'heart' : 'hearts'} left.`, $('livesRow'));
 }
 
 function markTutorialDone(index: number) {
@@ -676,11 +677,11 @@ function showFailModal() {
   const revive = $('btnFailRevive') as HTMLButtonElement;
   revive.classList.toggle('hidden', !canRevive);
   revive.disabled = false;
-  $('failReviveLabel').textContent = subscriber ? 'Keep going (1 more heart)' : 'Watch a video for 1 more heart';
+  $('failReviveLabel').textContent = subscriber ? 'Take an extra heart' : 'Watch a video for a heart';
   $('btnFailRetry').classList.toggle('primary', !canRevive);
   $('failText').textContent = canRevive
-    ? 'Keep your progress on this board with one more heart, or start the puzzle over.'
-    : 'The cats need a little more coaxing. Start the puzzle over?';
+    ? 'Get an extra heart to keep your progress on this board, or start the puzzle over.'
+    : 'The cats need a little more coaxing. Want to try this puzzle again?';
   $('failOverlay').classList.remove('hidden');
 }
 
@@ -735,7 +736,7 @@ function refreshHintBadge() {
     btn.setAttribute('aria-label', `Hint, ${left} of ${FREE_HINTS_PER_DAY} free left today`);
   } else {
     badge.innerHTML = '<svg class="icon"><use href="#i-video"/></svg>';
-    btn.setAttribute('aria-label', 'Hint, watch a video for one more');
+    btn.setAttribute('aria-label', 'Hint: watch a video to get one');
   }
 }
 
@@ -780,7 +781,7 @@ async function watchForRevive() {
   const earned = await earnReward();
   btn.disabled = false;
   if (!earned || !g || game !== g) {
-    $('failText').textContent = 'The video didn’t finish, so no hearts this time. Watch it again, or start the puzzle over.';
+    $('failText').textContent = 'The video didn’t finish, so no extra heart this time. You can watch it again or start the puzzle over.';
     return;
   }
   g.revive();
@@ -922,7 +923,7 @@ function finishLevel() {
   $('winCat').innerHTML = mascotSvg(96, worldCoat(g.ref.chapterIndex));
   $('winMedal').innerHTML = purrfect ? medalSvg(34) : '';
   // Letters bounce in one after another.
-  const title = purrfect ? 'Purrfect!' : 'All cosy!';
+  const title = purrfect ? 'Purrfect!' : 'All cozy!';
   $('winTitle').setAttribute('aria-label', title);
   $('winTitle').innerHTML = [...title]
     .map((ch, i) => `<span aria-hidden="true" style="animation-delay:${(0.15 + i * 0.045).toFixed(3)}s">${ch === ' ' ? '&nbsp;' : ch}</span>`)

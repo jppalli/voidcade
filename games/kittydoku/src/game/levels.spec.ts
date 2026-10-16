@@ -59,7 +59,7 @@ export const CHAPTERS: ChapterDef[] = [
       L(4, 1, 1),
       L(4, 1, 1),
       L(5, 2, 1),
-      L(5, 2, 2, 'A patch squeezed inside one row must keep its cat in that row, so the rest of that row is free of cats.'),
+      L(5, 2, 2, 'When a patch sits entirely inside one row, its cat must be in that row. No other square in that row can hold a cat.'),
       L(5, 1, 2),
       L(5, 1, 3.1, 'If a cat on one square would leave a row, column or patch with no spot at all, no cat can sit there.'),
       L(5, 0, 3.2),
@@ -68,12 +68,12 @@ export const CHAPTERS: ChapterDef[] = [
   },
   {
     id: 'cosy-armchair',
-    name: 'Cosy Armchair',
+    name: 'Cozy Armchair',
     blurb: 'Room for a few more paws.',
     accent: '#bdb2ff',
-    intro: 'You made it to the Cosy Armchair. The boards grow a little here, so take your time and leave plenty of paws.',
+    intro: 'You made it to the Cozy Armchair. The boards grow a little here, so take your time and leave plenty of paws.',
     levels: [
-      L(5, 1, 2, 'When a row has only one square left that works, that square is certain.'),
+      L(5, 1, 2, 'When a row has only one possible square left, its cat must go there.'),
       L(5, 0, 3.2),
       L(6, 2, 1),
       L(6, 1, 2),
@@ -147,7 +147,7 @@ export const CHAPTERS: ChapterDef[] = [
     name: 'Kitchen Counter',
     blurb: 'Warm tiles and a full saucer.',
     accent: '#ffe08a',
-    intro: 'Welcome to the Kitchen Counter! It smells of warm milk and fish. The boards are eight by eight now, so take it one row at a time.',
+    intro: 'Welcome to the Kitchen Counter! It smells like warm milk and fish. The boards are eight by eight now, so take it one row at a time.',
     levels: [
       L(8, 1, 3.0),
       L(8, 0, 3.3),
@@ -182,10 +182,10 @@ export const CHAPTERS: ChapterDef[] = [
   },
   {
     id: 'bookshop-nook',
-    name: 'Bookshop Nook',
+    name: 'Bookstore Nook',
     blurb: 'Quiet corners, careful thinking.',
     accent: '#e3b77f',
-    intro: 'Shh, this is the Bookshop Nook. Quiet cats, big boards, and puzzles that reward careful reading.',
+    intro: 'Shh, this is the Bookstore Nook. Quiet cats, big boards, and puzzles that reward careful reading.',
     levels: [
       L(9, 1, 3.2),
       L(9, 0, 4.2),

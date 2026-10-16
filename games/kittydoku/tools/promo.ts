@@ -143,10 +143,10 @@ function artHtml(a: Art, zoom: number): string {
     <div class="t" style="${textPos}">
       <h1 class="logo" style="font-size:${L}px">Kitty<em>Doku</em><span class="lp" style="top:${-L * 0.2}px;right:${-L * 0.36}px">${pawSvg('#e0687f', Math.round(L * 0.37))}</span></h1>
       ${a.tag ? `<p class="tag" style="font-size:${a.tag}px;margin-top:${Math.round(a.tag * 0.5)}px">A gentle cat logic puzzle</p>` : ''}
-      ${a.pill && a.pillTop === undefined ? `<span class="pill" style="font-size:${a.pill}px;padding:${a.pill * 0.5}px ${a.pill}px;margin-top:${Math.round(a.pill * 1.1)}px">${pawSvg('#5a2333', a.pill)} 100 cosy levels</span>` : ''}
+      ${a.pill && a.pillTop === undefined ? `<span class="pill" style="font-size:${a.pill}px;padding:${a.pill * 0.5}px ${a.pill}px;margin-top:${Math.round(a.pill * 1.1)}px">${pawSvg('#5a2333', a.pill)} 100 cozy levels</span>` : ''}
       ${a.button ? `<div style="margin-top:${Math.round(a.button.size * 0.8)}px"><span class="btn" style="font-size:${a.button.size}px">${a.button.label}</span></div>` : ''}
     </div>
-    ${a.pill && a.pillTop !== undefined ? `<div class="t" style="left:0;right:0;top:${a.pillTop}px;text-align:center"><span class="pill" style="font-size:${a.pill}px;padding:${a.pill * 0.5}px ${a.pill}px">${pawSvg('#5a2333', a.pill)} 100 cosy levels</span></div>` : ''}`;
+    ${a.pill && a.pillTop !== undefined ? `<div class="t" style="left:0;right:0;top:${a.pillTop}px;text-align:center"><span class="pill" style="font-size:${a.pill}px;padding:${a.pill * 0.5}px ${a.pill}px">${pawSvg('#5a2333', a.pill)} 100 cozy levels</span></div>` : ''}`;
   return `<!doctype html><html><head><meta charset="utf-8"><style>
 ${font(700)}${font(800)}${font(900)}
 *{margin:0;padding:0;box-sizing:border-box}

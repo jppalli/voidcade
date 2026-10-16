@@ -81,7 +81,7 @@ export function tutorialSteps(levelIndex: number, { game: g, cell, ripplePaws }:
     }
     for (const [reg, cells] of open) {
       if (!hasCat.has(reg) && cells.length === 1 && g.isSolutionCell(cells[0].row, cells[0].col)) {
-        return { at: cells[0], colour: COLOUR_WORD[pastel(reg).name] ?? 'coloured' };
+        return { at: cells[0], colour: COLOUR_WORD[pastel(reg).name] ?? 'colored' };
       }
     }
     return null;
@@ -124,7 +124,7 @@ export function tutorialSteps(levelIndex: number, { game: g, cell, ripplePaws }:
         return aha ? cell(aha.at.row, aha.at.col) : null;
       },
       captionFn: () => (aha ? `Only one square is left in the ${aha.colour} patch…` : ''),
-      sizeHint: 'Only one square is left in the coloured patch…', // longest colour word
+      sizeHint: 'Only one square is left in the colored patch…', // longest colour word
 
       gesture: 'double',
       until: (e) => !!aha && catAt(aha.at)(e),

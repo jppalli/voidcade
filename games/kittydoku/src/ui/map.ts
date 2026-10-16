@@ -218,7 +218,7 @@ export function renderMap(
     const sub = !unlocked
       ? `Finish ${CHAPTERS[slot.chapterIndex - 1].name} to open`
       : cleared
-        ? 'Every cat is cosy here'
+        ? 'Every cat is cozy here'
         : ch.blurb;
 
     const sign = document.createElement('button');
@@ -250,7 +250,7 @@ export function renderMap(
   coming.innerHTML = `
     <span class="csBoard">
       <span class="csNails" aria-hidden="true"><i></i><i></i></span>
-      <span class="csKicker">${allDone ? 'Every cat is cosy!' : `World ${signSlots.length + 1}`}</span>
+      <span class="csKicker">${allDone ? 'Every cat is cozy!' : `World ${signSlots.length + 1}`}</span>
       <span class="csName">More worlds coming soon</span>
       <span class="csSub">${allDone ? 'You found a spot for every cat. New puzzles are on the way.' : 'The cats are still exploring up here…'}</span>
       <span class="csPaws" aria-hidden="true">
