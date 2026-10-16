@@ -161,6 +161,7 @@ function startLevel(index: number) {
   levelMisses = 0;
   levelHelped = false;
   $('gameTitle').textContent = `Level ${index + 1}`;
+  fitGameTitle();
   $('screen-game').style.setProperty('--board', w.board);
   setDoodles($('gameDoodles'), w.id);
   startLevelWord();
@@ -218,6 +219,20 @@ function nextEndlessWord() {
 function refreshEndlessHeader() {
   $('gameTitle').textContent = `Score ${score.toLocaleString('en-US')}`;
   $('gameSub').textContent = `Endless · Word ${solvedInRun + 1}${streak > 1 ? ` · Streak ×${streak}` : ''}`;
+  fitGameTitle();
+}
+
+/** The title keeps its full size unless a long one (a big Endless score on
+ *  a narrow phone) would be cut off; then it steps down just enough. */
+function fitGameTitle() {
+  const h = $('gameTitle');
+  h.style.fontSize = '';
+  if (!h.clientWidth) return; // hidden: nothing to measure
+  let px = parseFloat(getComputedStyle(h).fontSize);
+  while (h.scrollWidth > h.clientWidth && px > 20) {
+    px -= 1;
+    h.style.fontSize = `${px}px`;
+  }
 }
 
 function beginRound(entry: Entry) {
@@ -682,7 +697,7 @@ function wire() {
     if ($('screen-game').classList.contains('hidden')) return;
     if (/^[a-z]$/i.test(e.key)) { e.preventDefault(); guess(e.key.toUpperCase()); }
   });
-  window.addEventListener('resize', () => { if (round) fitPhrase(); fitTitle(); });
+  window.addEventListener('resize', () => { if (round) fitPhrase(); fitTitle(); fitGameTitle(); });
   void document.fonts?.ready.then(fitTitle); // the web fonts change text sizes
 
   platform.onPause(suspendSound);

@@ -190,11 +190,12 @@ button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-high
   margin-bottom: 10px;
 }
 .topTitle { text-align: center; min-width: 0; }
-.topTitle h2 { font-family: var(--sketch); font-weight: 700; font-size: 30px; line-height: 1.05; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.topSub { font-size: 17px; color: var(--chalk-soft); display: inline-flex; align-items: center; gap: 8px; }
+.topTitle h2 { font-family: var(--sketch); font-weight: 700; font-size: 38px; line-height: 1.05; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Wraps (centred) rather than spilling if a long Endless line won't fit. */
+.topSub { font-size: 22px; line-height: 1.15; color: var(--chalk-soft); display: inline-flex; flex-wrap: wrap; justify-content: center; align-items: center; column-gap: 9px; }
 /* Five chalk dots: solved words filled, the current one ringed. */
-.wDots { display: inline-flex; gap: 5px; }
-.wDot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--chalk-faint); }
+.wDots { display: inline-flex; gap: 6px; }
+.wDot { width: 13px; height: 13px; border-radius: 50%; border: 2px solid var(--chalk-faint); }
 .wDot.done { background: var(--green); border-color: var(--green); }
 .wDot.now { border-color: var(--yellow); }
 
@@ -252,7 +253,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-high
 .drawWrap { flex: 1 1 0; min-height: 60px; max-height: 300px; width: 100%; display: flex; justify-content: center; }
 .drawing { height: 100%; max-width: 100%; overflow: visible; }
 .puzzle { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; flex-shrink: 0; }
-.category { font-size: 20px; color: var(--chalk-soft); }
+.category { font-size: 27px; line-height: 1.15; color: var(--chalk-soft); text-align: center; }
 .category b { color: var(--yellow); font-weight: 400; }
 
 .phrase {
@@ -534,10 +535,10 @@ html.wide {
 html.short {
   .screen { padding: 12px 14px 10px; }
   .topBar { margin-bottom: 4px; }
-  .topTitle h2 { font-size: 25px; }
+  .topTitle h2 { font-size: 31px; }
   .keyboard { gap: 5px; margin-top: 6px; }
   .tagline { margin: 6px 0 16px; }
-  .category { font-size: 18px; }
+  .category { font-size: 23px; }
   .puzzle { gap: 6px; }
 }
 /* Very short frames (phones in landscape, around 500px tall). */
@@ -545,8 +546,10 @@ html.tiny {
   .screen { padding: 8px 12px 8px; border-width: 7px; }
   .iconBtn { width: 40px; height: 40px; }
   .topBar { grid-template-columns: 40px 1fr 40px; margin-bottom: 2px; }
-  .topTitle h2 { font-size: 22px; }
-  .topSub { font-size: 15px; }
+  .topTitle h2 { font-size: 27px; }
+  .topSub { font-size: 18px; }
+  .wDot { width: 11px; height: 11px; }
+  .category { font-size: 21px; }
   .coachLine { font-size: 15px; }
   .hintBtn { min-height: 36px; font-size: 18px; }
   .btn.big { min-height: 52px; font-size: 26px; }
@@ -583,10 +586,10 @@ html:not(.staged):not(.tiny) {
   .titleBtns .linkBtn { font-size: 26px; margin-top: 2px; }
   .titleBtns .linkBtn .icon { width: 26px; height: 26px; }
   /* Game */
-  .topTitle h2 { font-size: 34px; }
-  .topSub { font-size: 20px; }
-  .wDot { width: 12px; height: 12px; }
-  .category { font-size: 25px; }
+  .topTitle h2 { font-size: clamp(30px, calc(var(--app-w, 100vw) * 0.1), 40px); }
+  .topSub { font-size: clamp(19px, calc(var(--app-w, 100vw) * 0.06), 24px); }
+  .wDot { width: 13px; height: 13px; }
+  .category { font-size: clamp(24px, calc(var(--app-w, 100vw) * 0.075), 30px); }
   .coachLine { font-size: 21px; }
   .misses { gap: 8px; }
   .tally { width: 6px; height: 30px; }
