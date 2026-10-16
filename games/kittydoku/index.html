@@ -62,8 +62,8 @@
 
       <div class="titleSecondary">
         <button class="btn pill" id="btnMap">Adventure Map</button>
-        <button class="btn pill" id="btnHowTo">How to Play</button>
       </div>
+      <button class="linkBtn" id="btnHowTo"><svg class="icon" aria-hidden="true"><use href="#i-help"/></svg>How to Play</button>
 
     </div>
   </section>
@@ -114,12 +114,14 @@
     <!-- Tutorial: the cat talks here, in the space the buttons normally use,
          so it never covers the board (the buttons come back when it is done). -->
     <div class="coachDock hidden" id="coachDock" role="status" aria-live="polite">
-      <div class="coachDockCat" id="coachDockCat" aria-hidden="true"></div>
-      <div class="coachDockBubble">
-        <span class="coachCaption" id="coachCaption"></span><span class="coachCount hidden" id="coachCount"></span>
-        <span class="coachSub hidden" id="coachSub"></span>
+      <div class="coachDockRow">
+        <div class="coachDockCat" id="coachDockCat" aria-hidden="true"></div>
+        <div class="coachDockBubble">
+          <span class="coachCaption" id="coachCaption"></span><span class="coachCount hidden" id="coachCount"></span>
+          <span class="coachSub hidden" id="coachSub"></span>
+        </div>
       </div>
-      <button class="coachSkip" id="btnCoachSkip">Skip</button>
+      <button class="coachSkip" id="btnCoachSkip">Skip tutorial</button>
     </div>
 
     <!-- Undo and Hint are the everyday buttons; Start over is a small icon

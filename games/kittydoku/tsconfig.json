@@ -16,5 +16,5 @@
     "skipLibCheck": true
   },
   "include": ["src", "tools"],
-  "exclude": ["tools/promo.ts"]
+  "exclude": ["tools/promo*.ts", "tools/_*.ts"]
 }

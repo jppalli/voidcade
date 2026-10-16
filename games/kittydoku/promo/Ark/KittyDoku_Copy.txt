@@ -1,0 +1,32 @@
+HOW TO PLAY KITTYDOKU
+
+KittyDoku is a gentle logic puzzle about finding every cat a cozy spot of its own. Each board is split into colored patches, and your job is to place one cat in each patch so that no cat has to share its space. There's no guessing and no timer: every puzzle can be solved with logic alone.
+
+The Three Rules
+Place exactly one cat in every colored patch. Each row and each column also gets exactly one cat. And cats like their personal space, so no two cats can touch, not even diagonally at the corners. When every patch has its cat and all three rules are met, the board is solved.
+
+Paws, Cats and Hearts
+Tap a square to mark it with a paw, a note that says "no cat here." Drag across squares to mark several at once, and tap a paw again to clear it. Double-tap a square to place a cat. A wrong cat costs one of your three hearts. If you run out, watch a video for an extra heart and keep your progress, or start the puzzle over. Stuck? Tap Hint to place one correct cat for you. You get 3 free hints each day, and you can watch a video for more.
+
+Earn a Purrfect
+Solve a board without using a hint or losing a heart to earn a Purrfect, and see how many you can collect along the Adventure Map.
+
+This game is operated by [Company Name]. Read our privacy policy [here] and terms of service [here].
+
+
+------------------------------------------------------------
+
+
+ABOUT KITTYDOKU
+
+KittyDoku is a cozy cat logic puzzle with soft colors, friendly cats and relaxing sounds. Place one cat in every colored patch, one in each row and column, and never let two cats touch. It's easy to learn, there's no timer and no guessing, and every board can be solved with clear, careful thinking.
+
+Play Through 100 Levels
+Follow the Adventure Map through ten cozy worlds: Sunny Windowsill, Cozy Armchair, Garden Fence, Rooftop Moon, Cat Council, Kitchen Counter, Bubble Bath, Bookstore Nook, Snowy Porch and Lantern Festival. Boards start small and grow from 4x4 up to 9x9 as you go, each world with its own scenery and its own cat to cheer you on. A short, hands-on tutorial on the first levels shows you everything you need.
+
+Hints, Hearts and Purrfects
+Three hearts give you room for a slip, and a daily set of free hints is there when a board has you stumped. Solve a board without a hint or a lost heart to earn a Purrfect, and try to collect them all.
+
+Looking for another puzzle game? Browse Arkadium's collection of free online puzzle games.
+
+This game is operated by [Company Name]. Read our privacy policy [here] and terms of service [here].

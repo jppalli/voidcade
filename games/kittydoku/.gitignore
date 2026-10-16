@@ -3,3 +3,10 @@ dist
 *.local
 arkadium-build
 kittydoku-arkadium-*.zip
+# brand pack (npm run promo:pack): large, regenerated on demand
+promo/Ark/Logo
+promo/Ark/Decoration
+promo/Ark/Background
+promo/Ark/Reference
+promo/*.zip
+promo/_chk
