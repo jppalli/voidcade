@@ -159,13 +159,16 @@ button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-high
   15% { transform: translateY(0.015em) rotate(1.5deg); }
 }
 /* A hand-drawn yellow underline that writes itself in under the name. */
-.logoLine { position: absolute; left: 4%; right: 4%; bottom: 0; width: 92%; height: 0.16em; overflow: visible; }
-.logoLine path { fill: none; stroke: var(--yellow); stroke-width: 5; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 0; opacity: 0.9; vector-effect: non-scaling-stroke; }
+/* Spans the whole word, centred; the stroke keeps its width however the
+   line is stretched. Drawn in with a left-to-right reveal (a dash pattern
+   doesn't survive the stretch). */
+.logoLine { position: absolute; left: 2%; bottom: 0; width: 96%; height: 0.16em; overflow: visible; }
+.logoLine path { fill: none; stroke: var(--yellow); stroke-width: 5; stroke-linecap: round; opacity: 0.9; vector-effect: non-scaling-stroke; }
 .tagline { font-size: 22px; color: var(--chalk-soft); margin: 10px 0 26px; }
 /* First open: "Hangman" writes itself across the board, then the rest appears. */
 #screen-title.intro .logo { animation: logoWrite 1.25s cubic-bezier(0.55, 0.1, 0.4, 1) 0.15s both; }
-#screen-title.intro .logoLine path { animation: lineWrite 0.6s ease-out 1.2s both; }
-@keyframes lineWrite { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+#screen-title.intro .logoLine { animation: lineWrite 0.6s ease-out 1.2s both; }
+@keyframes lineWrite { from { clip-path: inset(-60% 100% -60% -2%); } to { clip-path: inset(-60% -2% -60% -2%); } }
 #screen-title.intro .tagline { animation: introFade 0.5s ease 1.25s both; }
 #screen-title.intro .titleBtns { animation: introUp 0.5s ease 1.4s both; }
 #screen-title.intro .doodles { animation: introFade 0.8s ease 1.1s both; }
@@ -648,7 +651,7 @@ html.narrow {
 
 @media (prefers-reduced-motion: reduce) {
   .logoWord span, .levelBtn.next, .drawing.won .happy, .drawing .figure.nudge, .drawing.lost .figure { animation: none; }
-  #screen-title.intro .logo, #screen-title.intro .logoLine path, #screen-title.intro .tagline,
+  #screen-title.intro .logo, #screen-title.intro .logoLine, #screen-title.intro .tagline,
   #screen-title.intro .titleBtns, #screen-title.intro .doodles, .tile.pop .ch { animation: none; }
   .drawing.lost .part.p2, .drawing.lost .part.p3 { transform: none; }
   .tile.pop, .phrase.shake, .modal, .modal .stars .star.stamp { animation: fadeIn 0.2s ease; }
