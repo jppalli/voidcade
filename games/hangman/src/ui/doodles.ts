@@ -10,7 +10,7 @@ const S = (inner: string, label: string) =>
 const T = (text: string, size = 30, y = 52) =>
   `<text x="40" y="${y}" text-anchor="middle" font-family="Patrick Hand, Comic Sans MS, sans-serif" font-size="${size}" fill="currentColor" stroke="none">${text}</text>`;
 
-const ART: Record<string, string> = {
+export const ART: Record<string, string> = {
   apple: S('<path d="M40 24c-8-6-24-4-24 14 0 16 12 30 24 26 12 4 24-10 24-26 0-18-16-20-24-14Z"/><path d="M40 24c0-6 2-10 6-13"/><path d="M42 18c5-5 12-5 15-2-4 4-10 5-15 2Z"/>', 'apple'),
   abc: S(T('ABC', 30), 'ABC'),
   pencil: S('<path d="M16 64l6-18 34-34 12 12-34 34Z"/><path d="M22 46l12 12"/><path d="M50 18l12 12"/><path d="M16 64l4-1-3-3Z"/>', 'pencil'),

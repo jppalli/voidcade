@@ -9,15 +9,15 @@
  * animating its dash offset; the shared #chalk filter gives the chalk edge.
  */
 
-const FRAME = [
+export const FRAME = [
   'M18 206 L128 206',   // ground
   'M48 206 L48 18',     // post
   'M44 18 L146 18',     // beam
   'M48 52 L82 18',      // brace
 ];
-const ROPE = 'M140 18 L140 46';
+export const ROPE = 'M140 18 L140 46';
 /** Order matters: one part per miss. */
-const FIGURE = [
+export const FIGURE = [
   'M140 46 a16 16 0 1 0 0.01 0',  // head
   'M140 78 L140 134',             // body
   'M140 94 L118 118',             // left arm
@@ -26,7 +26,7 @@ const FIGURE = [
   'M140 134 L158 172',            // right leg
 ];
 /** Faces on the hanging head (centre 140,62), one shown at a time. */
-const FACES: Record<string, string> = {
+export const FACES: Record<string, string> = {
   calm: 'M134 59 v0.5 M146 59 v0.5 M135 68 Q140 70 145 68',
   unsure: 'M134 59 v0.5 M146 59 v0.5 M135 69 L145 67',
   // Brows rise toward the middle (worried, not cross).
@@ -36,7 +36,7 @@ const FACES: Record<string, string> = {
   oops: 'M131 57 l5 4 M136 57 l-5 4 M144 57 l5 4 M149 57 l-5 4 M136 69 Q140 66 144 69',
 };
 /** The free figure, standing on the ground with both arms up. */
-const HAPPY = [
+export const HAPPY = [
   'M168 92 a14 14 0 1 0 0.01 0',
   'M168 120 L168 168',
   'M168 134 L148 108',
