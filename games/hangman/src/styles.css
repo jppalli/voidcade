@@ -100,33 +100,44 @@ button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-high
 .onTitle .dd.s3 { right: 6%; top: auto; bottom: 7%; }
 
 /* ---------------- buttons ---------------- */
+/* Buttons are chalk-drawn boxes standing on a little ledge (a dark edge
+   underneath), so they read as things to press. Pressing pushes the box
+   down onto the ledge. */
 .btn {
-  min-height: 48px;
+  --ledge: rgba(10, 18, 14, 0.42);
+  min-height: 50px;
   padding: 8px 20px;
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
   font-size: 22px; line-height: 1.1;
-  background: rgba(244, 241, 232, 0.06);
+  background: var(--dust), rgba(244, 241, 232, 0.1);
   border: 2.5px solid var(--chalk-soft);
   border-radius: 14px 18px 13px 17px / 17px 13px 18px 14px; /* hand-drawn wobble */
-  transition: transform 0.12s ease, background-color 0.15s ease;
+  box-shadow: 0 5px 0 var(--ledge), inset 0 2px 0 rgba(255, 255, 255, 0.07);
+  transition: transform 0.08s ease, box-shadow 0.08s ease, background-color 0.15s ease;
 }
-.btn:hover { background: rgba(244, 241, 232, 0.12); }
-.btn:active { transform: scale(0.97); }
+.btn:hover { background-color: rgba(244, 241, 232, 0.17); }
+.btn:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 1px 0 var(--ledge), inset 0 2px 0 rgba(255, 255, 255, 0.07); }
+.btn .icon { width: 1.05em; height: 1.05em; }
 .btn:focus-visible, .key:focus-visible, .iconBtn:focus-visible, .levelBtn:focus-visible, .linkBtn:focus-visible {
-  outline: 3px dashed var(--yellow); outline-offset: 3px;
+  outline: 3px dashed var(--yellow); outline-offset: 4px;
 }
-.btn.primary { background: var(--yellow); border-color: var(--yellow); color: var(--ink); }
-.btn.primary:hover { background: #fbeb97; }
-.btn.big { min-height: 62px; font-size: 30px; }
-.btn.ghost { border-color: transparent; background: transparent; color: var(--chalk-soft); min-height: 40px; }
+/* The main action: a fat stick of yellow chalk with sketch lettering. */
+.btn.primary { --ledge: #a8913a; background: var(--dust), var(--yellow); border-color: #fff3b0; color: var(--ink); }
+.btn.primary:hover { background-color: #fbeb97; }
+.btn.big { min-height: 66px; font-size: 32px; font-family: var(--sketch); font-weight: 700; letter-spacing: 0.5px; }
+.btn.ghost { border-color: transparent; background: transparent; box-shadow: none; color: var(--chalk-soft); min-height: 40px; text-decoration: underline; text-underline-offset: 4px; }
+.btn.ghost:active:not(:disabled) { transform: scale(0.97); box-shadow: none; }
 .btn:disabled { opacity: 0.55; cursor: default; }
 
 .iconBtn {
   width: 46px; height: 46px; display: grid; place-items: center;
-  border: 2.5px solid var(--chalk-faint); border-radius: 50%;
-  background: transparent; color: var(--chalk);
+  border: 2.5px solid var(--chalk-soft); border-radius: 50%;
+  background: var(--dust), rgba(244, 241, 232, 0.08); color: var(--chalk);
+  box-shadow: 0 4px 0 rgba(10, 18, 14, 0.42);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
 }
-.iconBtn:hover { border-color: var(--chalk-soft); }
+.iconBtn:hover { background-color: rgba(244, 241, 232, 0.16); }
+.iconBtn:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(10, 18, 14, 0.42); }
 .cornerBtn { position: absolute; top: 14px; right: 14px; z-index: 2; }
 
 .linkBtn {
@@ -181,6 +192,16 @@ button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-high
 .titleBtns { width: 100%; display: flex; flex-direction: column; gap: 12px; align-items: stretch; }
 .btnRow { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .bestLine { min-height: 26px; color: var(--yellow); font-size: 22px; }
+/* Daily Word: yellow chalk outline, with a little tag for the streak. */
+.dailyBtn { border-color: var(--yellow); color: var(--yellow); background-color: rgba(246, 226, 122, 0.1); }
+.dailyBtn.done { border-color: var(--chalk-soft); color: var(--chalk); background-color: rgba(244, 241, 232, 0.1); }
+.dailyTag {
+  display: inline-flex; align-items: center; gap: 2px;
+  margin-left: 2px; padding: 1px 10px 1px 8px; border-radius: 999px;
+  background: var(--yellow); color: var(--ink); font-size: 0.82em; line-height: 1.25;
+}
+.dailyTag .icon { width: 0.95em; height: 0.95em; stroke-width: 2.8; }
+.dailyBtn.done .dailyTag { background: var(--green); }
 .titleBtns .linkBtn { align-self: center; }
 
 /* ---------------- top bar ---------------- */
@@ -222,10 +243,13 @@ button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-high
 .levelBtn {
   min-height: 100px; min-width: 0; padding: 8px 4px 8px;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
-  background: transparent; color: var(--chalk);
+  background: rgba(244, 241, 232, 0.05); color: var(--chalk);
   border: 2.5px solid var(--chalk-soft);
   border-radius: 16px 20px 15px 19px / 19px 15px 20px 16px;
+  box-shadow: 0 4px 0 rgba(10, 18, 14, 0.38);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
 }
+.levelBtn:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 rgba(10, 18, 14, 0.38); }
 .levelBtn .lvNum { font-size: 30px; line-height: 1; }
 /* Topic name: wraps between words only (never mid-word), up to two lines. */
 .levelBtn .lvTopic {
@@ -236,8 +260,8 @@ button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-high
 .levelBtn.locked .icon { width: 26px; height: 26px; }
 .levelBtn.done { background: rgba(244, 241, 232, 0.08); }
 .levelBtn.next { border-color: var(--yellow); color: var(--yellow); animation: nextPulse 1.8s ease-in-out infinite; }
-.levelBtn.locked { border-style: dashed; border-color: var(--chalk-faint); color: var(--chalk-faint); cursor: default; }
-@keyframes nextPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(246, 226, 122, 0.4); } 50% { box-shadow: 0 0 0 7px rgba(246, 226, 122, 0); } }
+.levelBtn.locked { border-style: dashed; border-color: var(--chalk-faint); color: var(--chalk-faint); cursor: default; box-shadow: none; background: transparent; }
+@keyframes nextPulse { 0%, 100% { box-shadow: 0 4px 0 rgba(10, 18, 14, 0.38), 0 0 0 0 rgba(246, 226, 122, 0.4); } 50% { box-shadow: 0 4px 0 rgba(10, 18, 14, 0.38), 0 0 0 7px rgba(246, 226, 122, 0); } }
 .star { fill: var(--chalk-faint); }
 .star.on { fill: var(--yellow); }
 .lvStars { display: flex; gap: 2px; }
@@ -290,7 +314,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-high
 .misses { display: inline-flex; align-items: center; gap: 6px; }
 .tally { width: 5px; height: 24px; border-radius: 3px; background: var(--chalk-faint); transform: rotate(6deg); transition: background-color 0.3s ease; }
 .tally.left { background: var(--chalk); }
-.hintBtn { min-height: 42px; padding: 6px 14px; font-size: 20px; position: relative; border-color: var(--yellow); color: var(--yellow); }
+.hintBtn { min-height: 42px; padding: 6px 14px; font-size: 20px; position: relative; border-color: var(--yellow); color: var(--yellow); background-color: rgba(246, 226, 122, 0.1); }
 .hintBtn .icon { width: 20px; height: 20px; }
 .badge {
   position: absolute; top: -9px; right: -9px; min-width: 24px; height: 24px; padding: 0 6px;
@@ -307,15 +331,18 @@ button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-high
   /* Key size follows the frame height, so three rows always fit. */
   flex: 1 1 0; max-width: 56px; min-width: 0; height: clamp(34px, calc(var(--app-h, 100vh) * 0.074), 50px);
   font-size: clamp(18px, calc(var(--app-h, 100vh) * 0.043), 25px); line-height: 1;
-  background: rgba(244, 241, 232, 0.05); color: var(--chalk);
+  background: rgba(244, 241, 232, 0.08); color: var(--chalk);
   border: 2px solid var(--chalk-soft);
   border-radius: 10px 12px 9px 11px / 11px 9px 12px 10px;
+  box-shadow: 0 3px 0 rgba(10, 18, 14, 0.4);
+  transition: transform 0.06s ease, box-shadow 0.06s ease;
   position: relative;
 }
-.key:hover:not(:disabled) { background: rgba(244, 241, 232, 0.14); }
-.key:active:not(:disabled) { transform: scale(0.94); }
-.key.hit { background: rgba(168, 226, 176, 0.2); border-color: var(--green); color: var(--green); cursor: default; }
-.key.miss { border-color: var(--chalk-faint); color: var(--chalk-faint); cursor: default; }
+.key:hover:not(:disabled) { background: rgba(244, 241, 232, 0.16); }
+.key:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 rgba(10, 18, 14, 0.4); }
+/* Used keys sit flat: pressed in for good. */
+.key.hit { background: rgba(168, 226, 176, 0.2); border-color: var(--green); color: var(--green); cursor: default; box-shadow: none; transform: translateY(2px); }
+.key.miss { border-color: var(--chalk-faint); color: var(--chalk-faint); cursor: default; box-shadow: none; transform: translateY(2px); background: transparent; }
 .key.miss::after {
   content: ''; position: absolute; left: 18%; right: 18%; top: 50%; height: 2.5px;
   background: var(--pink); transform: rotate(-24deg); border-radius: 2px; opacity: 0.85;
@@ -386,6 +413,24 @@ button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-high
 .modal .stars { display: flex; justify-content: center; gap: 6px; margin: 4px 0; }
 .answer { font-size: 25px; line-height: 1.35; color: var(--yellow); letter-spacing: 1px; word-break: break-word; }
 .modalText { font-size: 21px; color: var(--chalk-soft); line-height: 1.3; }
+/* Daily result card */
+.dailyNum { font-size: 20px; color: var(--yellow); letter-spacing: 0.5px; }
+.dailyMoves { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; margin: 2px 0 4px; }
+.dm { width: 18px; height: 18px; border-radius: 4px 5px 4px 5px; border: 2px solid var(--chalk-faint); }
+.dm.hit { background: var(--green); border-color: var(--green); }
+.dm.miss { background: var(--pink); border-color: var(--pink); }
+.dm.hint { background: var(--yellow); border-color: var(--yellow); border-radius: 50%; }
+.dm.life { background: transparent; border-color: var(--pink); border-radius: 50%; }
+.dailyStats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 4px 0 6px; }
+.dailyStats div { display: flex; flex-direction: column; align-items: center; }
+.dailyStats b { font-family: var(--sketch); font-size: 34px; line-height: 1; font-weight: 700; }
+.dailyStats span { font-size: 17px; color: var(--chalk-soft); }
+.dailyNext { font-size: 20px; }
+.shareFallback { display: flex; flex-direction: column; gap: 6px; font-size: 19px; color: var(--chalk-soft); text-align: left; }
+.shareFallback textarea {
+  width: 100%; resize: none; padding: 8px 10px; border-radius: 10px;
+  font: 18px/1.3 var(--hand); color: var(--chalk); background: rgba(0, 0, 0, 0.25); border: 2px solid var(--chalk-faint);
+}
 .howTo { max-width: 440px; text-align: left; }
 .howTo h3 { text-align: center; }
 .rules { padding-left: 24px; display: flex; flex-direction: column; gap: 8px; font-size: 22px; line-height: 1.3; }
@@ -453,7 +498,8 @@ button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-high
 
 /* Floating "+120" after an Endless solve. */
 .toast {
-  position: fixed; z-index: 55; left: 50%; top: 22%;
+  /* Above the cards too ("Copied!" shows over the Daily result). */
+  position: fixed; z-index: 75; left: 50%; top: 22%;
   transform: translateX(-50%);
   font-family: var(--sketch); font-size: 40px; color: var(--yellow);
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
@@ -583,6 +629,10 @@ html:not(.staged):not(.tiny) {
   .btn.big { min-height: 76px; font-size: 36px; }
   .btnRow .btn { min-height: 62px; font-size: 27px; }
   .bestLine { font-size: 24px; }
+  .dailyBtn { min-height: 62px; font-size: 27px; }
+  .dailyNum, .dailyNext { font-size: 22px; }
+  .dailyStats span { font-size: 19px; }
+  .dm { width: 21px; height: 21px; }
   .titleBtns .linkBtn { font-size: 26px; margin-top: 2px; }
   .titleBtns .linkBtn .icon { width: 26px; height: 26px; }
   /* Game */
@@ -630,8 +680,10 @@ html:not(.staged):not(.tiny):not(.wide) {
   .tagline { margin: 16px 0 44px; }
   .titleBtns { gap: 18px; }
   .btn.big { min-height: 84px; }
-  .btnRow { grid-template-columns: 1fr; gap: 18px; }
-  .btnRow .btn { min-height: 66px; }
+  /* Four buttons now (Play, Daily, Levels, Endless): Levels and Endless
+     share a row so the column still fits. */
+  .btnRow { gap: 14px; }
+  .btnRow .btn, .dailyBtn { min-height: 66px; }
   .bestLine { margin-top: 4px; }
 }
 

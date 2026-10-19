@@ -11,7 +11,7 @@ import type { Platform } from './platform';
  * whichever copy was behind.
  */
 
-const KEYS = ['hangman-progress', 'hangman-sound', 'hangman-hints', 'hangman-endless'] as const;
+const KEYS = ['hangman-progress', 'hangman-sound', 'hangman-hints', 'hangman-endless', 'hangman-daily'] as const;
 export type StorageKey = (typeof KEYS)[number];
 
 /** Combines this device's value and the cloud's into one. */

@@ -9,7 +9,8 @@
     "build:arkadium": "tsc && vite build --outDir arkadium-build --emptyOutDir",
     "preview": "vite preview",
     "check-words": "vite-node tools/check-words.ts",
-    "promo": "vite-node tools/promo.ts"
+    "promo": "vite-node tools/promo.ts",
+    "make-daily": "vite-node tools/make-daily.ts"
   },
   "dependencies": {
     "@arkadiuminc/sdk": "2.76.0",

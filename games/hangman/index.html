@@ -20,6 +20,12 @@
     <symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.5v5l4.5-2.5Z" fill="currentColor"/></symbol>
     <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.4 9.2a2.7 2.7 0 1 1 3.6 2.5c-.7.3-1 .9-1 1.6v.3"/><line x1="12" y1="17" x2="12" y2="17.01" stroke-width="2.6"/></symbol>
     <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 2.5l3.09 6.26 6.91 1-5 4.87 1.18 6.87L12 18.27 5.82 21.5 7 14.63l-5-4.87 6.91-1z"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M9 14.8l2 2 4-4"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></symbol>
+    <symbol id="i-infinity" viewBox="0 0 24 24"><path d="M12 12c-2-2.7-3.6-4-5.5-4a4 4 0 0 0 0 8c1.9 0 3.5-1.3 5.5-4Zm0 0c2 2.7 3.6 4 5.5 4a4 4 0 0 0 0-8c-1.9 0-3.5 1.3-5.5 4Z"/></symbol>
+    <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5"/><path d="M5 12v6.5A2.5 2.5 0 0 0 7.5 21h9a2.5 2.5 0 0 0 2.5-2.5V12"/></symbol>
+    <symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 21.5c-4 0-7-2.8-7-6.6 0-3.4 2.4-5.6 4-8.4.4 1.9 1.4 3 2.6 3.6C11.4 6.6 12.8 4 15.6 2.5c-.3 3 1 4.8 2.2 6.6 1 1.5 1.2 3 1.2 4.2 0 4.5-3 8.2-7 8.2Z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
   </svg>
 
   <!-- Shared chalk texture filter. Not display:none, so every screen can use
@@ -47,9 +53,11 @@
       <p class="tagline">Guess the word, one letter at a time</p>
       <div class="titleBtns">
         <button class="btn primary big" id="btnPlay"><span id="playLabel">Play</span></button>
+        <!-- One word a day for everyone; the tag shows the streak or "Done". -->
+        <button class="btn dailyBtn" id="btnDaily"><svg class="icon" aria-hidden="true"><use href="#i-calendar"/></svg><span>Daily Word</span><span class="dailyTag hidden" id="dailyTag"></span></button>
         <div class="btnRow">
-          <button class="btn" id="btnLevels">Levels</button>
-          <button class="btn" id="btnEndless">Endless</button>
+          <button class="btn" id="btnLevels"><svg class="icon" aria-hidden="true"><use href="#i-grid"/></svg>Levels</button>
+          <button class="btn" id="btnEndless"><svg class="icon" aria-hidden="true"><use href="#i-infinity"/></svg>Endless</button>
         </div>
         <p class="bestLine" id="bestLine"></p>
         <button class="linkBtn" id="btnHowTo"><svg class="icon"><use href="#i-help"/></svg>How to play</button>
@@ -116,6 +124,28 @@
     </div>
   </div>
 
+  <!-- Daily Word result: the answer, how it went, stats, share, countdown. -->
+  <div class="overlay hidden" id="dailyOverlay">
+    <div class="modal dailyCard" role="dialog" aria-labelledby="dailyTitle">
+      <p class="dailyNum" id="dailyNum"></p>
+      <h3 id="dailyTitle">Solved!</h3>
+      <p class="answer" id="dailyAnswer"></p>
+      <p class="dailyMoves" id="dailyMoves" role="img"></p>
+      <div class="dailyStats">
+        <div><b id="dsPlayed">0</b><span>Played</span></div>
+        <div><b id="dsWin">0%</b><span>Solved</span></div>
+        <div><b id="dsStreak">0</b><span>Streak</span></div>
+        <div><b id="dsBest">0</b><span>Best</span></div>
+      </div>
+      <button class="btn primary" id="btnShare"><svg class="icon" aria-hidden="true"><use href="#i-share"/></svg>Share result</button>
+      <label class="shareFallback hidden" id="shareFallback">Copy this to share:
+        <textarea id="shareText" rows="4" readonly></textarea>
+      </label>
+      <p class="modalText dailyNext" id="dailyNext"></p>
+      <button class="btn" id="btnDailyClose">Menu</button>
+    </div>
+  </div>
+
   <div class="overlay hidden" id="howToOverlay">
     <div class="modal howTo" role="dialog" aria-labelledby="howToTitle">
       <h3 id="howToTitle">How to play</h3>
@@ -124,7 +154,7 @@
         <li>Each wrong letter adds a line to the drawing. Six misses and the round is over.</li>
         <li>Each level is one topic with five words, and every word gets a fresh drawing.</li>
       </ol>
-      <p class="modalText">Fewer misses across the level earn more stars. In Endless, keep solving to build your score.</p>
+      <p class="modalText">Fewer misses across the level earn more stars. In Endless, keep solving to build your score. The Daily Word is one try a day, the same word for everyone.</p>
       <button class="btn primary" id="btnHowToClose">Let's play</button>
     </div>
   </div>

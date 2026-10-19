@@ -12,11 +12,12 @@ import { ENDLESS_POOL, LEVELS, TOTAL_LEVELS, WORDS_PER_LEVEL, WORLDS, levelStars
 import { MAX_MISSES, Round } from './game/round';
 import { bestEndless, loadProgress, nextLevel, recordSolve, saveBestEndless, saveProgress, solvedCount, starCount, type Progress } from './game/progress';
 import { freeHintsLeft, useFreeHint } from './game/hints';
+import { currentStreak, dailyEntry, dayNumber, finishDaily, loadDaily, msUntilNext, saveDaily, type DailyState } from './game/daily';
 import { drawingLost, drawingWon, mountDrawing, resetDrawing, setParts } from './ui/drawing';
 import { wipeBusy, wipeTo } from './ui/wipe';
 
 type Screen = 'title' | 'map' | 'game';
-type Mode = { kind: 'level'; index: number } | { kind: 'endless' };
+type Mode = { kind: 'level'; index: number } | { kind: 'endless' } | { kind: 'daily'; day: number };
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -57,7 +58,7 @@ function show(screen: Screen) {
 function go(swap: () => void) { void wipeTo(swap); }
 
 function hideOverlays() {
-  ['winOverlay', 'loseOverlay'].forEach((id) => $(id).classList.add('hidden'));
+  ['winOverlay', 'loseOverlay', 'dailyOverlay'].forEach((id) => $(id).classList.add('hidden'));
 }
 
 function refreshSoundButtons() {
@@ -91,6 +92,25 @@ function renderTitle() {
   $('playLabel').textContent = done === 0 ? 'Play' : all ? 'Play again' : `Level ${next + 1}`;
   const best = bestEndless();
   $('bestLine').textContent = best ? `Endless best: ${best.toLocaleString('en-US')}` : '';
+  renderDailyTag();
+}
+
+/** "Done" once today's word is finished, otherwise the streak (if any). */
+function renderDailyTag() {
+  const d = loadDaily();
+  const streak = currentStreak(d);
+  const tag = $('dailyTag');
+  const btn = $('btnDaily');
+  btn.classList.toggle('done', !!d.result);
+  if (d.result) {
+    tag.innerHTML = `<svg class="icon"><use href="#i-check"/></svg>${streak ? `<svg class="icon"><use href="#i-flame"/></svg>${streak}` : 'Done'}`;
+  } else if (streak) {
+    tag.innerHTML = `<svg class="icon"><use href="#i-flame"/></svg>${streak}`;
+  } else {
+    tag.innerHTML = 'New';
+  }
+  tag.classList.remove('hidden');
+  btn.setAttribute('aria-label', `Daily Word, ${d.result ? 'done for today' : 'new word today'}${streak ? `, ${streak}-day streak` : ''}`);
 }
 
 // ---------------------------------------------------------------- level map
@@ -235,6 +255,172 @@ function fitGameTitle() {
   }
 }
 
+// ---------------------------------------------------------------- daily word
+
+let daily: DailyState = loadDaily();
+
+function startDaily() {
+  const day = dayNumber();
+  daily = loadDaily(day);
+  if (daily.result) { show('title'); openDailyResult(false); return; }
+  mode = { kind: 'daily', day };
+  show('game');
+  endActiveLevel();
+  platform.gameStart();
+  $('screen-game').style.setProperty('--board', '#3a3a52');
+  setDoodles($('gameDoodles'), 'daily');
+  $('coachLine').classList.add('hidden');
+  beginRound(dailyEntry(day));
+  // Pick up where the player left off today.
+  const r = round!;
+  for (const m of daily.moves) {
+    if (m === '+') r.revive();
+    else if (m[0] === '*') { r.guessed.add(m[1]); r.hinted.add(m[1]); }
+    else r.guess(m);
+  }
+  r.guessed.forEach((ch) => markKey(ch, r.letters.has(ch) ? 'hit' : 'miss'));
+  renderPhrase();
+  renderStatus();
+  refreshDailyHeader();
+  if (daily.moves.length && !r.over) toast('Welcome back!');
+  if (r.solved) onSolved();
+  else if (r.lost) onLost();
+}
+
+function refreshDailyHeader() {
+  const streak = currentStreak(daily);
+  // Short date, so "date · Streak N" stays on one line on phones.
+  const date = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+  $('gameTitle').textContent = `Daily Word #${daily.day}`;
+  $('gameSub').textContent = streak ? `${date} · Streak ${streak}` : date;
+  fitGameTitle();
+}
+
+/** Save a move as it happens, so leaving mid-word can't reset the day. */
+function recordMove(m: string) {
+  if (mode.kind !== 'daily' || daily.result) return;
+  daily = { ...daily, moves: [...daily.moves, m] };
+  saveDaily(daily);
+}
+
+function finishDailyDay(won: boolean) {
+  if (mode.kind !== 'daily' || !round || daily.result) return;
+  daily = finishDaily(daily, won, round.misses);
+  saveDaily(daily);
+  renderDailyTag();
+  refreshDailyHeader();
+}
+
+/** One chalk mark per move: found, missed, hint, second chance. */
+function moveMarks(d: DailyState, entry: Entry): ('hit' | 'miss' | 'hint' | 'life')[] {
+  return d.moves.map((m) => (m === '+' ? 'life' : m[0] === '*' ? 'hint' : entry.text.includes(m) ? 'hit' : 'miss'));
+}
+
+let dailyFromGame = false;
+let countdown: number | null = null;
+
+function openDailyResult(fromGame: boolean) {
+  dailyFromGame = fromGame;
+  const d = daily = loadDaily();
+  const entry = dailyEntry(d.day);
+  const won = d.result === 'won';
+  const streak = currentStreak(d);
+  const date = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+  $('dailyNum').textContent = `Daily Word #${d.day} · ${date}`;
+  $('dailyTitle').textContent = won ? (d.misses === 0 ? 'Flawless!' : 'Solved!') : 'Not this time';
+  $('dailyAnswer').textContent = entry.text;
+  const marks = moveMarks(d, entry);
+  $('dailyMoves').innerHTML = marks.map((k) => `<i class="dm ${k}"></i>`).join('');
+  const found = marks.filter((k) => k === 'hit').length;
+  $('dailyMoves').setAttribute('aria-label', `${found} letters found, ${d.misses} ${d.misses === 1 ? 'miss' : 'misses'}`);
+  $('dsPlayed').textContent = String(d.played);
+  $('dsWin').textContent = d.played ? `${Math.round((100 * d.won) / d.played)}%` : '0%';
+  $('dsStreak').textContent = String(streak);
+  $('dsBest').textContent = String(d.best);
+  $('shareFallback').classList.add('hidden');
+  tickCountdown();
+  if (countdown !== null) clearInterval(countdown);
+  countdown = window.setInterval(tickCountdown, 20_000);
+  $('dailyOverlay').classList.remove('hidden');
+  $('btnShare').focus();
+}
+
+function tickCountdown() {
+  if ($('dailyOverlay').classList.contains('hidden') && countdown !== null) { clearInterval(countdown); countdown = null; return; }
+  if (dayNumber() !== daily.day) {
+    $('dailyNext').textContent = 'A new word is ready!';
+    renderDailyTag();
+    return;
+  }
+  const mins = Math.ceil(msUntilNext() / 60_000);
+  const h = Math.floor(mins / 60), m = mins % 60;
+  $('dailyNext').textContent = `Next word in ${h ? `${h}h ` : ''}${m}m`;
+}
+
+function closeDailyResult() {
+  playTap();
+  $('dailyOverlay').classList.add('hidden');
+  if (dailyFromGame) leaveGame('title');
+  else renderTitle();
+}
+
+/** Spoiler-free result: no letters, just how it went. */
+function shareText(): string {
+  const d = daily;
+  const entry = dailyEntry(d.day);
+  const icons = { hit: '🟩', miss: '🟥', hint: '💡', life: '❤️' };
+  const row = moveMarks(d, entry).map((k) => icons[k]).join('');
+  const streak = currentStreak(d);
+  const head = d.result === 'won'
+    ? `Hangman Daily #${d.day} ✅ ${d.misses} ${d.misses === 1 ? 'miss' : 'misses'}`
+    : `Hangman Daily #${d.day} ❌`;
+  const lines = [head, row];
+  if (streak > 1) lines.push(`🔥 ${streak}-day streak`);
+  // Outside the Arena, link back to the game. In the Arena the page around
+  // the game is Arkadium's, so the text stands on its own.
+  if (platform.name === 'local' && /^https?:/.test(location.href)) lines.push(location.origin + location.pathname);
+  return lines.join('\n');
+}
+
+async function copyText(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch { /* blocked in some frames: try the old way */ }
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.cssText = 'position:fixed;left:-9999px;top:0';
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand('copy');
+    ta.remove();
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
+async function onShare() {
+  playTap();
+  const text = shareText();
+  // Phones: the system share sheet. It can be blocked inside an embed, in
+  // which case copying is the fallback.
+  if (navigator.share && matchMedia('(pointer: coarse)').matches) {
+    try { await navigator.share({ text }); return; } catch (e) {
+      if ((e as DOMException)?.name === 'AbortError') return;
+    }
+  }
+  if (await copyText(text)) { toast('Copied! Paste it anywhere'); return; }
+  // Nothing worked: show the text so it can be copied by hand.
+  const ta = $<HTMLTextAreaElement>('shareText');
+  ta.value = text;
+  $('shareFallback').classList.remove('hidden');
+  ta.focus();
+  ta.select();
+}
+
 function beginRound(entry: Entry) {
   round = new Round(entry);
   seen.add(entry.text);
@@ -359,6 +545,7 @@ function guess(ch: string) {
   const r = round;
   const res = r.guess(ch);
   if (res === 'repeat') return;
+  recordMove(ch);
   $('coachLine').classList.add('hidden');
   if (res === 'hit') {
     const count = [...r.entry.text].filter((c) => c === ch).length;
@@ -390,6 +577,7 @@ async function onHint() {
   }
   const ch = round.hint();
   if (!ch) return;
+  recordMove('*' + ch);
   markKey(ch, 'hit');
   renderPhrase();
   document.querySelectorAll<HTMLElement>(`.tile[data-ch="${ch}"]`).forEach((t) => t.classList.add('pop'));
@@ -405,6 +593,13 @@ function onSolved() {
   locked = true;
   drawingWon();
   wordDone($('phrase'));
+  if (mode.kind === 'daily') {
+    finishDailyDay(true);
+    refreshDailyHeader();
+    setTimeout(() => { if (round === r) { levelDone(); playWin(); } }, 450);
+    setTimeout(() => { if (round === r && mode.kind === 'daily') openDailyResult(true); }, 1700);
+    return;
+  }
   const levelOver = mode.kind === 'level' && wordIndex >= WORDS_PER_LEVEL - 1;
   if (levelOver) {
     // The big one: confetti and a fanfare just after the word's own cheer.
@@ -490,7 +685,14 @@ function onLost() {
   setTimeout(playLose, 200);
   setTimeout(() => {
     if (round !== r) return;
-    const canRevive = mode.kind === 'level' ? !r.revived : !runRevived;
+    const canRevive = mode.kind === 'endless' ? !runRevived : !r.revived;
+    // Daily with no second chance left: straight to the result card.
+    if (mode.kind === 'daily' && !canRevive) {
+      finishDailyDay(false);
+      renderPhrase(true);
+      setTimeout(() => { if (round === r) openDailyResult(true); }, 900);
+      return;
+    }
     // While one more guess is on offer, the answer stays hidden: showing it
     // would make the extra guess a free win.
     if (!canRevive) renderPhrase(true);
@@ -499,7 +701,12 @@ function onLost() {
     $('reviveLabel').textContent = subscriber ? 'Keep going (one more guess)' : 'Watch a video for one more guess';
     $('btnRetry').classList.toggle('primary', !canRevive);
     $('loseAnswer').classList.add('hidden');
-    if (mode.kind === 'level') {
+    if (mode.kind === 'daily') {
+      $('loseTitle').textContent = 'Out of guesses!';
+      $('loseText').textContent = 'One more guess could still save your streak.';
+      $('btnRetry').textContent = 'Show the answer';
+      $('btnLoseMenu').textContent = 'Menu';
+    } else if (mode.kind === 'level') {
       $('loseTitle').textContent = canRevive ? 'Out of guesses!' : 'So close!';
       $('loseText').textContent = canRevive
         ? 'Get one more guess on this word, or start the level over with new words.'
@@ -537,6 +744,7 @@ async function onRevive() {
   }
   if (mode.kind === 'endless') runRevived = true;
   r.revive();
+  recordMove('+');
   locked = false;
   $('loseOverlay').classList.add('hidden');
   renderPhrase();
@@ -546,6 +754,13 @@ async function onRevive() {
 
 function onRetry() {
   playTap();
+  if (mode.kind === 'daily') {
+    finishDailyDay(false);
+    $('loseOverlay').classList.add('hidden');
+    renderPhrase(true);
+    setTimeout(() => openDailyResult(true), 700);
+    return;
+  }
   if (mode.kind === 'endless') {
     finishEndlessRun();
     go(() => { hideOverlays(); startEndless(); });
@@ -560,6 +775,7 @@ function onRetry() {
 function leaveGame(to: Screen) {
   // Quitting a run mid-word still keeps what was scored so far.
   if (mode.kind === 'endless') finishEndlessRun();
+  if (mode.kind === 'daily' && round?.lost) finishDailyDay(false);
   endActiveLevel();
   round = null;
   go(() => show(to));
@@ -633,6 +849,12 @@ function wire() {
   $('btnPlay').addEventListener('click', play);
   $('btnLevels').addEventListener('click', () => { playTap(); go(() => show('map')); });
   $('btnEndless').addEventListener('click', () => { playTap(); go(startEndless); });
+  $('btnDaily').addEventListener('click', () => {
+    playTap();
+    // Already played today: just show the card, no trip to the board.
+    if (loadDaily().result) { daily = loadDaily(); openDailyResult(false); return; }
+    go(startDaily);
+  });
   $('btnHowTo').addEventListener('click', () => { playTap(); openHowTo(); });
   $('btnHowToClose').addEventListener('click', () => {
     playTap();
@@ -664,7 +886,7 @@ function wire() {
   window.addEventListener('pointerdown', () => startMusic(), { once: true });
   window.addEventListener('keydown', () => startMusic(), { once: true });
 
-  $('btnGameBack').addEventListener('click', () => { playTap(); leaveGame(mode.kind === 'endless' ? 'title' : 'map'); });
+  $('btnGameBack').addEventListener('click', () => { playTap(); leaveGame(mode.kind === 'level' ? 'map' : 'title'); });
   $('keyboard').addEventListener('click', (e) => {
     const k = (e.target as HTMLElement).closest<HTMLButtonElement>('.key');
     if (k?.dataset.k) guess(k.dataset.k);
@@ -688,12 +910,15 @@ function wire() {
   });
   $('btnRevive').addEventListener('click', () => { playTap(); void onRevive(); });
   $('btnRetry').addEventListener('click', onRetry);
-  $('btnLoseMenu').addEventListener('click', () => { playTap(); leaveGame(mode.kind === 'endless' ? 'title' : 'map'); });
+  $('btnLoseMenu').addEventListener('click', () => { playTap(); leaveGame(mode.kind === 'level' ? 'map' : 'title'); });
+  $('btnShare').addEventListener('click', () => void onShare());
+  $('btnDailyClose').addEventListener('click', closeDailyResult);
 
   // Physical keyboard: letters guess, Escape closes How to Play.
   window.addEventListener('keydown', (e) => {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     if (e.key === 'Escape' && !$('howToOverlay').classList.contains('hidden')) { $('btnHowToClose').click(); return; }
+    if (!$('dailyOverlay').classList.contains('hidden')) { if (e.key === 'Escape') $('btnDailyClose').click(); return; }
     if ($('screen-game').classList.contains('hidden')) return;
     if (/^[a-z]$/i.test(e.key)) { e.preventDefault(); guess(e.key.toUpperCase()); }
   });
@@ -708,6 +933,7 @@ function wire() {
     void (async () => {
       await resyncStorage();
       progress = loadProgress();
+      daily = loadDaily();
       subscriber = await platform.isSubscriber();
       refreshSoundButtons();
       if (!$('screen-title').classList.contains('hidden')) renderTitle();

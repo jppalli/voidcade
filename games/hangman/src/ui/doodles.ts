@@ -49,6 +49,7 @@ const SETS: Record<string, string[]> = {
   'final-exam': ['cap', 'aplus', 'scroll', 'clock'],
   endless: ['question', 'star', 'bulb', 'aplus'],
   title: ['apple', 'aplus', 'book', 'star'],
+  daily: ['clock', 'star', 'pencil', 'bulb'],
 };
 
 /** Fill a screen's doodle layer with a set (`key` = lesson id, 'endless' or 'title'). */
