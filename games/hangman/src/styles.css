@@ -93,6 +93,19 @@ button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-high
 .dd.s1 { right: 3%; top: 12%; rotate: 7deg; }
 .dd.s2 { left: 4%; top: 36%; rotate: 5deg; }
 .dd.s3 { right: 4%; top: 37%; rotate: -6deg; }
+/* Sketched in when a board appears: strokes draw themselves, lettering
+   wipes in. The dash pattern lives only in the keyframes, so with no
+   animation (reduced motion, or once it has run) the lines are just solid. */
+.doodles.drawIn .dd:not(.txt) svg g > * { animation: ddDraw 0.7s ease-out calc(var(--dd-delay, 380ms) + var(--di) * 170ms) backwards; }
+.doodles.drawIn .dd.txt { animation: ddWipe 0.55s ease-out calc(var(--dd-delay, 380ms) + var(--di) * 170ms) backwards; }
+@keyframes ddDraw { from { stroke-dasharray: 1 2; stroke-dashoffset: 1; } to { stroke-dasharray: 1 2; stroke-dashoffset: 0; } }
+@keyframes ddWipe { from { clip-path: inset(-10% 100% -10% -10%); } to { clip-path: inset(-10% -10% -10% -10%); } }
+/* A word solved: one wiggle each, a beat after the letters hop. */
+.doodles.cheer .dd svg { animation: ddCheer 0.6s ease-in-out calc(450ms + var(--di) * 70ms) both; }
+@keyframes ddCheer { 0%, 100% { transform: none; } 30% { transform: translateY(-6px) rotate(-7deg) scale(1.08); } 65% { transform: translateY(1px) rotate(4deg); } }
+/* Menu: now and then one doodle gets a gentle nudge. */
+.dd.nudge svg { animation: ddNudge 1.1s ease-in-out both; }
+@keyframes ddNudge { 0%, 100% { transform: none; } 25% { transform: rotate(-6deg) translateY(-3px); } 55% { transform: rotate(4deg); } 80% { transform: rotate(-1.5deg); } }
 /* Title: the four corners. */
 .onTitle .dd.s0 { left: 6%; top: 9%; }
 .onTitle .dd.s1 { right: 7%; top: 17%; }
@@ -735,5 +748,6 @@ html.narrow {
   .drawing.lost .part.p2, .drawing.lost .part.p3 { transform: none; }
   .tile.pop, .phrase.shake, .modal, .modal .stars .star.stamp { animation: fadeIn 0.2s ease; }
   .tile.cheer, .wDots.party .wDot { animation: none; }
+  .doodles .dd, .doodles .dd svg, .doodles .dd svg g > * { animation: none !important; }
   .drawing .ln { transition: opacity 0.2s ease; }
 }

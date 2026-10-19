@@ -6,7 +6,7 @@ import { createPlatform, type Platform } from './platform/platform';
 import { initStorage, resyncStorage, setSignedOut } from './platform/storage';
 import { initSound, musicOn, playErase, playHit, playLose, playMiss, playStar, playTap, playWin, playWordDone, resumeSound, setMusic, setSound, soundOn, startMusic, suspendSound } from './audio/sound';
 import { levelDone, wordDone } from './ui/celebrate';
-import { setDoodles } from './ui/doodles';
+import { cheerDoodles, drawDoodles, setDoodles, startTitleNudge } from './ui/doodles';
 import { initStage, isStaged, stageHeight, stageWidth, toStage } from './ui/stage';
 import { ENDLESS_POOL, LEVELS, TOTAL_LEVELS, WORDS_PER_LEVEL, WORLDS, levelStars, pickLevelWords, type Entry } from './game/words';
 import { MAX_MISSES, Round } from './game/round';
@@ -49,7 +49,7 @@ const usedInRun = new Set<string>();
 
 function show(screen: Screen) {
   (['title', 'map', 'game'] as Screen[]).forEach((s) => $(`screen-${s}`).classList.toggle('hidden', s !== screen));
-  if (screen === 'title') renderTitle();
+  if (screen === 'title') { renderTitle(); drawDoodles($('titleDoodles')); }
   if (screen === 'map') renderMap();
   hideOverlays();
 }
@@ -194,6 +194,7 @@ function startLevel(index: number) {
   fitGameTitle();
   $('screen-game').style.setProperty('--board', w.board);
   setDoodles($('gameDoodles'), w.id);
+  drawDoodles($('gameDoodles'));
   startLevelWord();
   // First word ever: one short line under the word, never a pop-up.
   const firstTime = index === 0 && !progress.stars[0];
@@ -227,6 +228,7 @@ function startEndless() {
   usedInRun.clear();
   $('screen-game').style.setProperty('--board', '#33333d');
   setDoodles($('gameDoodles'), 'endless');
+  drawDoodles($('gameDoodles'));
   $('coachLine').classList.add('hidden');
   nextEndlessWord();
 }
@@ -279,6 +281,7 @@ function startDaily() {
   platform.gameStart();
   $('screen-game').style.setProperty('--board', '#3a3a52');
   setDoodles($('gameDoodles'), 'daily');
+  drawDoodles($('gameDoodles'));
   $('coachLine').classList.add('hidden');
   beginRound(dailyEntry(day));
   // Pick up where the player left off today.
@@ -630,6 +633,7 @@ function onSolved() {
   locked = true;
   drawingWon();
   wordDone($('phrase'));
+  cheerDoodles($('gameDoodles'));
   if (mode.kind === 'daily') {
     finishDailyDay(true);
     refreshDailyHeader();
@@ -1001,6 +1005,9 @@ async function boot() {
   show('title');
   // First open only: "Hangman" writes itself in, then the menu appears.
   $('screen-title').classList.add('intro');
+  // First open: the doodles sketch in as the logo finishes writing itself.
+  drawDoodles($('titleDoodles'), 1100);
+  startTitleNudge($('titleDoodles'));
   setTimeout(() => $('screen-title').classList.remove('intro'), 2200);
   platform.ready();
 }

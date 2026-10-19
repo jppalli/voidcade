@@ -1,12 +1,19 @@
 /**
  * Faint chalk doodles at the edges of the board, a different set per lesson,
- * like a teacher's sketches. Static (no motion behind the word), drawn with
- * the same chalk filter as the hangman drawing, and kept clear of the play
- * area by fixed slots (see .doodles in styles.css).
+ * like a teacher's sketches, drawn with the same chalk filter as the hangman
+ * drawing and kept clear of the play area by fixed slots (see .doodles in
+ * styles.css).
+ *
+ * They only move when something happens, never while the player thinks:
+ *  - drawDoodles: they sketch themselves in when a board appears;
+ *  - cheerDoodles: one small wiggle when a word is solved;
+ *  - startTitleNudge: on the menu, one doodle gives a nudge now and then.
+ * Reduced motion: no movement at all (they just appear).
  */
 
+// pathLength="1" on every stroke lets the draw-in animate any shape the same way.
 const S = (inner: string, label: string) =>
-  `<svg viewBox="0 0 80 80" role="presentation" data-name="${label}"><g filter="url(#chalk)" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">${inner}</g></svg>`;
+  `<svg viewBox="0 0 80 80" role="presentation" data-name="${label}"><g filter="url(#chalk)" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">${inner.replace(/<(path|circle|rect|ellipse)\b/g, '<$1 pathLength="1"')}</g></svg>`;
 const T = (text: string, size = 30, y = 52) =>
   `<text x="40" y="${y}" text-anchor="middle" font-family="Patrick Hand, Comic Sans MS, sans-serif" font-size="${size}" fill="currentColor" stroke="none">${text}</text>`;
 
@@ -56,5 +63,48 @@ const SETS: Record<string, string[]> = {
 export function setDoodles(host: HTMLElement, key: string) {
   if (host.dataset.set === key) return;
   host.dataset.set = key;
-  host.innerHTML = (SETS[key] ?? SETS.title).map((name, i) => `<span class="dd s${i}">${ART[name] ?? ''}</span>`).join('');
+  host.innerHTML = (SETS[key] ?? SETS.title).map((name, i) => {
+    const art = ART[name] ?? '';
+    // Lettering (ABC, A+...) wipes in left to right instead of being stroked.
+    return `<span class="dd s${i}${art.includes('<text') ? ' txt' : ''}" style="--di:${i}">${art}</span>`;
+  }).join('');
+}
+
+const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/** Replays a one-shot CSS class on an element. */
+function replay(el: Element, cls: string) {
+  el.classList.remove(cls);
+  void (el as HTMLElement).offsetWidth;
+  el.classList.add(cls);
+}
+
+/** Sketch the doodles in, one after another. `delayMs`: wait first (e.g.
+ *  until the eraser wipe has moved off the board). */
+export function drawDoodles(host: HTMLElement, delayMs = 380) {
+  if (reduced()) return;
+  host.style.setProperty('--dd-delay', `${delayMs}ms`);
+  replay(host, 'drawIn');
+}
+
+/** A word was solved: the doodles give one little wiggle. */
+export function cheerDoodles(host: HTMLElement) {
+  if (reduced()) return;
+  host.querySelectorAll('.dd').forEach((d) => d.classList.remove('nudge'));
+  replay(host, 'cheer');
+}
+
+let nudgeTimer: number | null = null;
+let nudgeNext = 0;
+
+/** Menu only: every ~9 s one doodle (taking turns) gives a gentle nudge.
+ *  Pauses itself while the menu is hidden or the tab is in the background. */
+export function startTitleNudge(host: HTMLElement) {
+  if (nudgeTimer !== null) return;
+  nudgeTimer = window.setInterval(() => {
+    if (reduced() || document.hidden || host.closest('.screen')?.classList.contains('hidden')) return;
+    const all = host.querySelectorAll('.dd');
+    if (!all.length) return;
+    replay(all[nudgeNext++ % all.length], 'nudge');
+  }, 9000);
 }
