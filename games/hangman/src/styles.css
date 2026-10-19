@@ -191,7 +191,17 @@ button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-high
 @keyframes introUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 .titleBtns { width: 100%; display: flex; flex-direction: column; gap: 12px; align-items: stretch; }
 .btnRow { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.bestLine { min-height: 26px; color: var(--yellow); font-size: 22px; }
+/* Levels / Endless: the mode name, and under it the record in the same
+   sketch lettering as the title, in yellow chalk. */
+.modeBtn { flex-direction: column; gap: 2px; padding-top: 6px; padding-bottom: 6px; }
+.modeMain { display: inline-flex; align-items: center; gap: 10px; }
+.modeRec {
+  display: inline-flex; align-items: baseline; gap: 6px;
+  font-family: var(--sketch); font-weight: 700; font-size: 1.05em; line-height: 1; letter-spacing: 0.5px;
+  color: var(--yellow);
+}
+.modeRec small { font-family: var(--hand); font-weight: 400; font-size: 0.7em; letter-spacing: 0; color: var(--chalk-soft); }
+.modeRec .icon { width: 0.8em; height: 0.8em; fill: var(--yellow); stroke: none; align-self: center; }
 /* Daily Word: yellow chalk outline, with a little tag for the streak. */
 .dailyBtn { border-color: var(--yellow); color: var(--yellow); background-color: rgba(246, 226, 122, 0.1); }
 .dailyBtn.done { border-color: var(--chalk-soft); color: var(--chalk); background-color: rgba(244, 241, 232, 0.1); }
@@ -644,7 +654,6 @@ html:not(.staged):not(.tiny) {
   .titleBtns { gap: 16px; }
   .btn.big { min-height: 76px; font-size: 36px; }
   .btnRow .btn { min-height: 62px; font-size: 27px; }
-  .bestLine { font-size: 24px; }
   .dailyBtn { min-height: 62px; font-size: 27px; }
   .dailyNum, .dailyNext { font-size: 22px; }
   .dailyStats span { font-size: 19px; }
@@ -700,7 +709,6 @@ html:not(.staged):not(.tiny):not(.wide) {
      share a row so the column still fits. */
   .btnRow { gap: 14px; }
   .btnRow .btn, .dailyBtn { min-height: 66px; }
-  .bestLine { margin-top: 4px; }
 }
 
 /* Narrow phones: two wide level buttons per row (number on the left, topic

@@ -60,10 +60,10 @@
         <!-- One word a day for everyone; the tag shows the streak or "Done". -->
         <button class="btn dailyBtn" id="btnDaily"><svg class="icon" aria-hidden="true"><use href="#i-calendar"/></svg><span>Daily Word</span><span class="dailyTag hidden" id="dailyTag"></span></button>
         <div class="btnRow">
-          <button class="btn" id="btnLevels"><svg class="icon" aria-hidden="true"><use href="#i-grid"/></svg>Levels</button>
-          <button class="btn" id="btnEndless"><svg class="icon" aria-hidden="true"><use href="#i-infinity"/></svg>Endless</button>
+          <!-- Each mode carries its own record: stars for Levels, best score for Endless. -->
+          <button class="btn modeBtn" id="btnLevels"><span class="modeMain"><svg class="icon" aria-hidden="true"><use href="#i-grid"/></svg>Levels</span><span class="modeRec hidden" id="levelsRec"></span></button>
+          <button class="btn modeBtn" id="btnEndless"><span class="modeMain"><svg class="icon" aria-hidden="true"><use href="#i-infinity"/></svg>Endless</span><span class="modeRec hidden" id="endlessRec"></span></button>
         </div>
-        <p class="bestLine" id="bestLine"></p>
         <button class="linkBtn" id="btnHowTo"><svg class="icon"><use href="#i-help"/></svg>How to play</button>
       </div>
     </div>

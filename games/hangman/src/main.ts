@@ -91,8 +91,18 @@ function renderTitle() {
   const all = done >= TOTAL_LEVELS;
   $('playLabel').textContent = done === 0 ? 'Play' : all ? 'Play again' : `Level ${next + 1}`;
   const best = bestEndless();
-  $('bestLine').textContent = best ? `Endless best: ${best.toLocaleString('en-US')}` : '';
+  const stars = starCount(progress);
+  setRecord('btnLevels', 'levelsRec', 'Levels', stars ? `<svg class="icon" aria-hidden="true"><use href="#i-star"/></svg>${stars}<small>/${TOTAL_LEVELS * 3}</small>` : '', `${stars} of ${TOTAL_LEVELS * 3} stars`);
+  setRecord('btnEndless', 'endlessRec', 'Endless', best ? `<small>Best</small>${best.toLocaleString('en-US')}` : '', `best score ${best.toLocaleString('en-US')}`);
   renderDailyTag();
+}
+
+/** A mode button's record line (hidden until there is one to show). */
+function setRecord(btnId: string, recId: string, name: string, html: string, spoken: string) {
+  const rec = $(recId);
+  rec.innerHTML = html;
+  rec.classList.toggle('hidden', !html);
+  $(btnId).setAttribute('aria-label', html ? `${name}, ${spoken}` : name);
 }
 
 /** "Done" once today's word is finished, otherwise the streak (if any). */
