@@ -338,6 +338,7 @@ function openDailyResult(fromGame: boolean) {
   $('dsStreak').textContent = String(streak);
   $('dsBest').textContent = String(d.best);
   $('shareFallback').classList.add('hidden');
+  fillShareLinks();
   tickCountdown();
   if (countdown !== null) clearInterval(countdown);
   countdown = window.setInterval(tickCountdown, 20_000);
@@ -382,6 +383,32 @@ function shareText(): string {
   return lines.join('\n');
 }
 
+/** The phone share sheet (WhatsApp, Messages, email... whatever is installed). */
+const canShareSheet = () => !!navigator.share && matchMedia('(pointer: coarse)').matches;
+
+/** Direct links for the share row. They open in a new tab, so they also
+ *  work on desktop and inside the Arena frame. */
+function fillShareLinks() {
+  const text = shareText();
+  const enc = encodeURIComponent;
+  $<HTMLAnchorElement>('shWhatsApp').href = `https://wa.me/?text=${enc(text)}`;
+  $<HTMLAnchorElement>('shEmail').href = `mailto:?subject=${enc(`Hangman Daily #${daily.day}`)}&body=${enc(text)}`;
+  $<HTMLAnchorElement>('shX').href = `https://twitter.com/intent/tweet?text=${enc(text)}`;
+  // The big button only when the phone has a share sheet; the row covers the rest.
+  $('btnShare').classList.toggle('hidden', !canShareSheet());
+}
+
+async function onCopy() {
+  playTap();
+  const text = shareText();
+  if (await copyText(text)) { toast('Copied! Paste it anywhere'); return; }
+  const ta = $<HTMLTextAreaElement>('shareText');
+  ta.value = text;
+  $('shareFallback').classList.remove('hidden');
+  ta.focus();
+  ta.select();
+}
+
 async function copyText(text: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(text);
@@ -407,7 +434,7 @@ async function onShare() {
   const text = shareText();
   // Phones: the system share sheet. It can be blocked inside an embed, in
   // which case copying is the fallback.
-  if (navigator.share && matchMedia('(pointer: coarse)').matches) {
+  if (canShareSheet()) {
     try { await navigator.share({ text }); return; } catch (e) {
       if ((e as DOMException)?.name === 'AbortError') return;
     }
@@ -912,6 +939,8 @@ function wire() {
   $('btnRetry').addEventListener('click', onRetry);
   $('btnLoseMenu').addEventListener('click', () => { playTap(); leaveGame(mode.kind === 'level' ? 'map' : 'title'); });
   $('btnShare').addEventListener('click', () => void onShare());
+  $('shCopy').addEventListener('click', () => void onCopy());
+  ['shWhatsApp', 'shEmail', 'shX'].forEach((id) => $(id).addEventListener('click', () => playTap()));
   $('btnDailyClose').addEventListener('click', closeDailyResult);
 
   // Physical keyboard: letters guess, Escape closes How to Play.

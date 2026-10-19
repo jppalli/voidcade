@@ -426,6 +426,22 @@ button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-high
 .dailyStats b { font-family: var(--sketch); font-size: 34px; line-height: 1; font-weight: 700; }
 .dailyStats span { font-size: 17px; color: var(--chalk-soft); }
 .dailyNext { font-size: 20px; }
+.shareRow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.shareBtn {
+  min-width: 0; min-height: 66px; padding: 8px 2px 6px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  font: inherit; font-size: min(18px, calc(var(--app-w, 100vw) * 0.041)); line-height: 1; color: var(--chalk); text-decoration: none;
+  background: var(--dust), rgba(244, 241, 232, 0.08);
+  border: 2.5px solid var(--chalk-soft);
+  border-radius: 12px 15px 11px 14px / 14px 11px 15px 12px;
+  box-shadow: 0 4px 0 rgba(10, 18, 14, 0.42);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+.shareBtn .icon { width: 28px; height: 28px; }
+.shareBtn.wa { color: var(--green); border-color: var(--green); }
+.shareBtn:hover { background-color: rgba(244, 241, 232, 0.16); }
+.shareBtn:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(10, 18, 14, 0.42); }
+.shareBtn:focus-visible { outline: 3px dashed var(--yellow); outline-offset: 3px; }
 .shareFallback { display: flex; flex-direction: column; gap: 6px; font-size: 19px; color: var(--chalk-soft); text-align: left; }
 .shareFallback textarea {
   width: 100%; resize: none; padding: 8px 10px; border-radius: 10px;
