@@ -24,7 +24,7 @@ import {
 } from './audio/sound';
 import { FREE_HINTS_PER_DAY, freeHintsLeft, useFreeHint } from './game/hints';
 import { createPlatform, GAME_VERSION, type Platform } from './platform/platform';
-import { initStorage, resyncStorage, setSignedOut } from './platform/storage';
+import { initStorage, resyncStorage } from './platform/storage';
 import { CHAPTERS, TOTAL_LEVELS, allLevels, levelAt, type LevelRef } from './game/levels';
 import {
   cleanCount,
@@ -54,7 +54,7 @@ const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getEleme
 /** Set in boot(), once the platform (Arkadium SDK or local) and storage are ready. */
 let platform: Platform;
 let progress: Progress;
-/** Subscribers get rewards without watching a video. */
+/** Subscribers skip interstitials. Rewarded videos work the same for everyone. */
 let subscriber = false;
 /** 1-based number of the level currently being played, for onLevelStart/End. */
 let activeLevel: number | null = null;
@@ -677,7 +677,7 @@ function showFailModal() {
   const revive = $('btnFailRevive') as HTMLButtonElement;
   revive.classList.toggle('hidden', !canRevive);
   revive.disabled = false;
-  $('failReviveLabel').textContent = subscriber ? 'Take an extra heart' : 'Watch a video for a heart';
+  $('failReviveLabel').textContent = 'Watch a video for a heart';
   $('btnFailRetry').classList.toggle('primary', !canRevive);
   $('failText').textContent = canRevive
     ? 'Get an extra heart to keep your progress on this board, or start the puzzle over.'
@@ -708,10 +708,10 @@ async function maybeInterstitial() {
   }
 }
 
-/** Plays a rewarded video (skipped for subscribers). Resolves true if earned.
+/** Plays a rewarded video. Resolves true if earned. Subscribers too: the
+ *  extra hint or heart is always earned with an opt-in video, never free.
  *  Audio and animations pause while the video is up. */
 async function earnReward(): Promise<boolean> {
-  if (subscriber) return true;
   if (adPlaying) return false;
   adPlaying = true;
   setAudioHold('ad', true);
@@ -728,10 +728,7 @@ function refreshHintBadge() {
   const left = freeHintsLeft();
   const badge = $('hintBadge');
   const btn = $('btnHint');
-  if (subscriber) {
-    badge.innerHTML = '';
-    btn.setAttribute('aria-label', 'Hint');
-  } else if (left > 0) {
+  if (left > 0) {
     badge.textContent = String(left);
     btn.setAttribute('aria-label', `Hint, ${left} of ${FREE_HINTS_PER_DAY} free left today`);
   } else {
@@ -755,7 +752,7 @@ function applyHint() {
 function onHintPressed() {
   if (!game || winPending || adPlaying) return;
   lastTap = null;
-  if (subscriber || useFreeHint()) {
+  if (useFreeHint()) {
     applyHint();
     refreshHintBadge();
     return;
@@ -1003,7 +1000,6 @@ function refreshSoundButtons() {
   ($('tglSfx')).setAttribute('aria-pressed', String(sfxEnabled()));
   SOUND_BUTTONS.forEach((id) => {
     const btn = $(id);
-    btn.title = 'Sound settings';
     btn.setAttribute('aria-label', 'Sound settings');
     btn.setAttribute('aria-haspopup', 'dialog');
     btn.classList.toggle('off', !on);
@@ -1185,19 +1181,18 @@ function init() {
     if (e.key === 'h' || e.key === 'H') $('btnHint').click();
   });
 
-  // Signing in mid-session: merge their cloud save with this device's, then
-  // redraw whatever screen is showing. Signing out just stops cloud saves.
-  platform.onAuthChange((signedIn) => {
-    if (!signedIn) { setSignedOut(); return; }
+  // Signed in, signed out or switched account: progress belongs to the
+  // player, so load the new player's save and start them from the menu
+  // (a board in progress belonged to the previous player).
+  platform.onAuthChange(() => {
     void (async () => {
       await resyncStorage();
       progress = loadProgress();
-      loadSoundPref();
-      subscriber = await platform.isSubscriber();
-      refreshSoundButtons();
+      subscriber = await platform.isSubscriber().catch(() => false);
+      closeTip(false);
+      ['failOverlay', 'winOverlay', 'hintAdOverlay', 'howToOverlay'].forEach((id) => document.getElementById(id)?.classList.add('hidden'));
       refreshHintBadge();
-      if (!$('screen-title').classList.contains('hidden')) renderTitle();
-      if (!$('screen-map').classList.contains('hidden')) show('map');
+      show('title');
     })();
   });
 

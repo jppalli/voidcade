@@ -31,7 +31,7 @@ export interface Platform {
   showRewardAd(): Promise<boolean>;
   /** Plays an interstitial video; resolves when control is back with the game. */
   showInterstitialAd(): Promise<void>;
-  /** Arkadium subscribers play ad-free: rewards are granted without a video. */
+  /** Arkadium subscriber: skips interstitials. Rewarded videos stay opt-in for everyone. */
   isSubscriber(): Promise<boolean>;
 }
 
@@ -84,20 +84,17 @@ function arkadium(sdk: ArkadiumGameSdk): Platform {
     onResume: (cb) =>
       safe(() => sdk.lifecycle.registerEventCallback(sdk.lifecycle.LifecycleEvent.GAME_RESUME, cb)),
 
-    // Everyone keeps a copy in the Arena's local storage; signed-in players
-    // also get a cloud copy so progress follows them to any device. The
-    // storage layer merges the two (see storage.ts).
+    // Guests save on this device; signed-in players save to their cloud
+    // copy, so progress belongs to the account (see storage.ts).
     loadLocal: (key) => sdk.persistence.getLocalStorageItem(key),
     saveLocal: (key, value) => sdk.persistence.setLocalStorageItem(key, value),
     async loadRemote(key) {
       if (!(await isAuthorized())) return null;
-      try {
-        const remote = await sdk.persistence.getRemoteStorageItem(key);
-        if (remote === null || remote === undefined) return null;
-        return typeof remote === 'string' ? remote : JSON.stringify(remote);
-      } catch {
-        return null;
-      }
+      // null = no save yet (a new account). A failed read throws, so the
+      // storage layer knows not to overwrite a save it couldn't see.
+      const remote = await sdk.persistence.getRemoteStorageItem(key);
+      if (remote === null || remote === undefined) return null;
+      return typeof remote === 'string' ? remote : JSON.stringify(remote);
     },
     async saveRemote(key, value) {
       if (!(await isAuthorized())) return;
