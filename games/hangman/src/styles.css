@@ -27,7 +27,13 @@ html, body {
   color: var(--chalk);
   font-family: var(--hand);
   -webkit-font-smoothing: antialiased;
+  /* Game UI, not a document: clicking and dragging never highlights text. */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
+/* The one exception: the Daily result's copy-by-hand box. */
+textarea { user-select: text; -webkit-user-select: text; }
 
 /* The stage holds the whole game (see src/ui/stage.ts). In stage mode it is
    a fixed design size, scaled and centred; the page around it is a warm,

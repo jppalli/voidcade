@@ -3,7 +3,7 @@ import '@fontsource/cabin-sketch/latin-700.css';
 import '@fontsource/patrick-hand/latin-400.css';
 
 import { createPlatform, type Platform } from './platform/platform';
-import { initStorage, resyncStorage, setSignedOut } from './platform/storage';
+import { initStorage, resyncStorage } from './platform/storage';
 import { initSound, musicOn, playErase, playHit, playLose, playMiss, playStar, playTap, playWin, playWordDone, resumeSound, setMusic, setSound, soundOn, startMusic, suspendSound } from './audio/sound';
 import { levelDone, wordDone } from './ui/celebrate';
 import { cheerDoodles, drawDoodles, setDoodles, startTitleNudge } from './ui/doodles';
@@ -22,6 +22,7 @@ type Mode = { kind: 'level'; index: number } | { kind: 'endless' } | { kind: 'da
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 
 let platform: Platform;
+/** Subscribers skip interstitials. Rewarded videos work the same for everyone. */
 let subscriber = false;
 let progress: Progress;
 let round: Round | null = null;
@@ -565,14 +566,12 @@ function renderStatus() {
     `<i class="tally${i < r.missesLeft ? ' left' : ''}"></i>`).join('');
   const label = `${r.missesLeft} ${r.missesLeft === 1 ? 'miss' : 'misses'} left`;
   $('misses').setAttribute('aria-label', label);
-  $('misses').title = label;
   refreshHintBadge();
 }
 
 function refreshHintBadge() {
   const free = freeHintsLeft();
   const badge = $('hintBadge');
-  if (subscriber) { badge.textContent = ''; badge.classList.add('hidden'); return; }
   badge.classList.remove('hidden');
   badge.innerHTML = free > 0 ? String(free) : '<svg class="icon"><use href="#i-video"/></svg>';
   $('btnHint').setAttribute('aria-label', free > 0 ? `Hint, ${free} free today` : 'Hint, watch a video');
@@ -611,7 +610,7 @@ function guess(ch: string) {
 async function onHint() {
   if (!round || locked || adPlaying || round.over) return;
   playTap();
-  if (!subscriber && !useFreeHint()) {
+  if (!useFreeHint()) {
     const ok = await earnReward();
     if (!ok || !round || round.over) return;
   }
@@ -739,7 +738,7 @@ function onLost() {
     if (!canRevive) renderPhrase(true);
     $('btnRevive').classList.toggle('hidden', !canRevive);
     ($('btnRevive') as HTMLButtonElement).disabled = false;
-    $('reviveLabel').textContent = subscriber ? 'Keep going (one more guess)' : 'Watch a video for one more guess';
+    $('reviveLabel').textContent = 'Watch a video for one more guess';
     $('btnRetry').classList.toggle('primary', !canRevive);
     $('loseAnswer').classList.add('hidden');
     if (mode.kind === 'daily') {
@@ -827,8 +826,9 @@ function leaveGame(to: Screen) {
 const INTERSTITIAL_GAP_MS = 5 * 60_000;
 let lastAdAt = Date.now();
 
+/** Plays a rewarded video. Subscribers too: an extra hint or guess is always
+ *  earned with an opt-in video, never free. */
 async function earnReward(): Promise<boolean> {
-  if (subscriber) return true;
   adPlaying = true;
   suspendSound();
   try {
@@ -971,17 +971,23 @@ function wire() {
   platform.onPause(suspendSound);
   platform.onResume(resumeSound);
   document.addEventListener('visibilitychange', () => (document.hidden ? suspendSound() : resumeSound()));
-  platform.onAuthChange((signedIn) => {
-    if (!signedIn) { setSignedOut(); return; }
+  // Signed in, signed out or switched account: everything saved belongs to
+  // the player, so load the new player's save and start them on the menu
+  // (a word in progress belonged to the previous player).
+  platform.onAuthChange(() => {
     void (async () => {
+      // Drop whatever was being played without scoring it for anyone.
+      endActiveLevel();
+      round = null;
+      locked = true;
       await resyncStorage();
       progress = loadProgress();
       daily = loadDaily();
-      subscriber = await platform.isSubscriber();
+      subscriber = await platform.isSubscriber().catch(() => false);
+      $('howToOverlay').classList.add('hidden');
+      $('soundPanel').classList.add('hidden');
       refreshSoundButtons();
-      if (!$('screen-title').classList.contains('hidden')) renderTitle();
-      if (!$('screen-map').classList.contains('hidden')) renderMap();
-      if (round) refreshHintBadge();
+      show('title'); // also closes the result cards and redraws the menu
     })();
   });
 }

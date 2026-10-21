@@ -2,7 +2,7 @@ import { getItem, registerMerge, setItem } from '../platform/storage';
 
 /**
  * Free hints: a few per day, refilled each local calendar day. Once they run
- * out, a hint costs a short rewarded video (or nothing for subscribers).
+ * out, a hint costs a short rewarded video (subscribers included).
  */
 export const FREE_HINTS_PER_DAY = 3;
 
