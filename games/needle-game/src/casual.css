@@ -629,7 +629,7 @@ button:focus:not(:focus-visible){outline:none}
 
 /* Phones: with the logo hidden during play, the top bar fits the back button, coins, cells, shop, sound and help. */
 @media(max-width:600px){
-  body[data-screen=game] .brand{display:none}
+  .brand{display:none}
   .header-actions{gap:6px}
   header .icon-button,header .help-button{width:42px;height:44px}
   .coin-badge{height:44px;padding:0 9px;font-size:20px;gap:5px;border-radius:13px}
@@ -637,4 +637,105 @@ button:focus:not(:focus-visible){outline:none}
   .cells-badge{padding:0 8px 0 5px}
   .cells-badge .cb-art{width:26px;height:26px}
   .icon-button.shop-btn svg{width:32px;height:32px}
+}
+
+/* ---- Coins and cells flying into their counters, and the daily gift ---- */
+.fly{position:fixed;left:0;top:0;z-index:20000;pointer-events:none;will-change:transform}
+i.coin.fly{font-size:28px}
+.cell.fly{margin:0;width:15px;height:24px}
+.coin-badge.bump,.shop-balance.bump{animation:badge-bump .32s cubic-bezier(.3,1.6,.5,1)}
+.tool.empty{opacity:.7;filter:saturate(.45)}
+@media(prefers-reduced-motion:reduce){.coin-badge.bump,.shop-balance.bump{animation:none}}
+
+/* ================= Polish ================= */
+* { scrollbar-width: thin; scrollbar-color: #b8793d #ffeec2 }
+::-webkit-scrollbar { width: 10px; height: 10px }
+::-webkit-scrollbar-track { background: #ffeec2 }
+::-webkit-scrollbar-thumb { background: #c0853f; border-radius: 6px; border: 2px solid #ffeec2 }
+
+/* Cards: a soft dim and blur behind, and they pop in. */
+dialog::backdrop { background: radial-gradient(ellipse at 50% 40%, #3a250e55, #1d120699); backdrop-filter: blur(3px) }
+dialog[open] { animation: dlg-in .38s cubic-bezier(.3,1.45,.5,1) }
+@keyframes dlg-in { from { opacity: 0; transform: translateY(22px) scale(.94) } }
+.shop-panel { animation: dlg-in .38s cubic-bezier(.3,1.45,.5,1) }
+
+/* Big buttons: a little gloss, and a shine that sweeps across. */
+.primary { position: relative; overflow: hidden }
+.primary::after { content: ""; position: absolute; top: -30%; bottom: -30%; left: -70%; width: 38%; transform: skewX(-20deg); background: linear-gradient(90deg, transparent, #ffffff66, transparent); pointer-events: none }
+.primary:hover:not(:disabled)::after { animation: shine .75s ease }
+.primary.claim::after, .primary.big::after { animation: shine 3.6s ease-in-out 1.4s infinite }
+@keyframes shine { from { left: -70% } 45%, to { left: 130% } }
+.shop-row { transition: transform .15s, box-shadow .15s }
+.shop-row:hover { transform: translateY(-2px); box-shadow: 0 5px #e0b36e }
+
+/* The reward line on the win card: two little pills. */
+.win-coins:not(.hidden) { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px }
+.win-coins span { display: inline-flex; align-items: center; gap: 6px; padding: 5px 16px; border-radius: 999px; background: #fff8e0; border: 3px solid #e8c77a; box-shadow: 0 3px #e8c77a; font-weight: 800; color: #70451f }
+
+/* Title: the daily gift button, with a red dot while a gift is waiting. */
+#btn-levels, .gift-btn { min-width: min(70vw, 250px) }
+.gift-btn { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 10px }
+.gift-btn .gi svg { width: 34px; height: 34px; display: block }
+.gift-btn .dot { display: none; position: absolute; top: -7px; right: -7px; width: 22px; height: 22px; border-radius: 50%; background: #ff5a4a; border: 3px solid #fff; box-shadow: 0 2px #0003 }
+.gift-btn.ready .dot { display: block; animation: soft-pulse 1.4s ease-in-out infinite }
+.gift-btn.ready .gi { animation: gift-wiggle 4.2s ease-in-out infinite }
+@keyframes gift-wiggle { 0%, 84%, 100% { transform: none } 88% { transform: rotate(-9deg) } 92% { transform: rotate(8deg) } 96% { transform: rotate(-4deg) } }
+
+/* ---- The daily gift card ---- */
+dialog.daily { width: min(680px, calc(100vw - 24px)); max-width: none; padding: 0 0 28px; text-align: center; overflow: visible; border-radius: 30px; background: linear-gradient(#fffaeb, #ffeec4) }
+.gift-stage { position: relative; height: 84px; margin-top: 0 }
+.gift-rays { position: absolute; left: 50%; top: 0; width: 280px; height: 280px; margin: -140px 0 0 -140px; border-radius: 50%; background: repeating-conic-gradient(#ffe49a88 0 9deg, transparent 9deg 22deg); -webkit-mask: radial-gradient(circle, #000 22%, transparent 66%); mask: radial-gradient(circle, #000 22%, transparent 66%); animation: spin 26s linear infinite; pointer-events: none }
+.gift-art { position: absolute; left: 50%; top: -56px; width: 124px; height: 124px; margin-left: -62px; display: grid; place-items: center; border-radius: 50%; background: radial-gradient(circle at 50% 35%, #fffdf0, #ffe9a8); border: 5px solid #e0b36e; box-shadow: 0 5px #b8793d, 0 12px 24px #5a34104d; animation: gift-float 3.2s ease-in-out infinite }
+.gift-art svg { width: 86px; height: 86px }
+@keyframes gift-float { 50% { transform: translateY(-5px) } }
+.gift-stage .spark { position: absolute; font-style: normal; color: #ffc93c; text-shadow: 0 1px #b8891b; animation: twinkle 2.4s ease-in-out infinite }
+.gift-stage .s1 { left: 22%; top: -24px; font-size: 22px }
+.gift-stage .s2 { right: 21%; top: -40px; font-size: 16px; animation-delay: .7s }
+.gift-stage .s3 { left: 30%; top: 26px; font-size: 14px; animation-delay: 1.2s }
+.gift-stage .s4 { right: 28%; top: 20px; font-size: 20px; animation-delay: 1.8s }
+dialog.daily h2 { margin: 6px 0 0; font-size: 42px }
+dialog.daily .sub { margin: 2px 0 0; font-size: 20px; font-weight: 800; letter-spacing: .04em; color: #a56c30 }
+.days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 9px; list-style: none; margin: 22px 20px 0; padding: 12px 0 4px }
+.day { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 9px 2px 9px; min-height: 124px; border: 3px solid #e6c27e; border-radius: 16px; background: #fffdf3; box-shadow: 0 3px #e6c27e; color: #70451f }
+.day .n { font-size: 12px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; color: #a56c30 }
+.day .ico { display: grid; place-items: center; height: 42px }
+.day .ico svg { width: 40px; height: 40px }
+.day .amt { font-size: 22px; font-weight: 800; line-height: 1 }
+.day .cl { display: flex; align-items: center; justify-content: center; gap: 2px; min-height: 22px; font-size: 14px; font-weight: 800; color: #2f7a2a }
+.day .cl svg { width: 16px; height: 20px }
+.pile { position: relative; display: block; width: 44px; height: 38px }
+.pile .coin { position: absolute; font-size: 25px; filter: drop-shadow(0 2px #0002) }
+.pile.p1 .coin { left: 10px; top: 6px; font-size: 28px }
+.pile.p2 .coin:nth-child(1) { left: 4px; top: 10px }
+.pile.p2 .coin:nth-child(2) { left: 15px; top: 2px }
+.pile.p3 .coin:nth-child(1) { left: 0; top: 12px }
+.pile.p3 .coin:nth-child(2) { left: 19px; top: 12px }
+.pile.p3 .coin:nth-child(3) { left: 9px; top: 1px }
+.day.today { background: linear-gradient(#fff4c2, #ffe08a); border-color: #c0853f; box-shadow: 0 5px #b8793d, 0 0 0 4px #ffd24a66; transform: translateY(-7px); animation: day-glow 1.8s ease-in-out infinite }
+@keyframes day-glow { 50% { box-shadow: 0 5px #b8793d, 0 0 0 9px #ffd24a33 } }
+.day.next { border-color: #c0853f; background: #fff3c9 }
+.day.done { background: #f3ebd2; border-color: #d9c698; box-shadow: 0 3px #d9c698; opacity: .72 }
+.day.done .ico, .day.done .amt { filter: grayscale(.55) }
+.day.big { border-color: #e8806a; box-shadow: 0 3px #e8806a }
+.day.big.today { box-shadow: 0 5px #c9553d, 0 0 0 4px #ffb0a066 }
+.day.big .ico svg { width: 46px; height: 46px }
+.day.today, .day.next { padding-top: 15px }
+.day .tag { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); padding: 2px 10px; border-radius: 999px; background: #e8806a; border: 2px solid #fff; color: #fff; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; box-shadow: 0 2px #0002 }
+.day .tick { position: absolute; top: -10px; right: -8px; display: grid; place-items: center; width: 23px; height: 23px; border-radius: 50%; background: #6fdc5c; border: 2px solid #2f7a2a; color: #164d12; font-size: 13px; font-style: normal }
+.reward { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 12px; margin: 22px 0 20px }
+.chip { display: inline-flex; align-items: center; gap: 8px; padding: 8px 22px; border-radius: 999px; border: 3px solid #e0b36e; background: #fff8e0; box-shadow: 0 3px #e0b36e; font-size: 30px; font-weight: 800; color: #70451f }
+.chip .coin { font-size: 32px }
+.chip.cells { border-color: #7fcf6d; background: #effce8; box-shadow: 0 3px #7fcf6d; color: #2f7a2a }
+.chip.cells svg { width: 24px; height: 30px }
+.claimed-note { margin: 22px 24px 18px; font-size: 22px; font-weight: 700; color: #8d6939 }
+dialog.daily .primary { min-width: 220px }
+@media (max-width: 560px) {
+  .days { grid-template-columns: repeat(4, 1fr); margin: 20px 14px 0 }
+  .day { min-height: 112px }
+  dialog.daily h2 { font-size: 34px }
+  .chip { font-size: 25px }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gift-rays, .gift-art, .gift-stage .spark, .day.today, .gift-btn.ready .gi, .gift-btn.ready .dot, .primary::after { animation: none !important }
+  dialog[open], .shop-panel { animation: none }
 }

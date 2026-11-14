@@ -4,7 +4,7 @@
  * All prices live in economy.ts.
  */
 import { saved } from './progress';
-import { CELLS, FIND_VALUE, TRACKS, anyAffordable, bagCount, bagValue, buy, buyCells, canBuyCells, nextTier, sellAll, type Track } from './economy';
+import { CELLS, FIND_VALUE, TRACKS, anyAffordable, bagCount, bagValue, buy, buyCells, canBuyCells, helpersUnlocked, nextTier, sellAll, type Track } from './economy';
 import type { Treasure } from './levels';
 import { CELLS_ART, DETECTOR_ART, FAN_ART } from './art';
 import * as sfx from './sound';
@@ -39,15 +39,151 @@ function stall(): string {
 
 const pips = (have: number, total: number) =>
   Array.from({ length: total }, (_, i) => `<i class="pip ${i < have ? 'on' : ''}"></i>`).join('');
-const money = () => (saved.cheat ? '∞' : String(saved.coins));
+// ---------------------------------------------------------------- counters
+// The coin and cell counters in the top bar (and the balance inside the shop) count up as coins
+// and cells land in them, and roll down when something is bought. While a gift is on its way the
+// number is held back, so it only rises when the coins arrive.
+const reducedMotion = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+type Pt = { x: number; y: number };
+export const centerOf = (el: Element): Pt => {
+  const r = el.getBoundingClientRect();
+  return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+};
+const coinView = { shown: saved.coins, hold: false };
+const cellView = { shown: saved.cells, hold: false, last: -1 };
+let roll = 0;
+
+const coinText = () => (saved.cheat ? '\u221E' : String(Math.round(coinView.shown)));
+function paintCoins() {
+  const t = coinText();
+  $('coin-count').textContent = t;
+  $('coin-badge').setAttribute('aria-label', `${t} coins`);
+  document.querySelectorAll('.shop-balance b').forEach(b => (b.textContent = t));
+}
+function bump(el: Element | null) {
+  if (!el || reducedMotion) return;
+  el.classList.remove('bump');
+  void (el as HTMLElement).offsetWidth;
+  el.classList.add('bump');
+}
+function rollCoins(target: number) {
+  cancelAnimationFrame(roll);
+  const from = coinView.shown;
+  if (saved.cheat || reducedMotion || from === target) {
+    coinView.shown = target;
+    paintCoins();
+    return;
+  }
+  const t0 = performance.now(),
+    dur = Math.min(700, 220 + Math.abs(target - from) * 8);
+  const step = (t: number) => {
+    const p = Math.min(1, (t - t0) / dur);
+    coinView.shown = from + (target - from) * (1 - Math.pow(1 - p, 3));
+    paintCoins();
+    if (p < 1) roll = requestAnimationFrame(step);
+  };
+  roll = requestAnimationFrame(step);
+}
+/** Call right after adding coins to the purse and before the coins are shown arriving: the counter stays at the old amount. */
+export function holdCoins(amount: number) {
+  cancelAnimationFrame(roll);
+  coinView.hold = true;
+  coinView.shown = Math.max(0, saved.coins - amount);
+  paintCoins();
+}
+/** Lets the counter show the real amount again (used when a gift is never shown arriving). */
+export function releaseCoins() {
+  coinView.hold = false;
+  coinView.shown = saved.coins;
+  paintCoins();
+}
+/** Little pieces of the thing (coins, cells) pop up from `from`, fly to `to` one after another and call `land` as each arrives. */
+function fly(from: Pt, to: HTMLElement | null, count: number, cls: string, land: (i: number) => void, done: () => void) {
+  if (reducedMotion || !to || to.getClientRects().length === 0) {
+    for (let i = 0; i < count; i++) land(i);
+    done();
+    return;
+  }
+  const target = centerOf(to);
+  let landed = 0;
+  for (let i = 0; i < count; i++) {
+    const el = document.createElement('i');
+    el.className = `${cls} fly`;
+    document.body.append(el);
+    const sx = from.x + (Math.random() - 0.5) * 40,
+      sy = from.y + (Math.random() - 0.5) * 16,
+      mx = sx + (Math.random() - 0.5) * 100,
+      my = sy - 36 - Math.random() * 50;
+    const at = (x: number, y: number, s: number) => `translate(${x}px,${y}px) translate(-50%,-50%) scale(${s})`;
+    const a = el.animate(
+      [
+        { transform: at(sx, sy, 0.4), opacity: 0 },
+        { transform: at(mx, my, 1.05), opacity: 1, offset: 0.3 },
+        { transform: at(target.x, target.y, 0.75), opacity: 1 },
+      ],
+      { duration: 900, delay: i * 70, easing: 'cubic-bezier(.45,0,.55,1)', fill: 'both' },
+    );
+    a.onfinish = () => {
+      el.remove();
+      land(i);
+      if (++landed === count) done();
+    };
+  }
+}
+/** Coins fly from `from` into whichever coin counter is on screen (the shop's balance when the shop is open). */
+export function flyCoins(from: Pt, amount: number) {
+  if (amount <= 0) return;
+  if (!coinView.hold) holdCoins(amount);
+  const to = (document.querySelector('#shop:not(.hidden) .shop-balance .coin') ?? $('coin-badge').querySelector('.coin')) as HTMLElement | null;
+  const count = Math.min(14, Math.max(3, Math.ceil(amount / 4)));
+  fly(from, to, count, 'coin', i => {
+    coinView.shown += amount / count;
+    paintCoins();
+    bump(to?.closest('.coin-badge, .shop-balance') ?? null);
+    sfx.coin(i);
+  }, releaseCoins);
+}
+
+function paintCells() {
+  const badge = $('cells-badge'),
+    t = saved.cheat ? '\u221E' : String(Math.round(cellView.shown));
+  $('cells-count').textContent = t;
+  badge.setAttribute('aria-label', saved.cheat ? 'Unlimited battery cells' : `${t} battery cells`);
+  badge.classList.toggle('empty', !saved.cheat && cellView.shown <= 0);
+  if (cellView.last !== -1 && cellView.last !== cellView.shown && !badge.classList.contains('hidden')) bump(badge);
+  cellView.last = cellView.shown;
+}
+/** The battery cell count in the top bar. It stays hidden until the first helper is unlocked. */
+export function updateCellsPill() {
+  $('cells-badge').classList.toggle('hidden', !helpersUnlocked());
+  if (!cellView.hold) cellView.shown = saved.cells;
+  paintCells();
+}
+export function holdCells(amount: number) {
+  cellView.hold = true;
+  cellView.shown = Math.max(0, saved.cells - amount);
+  paintCells();
+}
+export function flyCells(from: Pt, amount: number) {
+  if (amount <= 0) return;
+  if (!cellView.hold) holdCells(amount);
+  const n = Math.min(6, amount);
+  fly(from, $('cells-badge').querySelector('.cb-art') as HTMLElement | null, n, 'cell', i => {
+    cellView.shown = Math.min(saved.cells, cellView.shown + amount / n);
+    paintCells();
+    sfx.coin(i + 2);
+  }, () => {
+    cellView.hold = false;
+    cellView.shown = saved.cells;
+    paintCells();
+  });
+}
 
 /** Refreshes the coin counter and the shop button in the header. The shop button glows when there is something to do. */
 export function updateCoinPill() {
-  $('coin-count').textContent = money();
-  $('coin-badge').setAttribute('aria-label', `${money()} coins`);
+  if (!coinView.hold) rollCoins(saved.coins);
   $('btn-shop').classList.toggle('can-buy', anyAffordable() || bagCount() > 0);
 }
-
 export function initShop(imageOf: (kind: string) => string | null, hooks: { onOpen?: () => void; onClose?: () => void } = {}) {
   const screen = $('shop');
   let open = false;
@@ -64,7 +200,7 @@ export function initShop(imageOf: (kind: string) => string | null, hooks: { onOp
       : `<p class="shop-empty">Nothing to sell yet.<br>Bonus items you find in the hay land here.</p>`;
 
     const have = saved.cheat ? '∞' : String(saved.cells);
-    const helpers = `<div class="shop-row"><span class="art">${CELLS_ART}</span><div class="info"><strong>Battery cells</strong><span>In your stock: ${have}</span><small>Every helper runs on them. Each level starts with ${CELLS.free} free.</small></div><button class="buy" data-act="cells" ${canBuyCells() ? '' : 'disabled'}><span class="price">${CELLS.cost} ${COIN}</span><small>+${CELLS.pack} cells</small></button></div>`;
+    const helpers = `<div class="shop-row"><span class="art">${CELLS_ART}</span><div class="info"><strong>Battery cells</strong><span>In your stock: ${have}</span><small>Every helper runs on them. You also get some in the daily gift.</small></div><button class="buy" data-act="cells" ${canBuyCells() ? '' : 'disabled'}><span class="price">${CELLS.cost} ${COIN}</span><small>+${CELLS.pack} cells</small></button></div>`;
     const rows = (Object.keys(TRACKS) as Track[])
       .map(t => {
         const tiers = TRACKS[t].tiers,
@@ -79,9 +215,9 @@ export function initShop(imageOf: (kind: string) => string | null, hooks: { onOp
 
     screen.innerHTML = `<div class="shop-panel">
       <div class="shop-top"><button class="shop-back" aria-label="Close the shop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Back</span></button>
-        <span class="stall">${stall()}</span><h2 id="shop-title">The Shop</h2><p class="shop-balance">${COIN}<b>${money()}</b> coins</p></div>
+        <span class="stall">${stall()}</span><h2 id="shop-title">The Shop</h2><p class="shop-balance">${COIN}<b>${coinText()}</b> coins</p></div>
       <div class="shop-cols">
-        <section class="shop-col"><h3>Your finds</h3>${sell}<h3>Energy</h3>${helpers}</section>
+        <section class="shop-col"><h3>Your finds</h3>${sell}${helpersUnlocked() ? `<h3>Energy</h3>${helpers}` : ''}</section>
         <section class="shop-col"><h3>Upgrades</h3>${rows}</section>
       </div></div>`;
   };
@@ -118,16 +254,28 @@ export function initShop(imageOf: (kind: string) => string | null, hooks: { onOp
       return;
     }
     if (el.dataset.act === 'sell') {
-      if (sellAll() > 0) sfx.found(0, false);
+      const from = centerOf(el),
+        gain = sellAll();
+      if (gain > 0) {
+        sfx.found(0, false);
+        holdCoins(gain);
+        updateCoinPill();
+        render();
+        flyCoins(from, gain);
+        return;
+      }
     } else if (el.dataset.buy) {
       if (buy(el.dataset.buy as Track)) sfx.found(0, false);
       else sfx.denied();
     } else if (el.dataset.act === 'cells') {
-      if (buyCells()) sfx.found(0, false);
-      else sfx.denied();
+      if (buyCells()) {
+        sfx.found(0, false);
+        updateCellsPill();
+      } else sfx.denied();
     } else return;
     updateCoinPill();
     render();
   });
   updateCoinPill();
+  updateCellsPill();
 }

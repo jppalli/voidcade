@@ -1,9 +1,10 @@
 import Phaser from 'phaser';
 import './casual.css';
 import { levelDef, pilePoint, TOOL_LEVELS, TOTAL_LEVELS, OBJECTS, type LevelDef, type Treasure } from './levels';
-import { scoop, brushMult, addFind, levelCoins, detector, fan, CELLS } from './economy';
-import { HELPER_ART, HELPER_NAME, CELL_ART, SHOP_ART } from './art';
-import { initShop, updateCoinPill } from './shop';
+import { scoop, brushMult, addFind, levelCoins, detector, fan, CELLS, dailyReady } from './economy';
+import { maybeShowDaily, openDaily } from './daily';
+import { HELPER_ART, HELPER_NAME, CELL_ART, SHOP_ART, GIFT_ART } from './art';
+import { initShop, updateCoinPill, updateCellsPill, holdCoins, releaseCoins, flyCoins, holdCells, flyCells, centerOf } from './shop';
 import { enableTestMode, isSolved, saved, persist, recordWin, playTarget, allSolved, solvedCount, hasSeen, markSeen, resetProgress } from './progress';
 import { renderMap, scrollToFrontier } from './worldmap';
 import * as sfx from './sound';
@@ -19,7 +20,7 @@ const icons = {
 const svg=(name:keyof typeof icons)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name]}</svg>`;
 const needleArt=(id:string)=>`<svg viewBox="0 0 220 40" aria-hidden="true"><defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4f1e6"/><stop offset=".45" stop-color="#c3c7c0"/><stop offset=".7" stop-color="#7d847b"/><stop offset="1" stop-color="#d9d6c4"/></linearGradient></defs><path d="M6 20 L182 13 C214 11 214 29 182 27 Z" fill="url(#${id})" stroke="#6d6a5c" stroke-width="2"/><ellipse cx="188" cy="20" rx="10" ry="3.2" fill="#5a4a30"/><path d="M40 18 L170 14" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".75"/></svg>`;
 // The title screen: the big animated lettering, a floating needle, and two buttons.
-const titleHtml=`<section id="screen-title" class="screen" aria-label="Needle in a haystack"><div class="title-hero" aria-hidden="true"><span class="t-rays"></span><span class="t-glow"></span><div class="title-needle">${needleArt('steel-title')}</div><span class="t-spark s1">✦</span><span class="t-spark s2">✦</span><span class="t-spark s3">✦</span><span class="t-spark s4">✦</span></div><h1 class="title-word" aria-label="Needle!">${[...'NEEDLE!'].map((ch,i)=>`<span class="l" aria-hidden="true" style="--i:${i}">${ch}</span>`).join('')}</h1><p class="title-sub">IN A HAYSTACK</p><div class="title-actions"><button id="btn-play" class="primary big"><span id="play-label">Play</span></button><button id="btn-levels" class="secondary">Levels</button><button id="btn-delete" class="text-button">Delete progress</button></div></section>`;
+const titleHtml=`<section id="screen-title" class="screen" aria-label="Needle in a haystack"><div class="title-hero" aria-hidden="true"><span class="t-rays"></span><span class="t-glow"></span><div class="title-needle">${needleArt('steel-title')}</div><span class="t-spark s1">✦</span><span class="t-spark s2">✦</span><span class="t-spark s3">✦</span><span class="t-spark s4">✦</span></div><h1 class="title-word" aria-label="Needle!">${[...'NEEDLE!'].map((ch,i)=>`<span class="l" aria-hidden="true" style="--i:${i}">${ch}</span>`).join('')}</h1><p class="title-sub">IN A HAYSTACK</p><div class="title-actions"><button id="btn-play" class="primary big"><span id="play-label">Play</span></button><button id="btn-levels" class="secondary">Levels</button><button id="btn-daily" class="secondary gift-btn"><span class="gi">${GIFT_ART}</span><span>Daily gift</span><i class="dot"></i></button><button id="btn-delete" class="text-button">Delete progress</button></div></section>`;
 document.querySelector('#app')!.innerHTML=`
 ${sceneryHtml()}<header><a class="brand" id="brand" href="./" aria-label="Needle, back to the title screen">${svg('needle')}<span class="word"><span class="letters" aria-hidden="true">${[...'NEEDLE!'].map((ch,i)=>`<span class="l" style="--i:${i}">${ch}</span>`).join('')}</span><small>IN A HAYSTACK</small></span><i class="brand-glint" aria-hidden="true">✦</i></a><div class="header-note">A LITTLE GAME OF LOOKING</div><div class="header-actions"><button id="btn-back" class="icon-button" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><a id="btn-home" class="icon-button" href="../../" aria-label="Back to Voidcade" title="Back to Voidcade" style="color:inherit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v10h13V10"/><path d="M10 20v-5.5h4V20"/></svg></a><div id="coin-badge" class="coin-badge" role="status"><i class="coin"></i><b id="coin-count">0</b></div><div id="cells-badge" class="coin-badge cells-badge hidden" role="status" title="Battery cells"><span class="cb-art">${CELL_ART}</span><b id="cells-count">0</b></div><button id="btn-shop" class="icon-button shop-btn" aria-label="Shop" title="Shop">${SHOP_ART}</button><button id="sound" class="icon-button" aria-label="Toggle sound">${svg('sound')}</button><button id="help" class="help-button">How to play <span>?</span></button></div></header>
 ${titleHtml}<section id="screen-map" class="screen off" aria-label="Levels"><div id="mapWrap"><div id="mapRegions"></div><svg id="mapPath" aria-hidden="true"></svg><div id="mapBanners"></div><div id="mapNodes"></div></div></section>
@@ -160,7 +161,7 @@ class Haystack extends Phaser.Scene {
  /** Starts the level in saved.level (the player picked it on the map). */
  begin(){if(!this.ready){this.pending=true;return;}this.newRound();}
  /** The player left the board for the map or title: stop everything. */
- leave(){this.inLevel=false;$('cells-badge').classList.add('hidden');this.active=false;this.pending=false;this.coach='';hideCoach();window.clearTimeout(this.msgTimer);$('win').classList.add('hidden');if(!this.ready)return;this.round++;this.time.removeAllEvents();this.endDetector(true);this.cancelTool();}
+ leave(){this.inLevel=false;this.active=false;this.pending=false;this.coach='';hideCoach();window.clearTimeout(this.msgTimer);$('win').classList.add('hidden');if(!this.ready)return;this.round++;this.time.removeAllEvents();this.endDetector(true);this.cancelTool();}
  makeTextures(){
   for(const kind of OBJECTS){const texture=this.textures.createCanvas('object-'+kind,64,64)!,c=texture.context;c.lineCap='round';c.lineJoin='round';c.shadowColor='#35261288';c.shadowBlur=3;c.shadowOffsetY=3;c.strokeStyle='#76502b';c.lineWidth=3;
    if(kind==='button'){c.fillStyle='#cc7756';c.beginPath();c.arc(32,32,19,0,Math.PI*2);c.fill();c.stroke();c.shadowColor='transparent';c.strokeStyle='#edb58c';c.beginPath();c.arc(32,32,14,0,Math.PI*2);c.stroke();c.fillStyle='#67442a';for(const x of [27,37])for(const y of [27,37]){c.beginPath();c.arc(x,y,2.5,0,Math.PI*2);c.fill();}}
@@ -184,7 +185,7 @@ class Haystack extends Phaser.Scene {
   this.tweens.killAll();this.moving.clear();this.straws.forEach(s=>s.destroy());this.straws=[];this.needle?.destroy();this.glint?.destroy();
   this.inLevel=true;this.endDetector(true);this.ring.setVisible(false);this.gesture=false;this.panning=false;this.pinchDist=0;
   this.won=false;this.started=this.time.now;this.elapsed=0;this.stroking=false;this.brushedOnce=false;this.active=true;this.coach='';this.coverStraw=null;this.coachCheck=0;hideCoach();
-  this.free=CELLS.free;$('win').classList.add('hidden');
+  $('win').classList.add('hidden');
   $('level').textContent=String(saved.level);setWorldTheme(saved.level);this.updateTools();
   const stage=levelDef(saved.level);this.ground.setTint(stage.tint);
   // The haystack can be bigger than one screen: the layouts are drawn for 1200 x 700 and stretched to fit.
@@ -398,8 +399,9 @@ class Haystack extends Phaser.Scene {
   this.tweens.chain({targets:s,tweens:[{scale:s.scaleX*1.6,y:s.y-18,rotation:0,duration:reduced?0:300,ease:'Back.Out'},{y:s.y-70,alpha:0,delay:reduced?0:350,duration:reduced?0:500,ease:'Sine.In'}]});
   this.updateMission(t.kind);this.say(`You found the ${t.kind}!`,{passing:true});
  }
- introduceTool(){const index=TOOL_LEVELS.findIndex((level,i)=>saved.level===level&&!saved.introduced.includes(i));if(index<0)return;this.active=false;const pauseAt=this.time.now;const modal=document.createElement('dialog');modal.className='tool-intro';modal.innerHTML=`<div class="unlock-icon">${HELPER_ART[index]}</div><h2>New helper:<br>${HELPER_NAME[index]}</h2><p>${['Tap it, then hold down and sweep over the hay.<br>White ping: working. Green: something is near.<br>Let go to switch it off.','Tap it, then tap the hay.<br>The fan blows the hay away.'][index]}</p><button class="primary">Got it!</button>`;document.body.append(modal);modal.addEventListener('close',()=>{saved.introduced.push(index);persist();const tool=$(['magnet','wind'][index]);tool.classList.add('just-unlocked','guide');window.setTimeout(()=>tool.classList.remove('just-unlocked'),800);this.started+=this.time.now-pauseAt;this.active=true;modal.remove();},{once:true});modal.querySelector('button')!.onclick=()=>{sfx.select();modal.close();};modal.showModal();sfx.unlockTool();}
- power(index:number){if(this.won||!this.active)return;if(index===0&&this.detOn){sfx.cancel();this.pauseDetector();return;}if(this.selected===index){sfx.cancel();this.cancelTool();return;}if((!saved.cheat&&saved.level<TOOL_LEVELS[index])||(this.cells()<=0&&!(index===0&&this.detLeft>0))){sfx.denied();return;}if(index===0){this.cancelTool();this.startDetector();return;}this.pauseDetector(true);this.cancelTool();sfx.select();$(['magnet','wind'][index]).classList.remove('guide');this.selected=index;this.cursor.setVisible(false);this.showAim();this.updateTools();this.say(this.resting());}
+ introduceTool(){const index=TOOL_LEVELS.findIndex((level,i)=>saved.level===level&&!saved.introduced.includes(i));if(index<0)return;this.active=false;const pauseAt=this.time.now;const modal=document.createElement('dialog');modal.className='tool-intro';modal.innerHTML=`<div class="unlock-icon">${HELPER_ART[index]}</div><h2>New helper:<br>${HELPER_NAME[index]}</h2><p>${['Tap it, then hold down and sweep over the hay.<br>White ping: working. Green: something is near.<br>Let go to switch it off.<br>Here are '+CELLS.starter+' battery cells to start.','Tap it, then tap the hay.<br>The fan blows the hay away.'][index]}</p><button class="primary">Got it!</button>`;document.body.append(modal);let origin={x:innerWidth/2,y:innerHeight/2};
+ modal.addEventListener('close',()=>{saved.introduced.push(index);if(index===0){saved.cells+=CELLS.starter;holdCells(CELLS.starter);}persist();updateCellsPill();this.updateTools();if(index===0)flyCells(origin,CELLS.starter);const tool=$(['magnet','wind'][index]);tool.classList.add('just-unlocked','guide');window.setTimeout(()=>tool.classList.remove('just-unlocked'),800);this.started+=this.time.now-pauseAt;this.active=true;modal.remove();},{once:true});modal.querySelector('button')!.onclick=e=>{sfx.select();origin=centerOf(e.currentTarget as HTMLElement);modal.close();};modal.showModal();sfx.unlockTool();}
+ power(index:number){if(this.won||!this.active)return;if(index===0&&this.detOn){sfx.cancel();this.pauseDetector();return;}if(this.selected===index){sfx.cancel();this.cancelTool();return;}if(!saved.cheat&&saved.level<TOOL_LEVELS[index]){sfx.denied();return;}if(this.cells()<=0&&!(index===0&&this.detLeft>0)){sfx.denied();this.say('No battery cells left. Get more in the shop, or in your daily gift.',{passing:true});return;}if(index===0){this.cancelTool();this.startDetector();return;}this.pauseDetector(true);this.cancelTool();sfx.select();$(['magnet','wind'][index]).classList.remove('guide');this.selected=index;this.cursor.setVisible(false);this.showAim();this.updateTools();this.say(this.resting());}
  cancelTool(){this.selected=-1;this.ring?.setVisible(false);this.cursor?.setVisible(true);this.updateTools();if(this.straws.length)this.say(this.resting());}
  /** Detector: one charge, DET_MS of sweeping. It beeps faster and higher the closer the pointer is to the needle or a bonus item, covered or not. */
  startDetector(){
@@ -619,21 +621,14 @@ class Haystack extends Phaser.Scene {
   ($('zoom-in') as HTMLButtonElement).disabled=z>=MAX_ZOOM-.001;($('zoom-out') as HTMLButtonElement).disabled=z<=this.minZoom+.001;($('zoom-fit') as HTMLButtonElement).disabled=this.size<=1&&z<=1.001;
  }
  /** Battery cells left: the free ones this level plus the ones bought in the shop. Any helper runs on them. */
- cells(){return saved.cheat?99:this.free+saved.cells;}
+ cells(){return saved.cheat?99:saved.cells;}
  /** Uses a free cell first, then a bought one. */
- spendCell(){if(saved.cheat)return;if(this.free>0)this.free--;else if(saved.cells>0){saved.cells--;persist();}}
+ spendCell(){if(saved.cheat)return;if(saved.cells>0){saved.cells--;persist();}}
  /** The cell count in the top bar, and the battery bar under the board while a helper is out. */
  renderCells(){
-  const total=this.free+saved.cells,inf=saved.cheat,badge=$('cells-badge');
-  badge.classList.toggle('hidden',!this.inLevel);
-  $('cells-count').textContent=inf?'∞':String(total);
-  badge.setAttribute('aria-label',inf?'Unlimited battery cells':`${total} battery cells`);
-  badge.classList.toggle('empty',!inf&&total===0);
-  if(!inf&&total!==this.lastCells&&this.inLevel&&!reduced){badge.classList.remove('bump');void badge.offsetWidth;badge.classList.add('bump');}
-  this.lastCells=total;
+  updateCellsPill();
   this.renderPowerBar();
- }
- /** Under the board: the detector shows the cell it is draining (10 s each) and the cells waiting to take over; the fan shows the whole cell it will use. */
+ } /** Under the board: the detector shows the cell it is draining (10 s each) and the cells waiting to take over; the fan shows the whole cell it will use. */
  renderPowerBar(){
   const bar=$('power-bar'),tag=bar.parentElement!;
   const fanOut=this.selected===1,detOut=!fanOut&&this.detLeft>0,show=!this.won&&(fanOut||detOut);
@@ -652,13 +647,13 @@ class Haystack extends Phaser.Scene {
     ?`<span class="pw-label">Fan</span><span class="pw-cells"><i class="cell use">${bolt}</i>${'<i class="cell"></i>'.repeat(Math.max(0,shown-1))}${waiting>shown?more:''}</span><span class="pw-hint"><i class="cell mini"></i>Uses 1 whole cell. Tap the hay.</span>`
     :`<span class="pw-label">Fan</span><span class="pw-hint">No cells left</span>`;
   }
- } updateTools(){this.renderCells();['magnet','wind'].forEach((id,i)=>{($(id) as HTMLButtonElement).disabled=this.won||(this.cells()===0&&!(i===0&&this.detLeft>0));const on=this.selected===i||(i===0&&this.detOn);$(id).classList.toggle('selected',on);$(id).setAttribute('aria-pressed',String(on));const locked=!saved.cheat&&saved.level<TOOL_LEVELS[i];$(id).classList.toggle('locked',locked);$(id).querySelector('.charge')!.textContent=locked?'🔒':'';$(id).title=locked?'Unlocks at level '+TOOL_LEVELS[i]:HELPER_NAME[i]+' - shortcut '+(i+1);});}
+ } updateTools(){this.renderCells();['magnet','wind'].forEach((id,i)=>{($(id) as HTMLButtonElement).disabled=this.won;$(id).classList.toggle('empty',this.cells()===0&&!(i===0&&this.detLeft>0));const on=this.selected===i||(i===0&&this.detOn);$(id).classList.toggle('selected',on);$(id).setAttribute('aria-pressed',String(on));const locked=!saved.cheat&&saved.level<TOOL_LEVELS[i];$(id).classList.toggle('locked',locked);$(id).querySelector('.charge')!.textContent=locked?'🔒':'';$(id).title=locked?'Unlocks at level '+TOOL_LEVELS[i]:HELPER_NAME[i]+' - shortcut '+(i+1);});}
  /** The find: the hay parts, the needle rises out of it glowing, then the win card. */
  finish(){
   if(this.won)return;this.cancelTool();this.won=true;
   const def=levelDef(saved.level);
   // Coins for solving a level the first time; every bonus item found goes into the bag to be sold.
-   const coins=isSolved(saved.level)?0:levelCoins(saved.level);saved.coins+=coins;
+   const coins=isSolved(saved.level)?0:levelCoins(saved.level);saved.coins+=coins;if(coins>0)holdCoins(coins);
    let finds=0;for(const t of this.treasures)if(t.collected){addFind(t.kind);finds++;}
    recordWin(saved.level,this.treasures.length>0&&this.bonusFound===this.treasures.length);updateCoinPill();
   // The first-time guides are done once the level that taught them is won.
@@ -679,7 +674,7 @@ class Haystack extends Phaser.Scene {
   // Let the moment breathe before the card comes up.
   const round=this.round;
   this.time.delayedCall(reduced?300:1500,()=>{
-   if(this.round!==round||!this.active)return;
+   if(this.round!==round||!this.active){releaseCoins();return;}
    const all=this.treasures.length>0&&this.bonusFound===this.treasures.length;
    $('win').classList.toggle('chapter',def.finale);
    $('win-title').textContent=saved.level>=TOTAL_LEVELS?'All done!':def.finale?'World complete!':WIN_WORDS[saved.level%WIN_WORDS.length];
@@ -694,6 +689,7 @@ class Haystack extends Phaser.Scene {
     $('win-coins').innerHTML=[coins>0?`<span><i class="coin"></i>+${coins} coins</span>`:'',finds>0?`<span>${finds} ${finds===1?'find':'finds'} in your bag</span>`:''].join('');
     $('win-coins').classList.toggle('hidden',coins===0&&finds===0);
    $('win').classList.remove('hidden');$('next').focus();
+   if(coins>0)window.setTimeout(()=>{const el=$('win-coins').querySelector('.coin');flyCoins(el?centerOf(el):{x:innerWidth/2,y:innerHeight/2},coins);},reduced?0:650);
   });
  }
  update(_time:number,delta:number){
@@ -731,6 +727,7 @@ let screen:Screen='title';
 let freshWorld=-1;
 
 function renderTitle(){
+  $('btn-daily').classList.toggle('ready',dailyReady());
   $('play-label').textContent=allSolved()?'Play again':solvedCount()===0?'Play':`Level ${playTarget()}`;
 }
 
@@ -759,10 +756,11 @@ document.querySelector('.title-hero')!.addEventListener('click',()=>{
  const now=performance.now();needleTaps=now-needleLast<1500?needleTaps+1:1;needleLast=now;
  if(needleTaps<10)return;needleTaps=0;
  if(saved.cheat){toast('Test mode is already on');return;}
- enableTestMode();sfx.found(0,true);updateCoinPill();renderTitle();toast('Test mode on: every level open, unlimited coins');
+ enableTestMode();sfx.found(0,true);updateCoinPill();updateCellsPill();renderTitle();toast('Test mode on: every level open, unlimited coins');
 });
 $('btn-play').onclick=()=>{startLevel(allSolved()?1:playTarget());};
 $('btn-levels').onclick=()=>{sfx.select();show('map');};
+$('btn-daily').onclick=()=>{sfx.select();openDaily(renderTitle);};
 $('btn-back').onclick=()=>{sfx.select();show(screen==='game'?'map':'title');};
 $('brand').addEventListener('click',e=>{e.preventDefault();if(screen!=='title'){sfx.select();show('title');}});
 $('win-map').onclick=()=>{sfx.select();show('map');};
@@ -787,13 +785,7 @@ const confirmDlg=$('confirm-reset') as HTMLDialogElement;
 $('reset').onclick=()=>{sfx.select();confirmDlg.showModal();};
 $('btn-delete').onclick=()=>{sfx.select();confirmDlg.showModal();};
 $('reset-cancel').onclick=()=>{sfx.select();confirmDlg.close();};
-$('reset-yes').onclick=()=>{sfx.select();resetProgress();updateCoinPill();helpPaused=false;confirmDlg.close();dialog.close();show('title');};
+$('reset-yes').onclick=()=>{sfx.select();resetProgress();updateCoinPill();updateCellsPill();helpPaused=false;confirmDlg.close();dialog.close();show('title');};
 show('title');
-
-
-
-
-
-
-
-
+// Once a day the title screen offers a gift.
+window.setTimeout(()=>{if(screen==='title')maybeShowDaily(renderTitle);},900);

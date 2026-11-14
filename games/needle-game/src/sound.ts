@@ -245,6 +245,12 @@ export function pluck(pan: number) {
   marimba(c, t + 0.015, f, 0.045, pan);
 }
 
+/** A soft tink for each coin that lands in the counter, climbing the scale as more arrive. */
+export function coin(step: number) {
+  const c = live();
+  if (!c) return;
+  marimba(c, c.currentTime, penta(72, Math.min(step, 9)), 0.04, 0);
+}
 /** The shovel: a longer, rounder rustle, with two soft wooden notes. `n` is how many straws it lifted. */
 export function scoop(pan: number, n: number) {
   const c = live();

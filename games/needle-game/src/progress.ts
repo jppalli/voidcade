@@ -9,6 +9,9 @@ import { TOTAL_LEVELS } from './levels';
 
 const KEY = 'needle-save';
 
+/** Battery cells given once, when the first helper is unlocked. */
+export const STARTER_CELLS = 3;
+
 export interface Save {
   /** The level last started. */
   level: number;
@@ -26,8 +29,10 @@ export interface Save {
   bag: Record<string, number>;
   /** Tier bought on each upgrade track (0 is what everyone starts with). */
   upgrades: { scoop: number; brush: number; detector: number; fan: number };
-  /** Battery cells bought in the shop. Any helper can use one; they are spent after the free cells every level starts with. */
+  /** Battery cells: from the starter gift, the daily gift and the shop. Any helper can use one; they are never refilled for free. */
   cells: number;
+  /** The daily gift: the date (local, YYYY-MM-DD) it was last claimed, and which day of the cycle comes next (0 to 6). */
+  daily: { last: string; day: number };
   /** Test mode, switched on by tapping the needle on the title screen 10 times: every level open, coins never run out. */
   cheat: boolean;
 }
@@ -41,7 +46,7 @@ function load(): Save {
   } catch {
     /* unreadable save: start fresh */
   }
-  const s: Save = { level: 1, unlocked: 1, results: {}, sound: raw.sound !== false, introduced: [], seen: [], coins: 0, bag: {}, upgrades: { scoop: 0, brush: 0, detector: 0, fan: 0 }, cells: 0, cheat: raw.cheat === true };
+  const s: Save = { level: 1, unlocked: 1, results: {}, sound: raw.sound !== false, introduced: [], seen: [], coins: 0, bag: {}, upgrades: { scoop: 0, brush: 0, detector: 0, fan: 0 }, cells: 0, daily: { last: '', day: 0 }, cheat: raw.cheat === true };
 
   if (typeof raw.unlocked === 'number') {
     s.unlocked = clampLevel(raw.unlocked);
@@ -66,6 +71,10 @@ function load(): Save {
   // Older saves kept separate charges per helper: they all become cells.
   const old = Array.isArray(raw.stock) ? raw.stock.reduce((a: number, b: unknown) => a + n(b, 999), 0) : 0;
   s.cells = Math.min(999, n(raw.cells, 999) + old);
+  const dl = (raw.daily ?? {}) as Record<string, unknown>;
+  s.daily = { last: typeof dl.last === 'string' ? dl.last : '', day: n(dl.day, 6) };
+  // Saves from before cells were limited: a player who already has a helper starts with a few.
+  if (raw.daily === undefined && s.introduced.includes(0) && s.cells === 0) s.cells = STARTER_CELLS;
   s.level = Math.min(s.unlocked, clampLevel(raw.level ?? s.unlocked));
   return s;
 }
@@ -115,6 +124,7 @@ export function resetProgress() {
   saved.bag = {};
   saved.upgrades = { scoop: 0, brush: 0, detector: 0, fan: 0 };
   saved.cells = 0;
+  saved.daily = { last: '', day: 0 };
   saved.cheat = false;
   persist();
 }

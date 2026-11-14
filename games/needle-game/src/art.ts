@@ -82,3 +82,14 @@ export const CELL_ART = `<svg viewBox="0 0 64 64" aria-hidden="true">
 <path d="M23 18v32" stroke="#fff" stroke-width="3.500" stroke-linecap="round" opacity=".45"/>
 <path d="M36 17 25 37h8l-3 16 12-22h-8Z" fill="#fff" stroke="#2f7a2a" stroke-width="2" stroke-linejoin="round"/>
 </svg>`;
+/** A wrapped gift, for the daily gift card. */
+export const GIFT_ART = `<svg viewBox="0 0 64 64" aria-hidden="true">
+<ellipse cx="32" cy="60" rx="22" ry="3" fill="#2a1a08" opacity=".18"/>
+<rect x="10" y="29" width="44" height="29" rx="4" fill="#e8806a" stroke="#a54d3a" stroke-width="2.500"/>
+<rect x="7" y="21" width="50" height="12" rx="4" fill="#f19a86" stroke="#a54d3a" stroke-width="2.500"/>
+<rect x="28" y="21" width="8" height="37" fill="#ffd24a" stroke="#b9780f" stroke-width="2"/>
+<path d="M32 20C22 20 16 14 20 9c5-3 11 3 12 11Z" fill="#ffd24a" stroke="#b9780f" stroke-width="2" stroke-linejoin="round"/>
+<path d="M32 20c10 0 16-6 12-11-5-3-11 3-12 11Z" fill="#ffd24a" stroke="#b9780f" stroke-width="2" stroke-linejoin="round"/>
+<circle cx="32" cy="20" r="3.200" fill="#f3b53a" stroke="#b9780f" stroke-width="1.800"/>
+<path d="M14 36v15" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".45"/>
+</svg>`;

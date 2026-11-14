@@ -11,7 +11,7 @@
  * - Upgrades are permanent. No charges, no running out.
  */
 import { LEVELS_PER_WORLD, type Treasure } from './levels';
-import { saved, persist, TEST_COINS } from './progress';
+import { saved, persist, TEST_COINS, STARTER_CELLS } from './progress';
 
 /** What the shop pays for one of each find. */
 export const FIND_VALUE: Record<Treasure, number> = { button: 4, key: 8, feather: 6, spool: 5, horseshoe: 10, acorn: 6 };
@@ -117,13 +117,49 @@ export function addFind(kind: Treasure) {
   saved.bag[kind] = (saved.bag[kind] ?? 0) + 1;
 }
 
-/** Battery cells: the energy any helper runs on. Every level starts with FREE of them; more are sold in packs. */
-export const CELLS = { free: 4, pack: 3, cost: 30 } as const;
-export const canBuyCells = () => saved.coins >= CELLS.cost;
+/** True once the first helper has been handed over (its "new helper" card has been shown). Cells are hidden until then. */
+export const helpersUnlocked = () => saved.cheat || saved.introduced.includes(0);
+
+/**
+ * Battery cells: the energy any helper runs on. They are limited: a few as a starter when the
+ * first helper unlocks, one or two in some daily gifts, and packs sold in the shop.
+ */
+export const CELLS = { starter: STARTER_CELLS, pack: 3, cost: 30 } as const;
+export const canBuyCells = () => helpersUnlocked() && saved.coins >= CELLS.cost;
 export function buyCells(): boolean {
   if (!canBuyCells()) return false;
   saved.coins = saved.cheat ? TEST_COINS : saved.coins - CELLS.cost;
   saved.cells += CELLS.pack;
   persist();
   return true;
+}
+
+/** The daily gift cycle. Cells only count once a helper is unlocked. Day seven is the big one. */
+export const DAILY: { coins: number; cells: number }[] = [
+  { coins: 15, cells: 1 },
+  { coins: 20, cells: 0 },
+  { coins: 25, cells: 1 },
+  { coins: 30, cells: 0 },
+  { coins: 35, cells: 1 },
+  { coins: 40, cells: 0 },
+  { coins: 60, cells: 2 },
+];
+const today = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+export const dailyReady = () => saved.daily.last !== today();
+/** What the next gift holds. */
+export function dailyPlan() {
+  const day = saved.daily.day % DAILY.length;
+  return { day, coins: DAILY[day].coins, cells: helpersUnlocked() ? DAILY[day].cells : 0 };
+}
+/** Hands over today's gift and moves the cycle on. */
+export function claimDaily() {
+  const plan = dailyPlan();
+  saved.coins = saved.cheat ? TEST_COINS : saved.coins + plan.coins;
+  saved.cells = Math.min(999, saved.cells + plan.cells);
+  saved.daily = { last: today(), day: (plan.day + 1) % DAILY.length };
+  persist();
+  return plan;
 }

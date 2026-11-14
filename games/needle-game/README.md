@@ -63,4 +63,4 @@ The last level is one huge haystack (`GRAND_FINALE` in `levels.ts`): size 3 and 
 
 ## Battery cells in the interface
 
-The cell total sits in the top bar next to the coins. While the detector or the fan is out, the message pill under the board becomes a battery bar: the detector shows the cell it is draining (with seconds left) and the cells waiting to take over; the fan shows the whole cell it will use. The bar is hidden when no helper is out. A cell left partly used when a level ends is lost; every level starts with `CELLS.free` fresh ones.
+The cell total sits in the top bar next to the coins. While the detector or the fan is out, the message pill under the board becomes a battery bar: the detector shows the cell it is draining (with seconds left) and the cells waiting to take over; the fan shows the whole cell it will use. The bar is hidden when no helper is out. A cell left partly used when a level ends is lost. every level starts with `CELLS.free` fresh ones.
