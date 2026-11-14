@@ -25,6 +25,14 @@ import {
 import { FREE_HINTS_PER_DAY, freeHintsLeft, useFreeHint } from './game/hints';
 import { createPlatform, GAME_VERSION, type Platform } from './platform/platform';
 import { initStorage, resyncStorage } from './platform/storage';
+import {
+  initEventTracking,
+  trackClickRuleset,
+  trackGameStart,
+  trackGameEnd,
+  trackGameQuit,
+  trackBoosterUsed,
+} from './platform/events';
 import { CHAPTERS, TOTAL_LEVELS, allLevels, levelAt, type LevelRef } from './game/levels';
 import {
   cleanCount,
@@ -72,7 +80,17 @@ let winTimers: number[] = [];
 
 function show(screen: Screen) {
   hideWelcomeToast();
-  if (screen !== 'game') { endActiveLevel(); stopCoach(); hideNote(); if (idleTimer !== null) clearTimeout(idleTimer); idleTimer = null; }
+  if (screen !== 'game') {
+    // Track game quit when leaving an active level
+    if (game && !winPending && activeLevel !== null) {
+      const ref = game.ref;
+      const isTutorial = ref.index < TUTORIAL_LEVELS;
+      const levelNum = isTutorial ? 'Tutorial' : ref.index + 1;
+      const levelGroup = isTutorial ? 'Tutorial' : ref.chapter.name;
+      trackGameQuit(levelNum, levelGroup);
+    }
+    endActiveLevel(); stopCoach(); hideNote(); if (idleTimer !== null) clearTimeout(idleTimer); idleTimer = null;
+  }
   (['title', 'map', 'game'] as Screen[]).forEach((s) => {
     const el = $(`screen-${s}`);
     el.classList.toggle('hidden', s !== screen);
@@ -151,6 +169,12 @@ function startLevel(index: number, forceTutorial = false) {
   lastTap = null;
   renderedLives = -1;
   clearCelebration();
+  
+  // Track game start event
+  const isTutorial = ref.index < TUTORIAL_LEVELS;
+  const levelNum = isTutorial ? 'Tutorial' : ref.index + 1;
+  const levelGroup = isTutorial ? 'Tutorial' : ref.chapter.name;
+  trackGameStart(levelNum, levelGroup);
 
   // The level sits inside its world: same pattern and colours as its map band.
   const world = worldOf(ref.chapterIndex);
@@ -746,6 +770,14 @@ function applyHint() {
   coachNotify({ type: 'cat', r: spot.row, c: spot.col });
   const el = cellEl(spot.row, spot.col);
   if (el) { el.classList.add('hintGlow'); setTimeout(() => el.classList.remove('hintGlow'), 2300); }
+  
+  // Track hint booster usage
+  const ref = game.ref;
+  const isTutorial = ref.index < TUTORIAL_LEVELS;
+  const levelNum = isTutorial ? 'Tutorial' : ref.index + 1;
+  const levelGroup = isTutorial ? 'Tutorial' : ref.chapter.name;
+  trackBoosterUsed('HINT', levelNum, levelGroup);
+  
   if (game.isSolved()) finishLevel();
 }
 
@@ -905,6 +937,12 @@ function finishLevel() {
 
   progress = recordWin(progress, g.ref.index, g.isPurrfect, TOTAL_LEVELS);
   saveProgress(progress);
+  
+  // Track game end event
+  const isTutorial = g.ref.index < TUTORIAL_LEVELS;
+  const levelNum = isTutorial ? 'Tutorial' : g.ref.index + 1;
+  const levelGroup = isTutorial ? 'Tutorial' : g.ref.chapter.name;
+  trackGameEnd(levelNum, levelGroup);
 
   endActiveLevel();
   // Score for Arena leaderboards: 10 per solved level, +5 per purrfect.
@@ -1036,7 +1074,7 @@ function init() {
   );
 
   // How-to modal
-  const openHowTo = () => { playTap(); $('howToOverlay').classList.remove('hidden'); };
+  const openHowTo = () => { playTap(); trackClickRuleset(); $('howToOverlay').classList.remove('hidden'); };
   $('btnHowTo').addEventListener('click', openHowTo);
 
 
@@ -1070,6 +1108,12 @@ function init() {
     if (!game || winPending) return;
     lastTap = null;
     game.undo(); playLift(); renderBoard();
+    // Track undo booster usage
+    const ref = game.ref;
+    const isTutorial = ref.index < TUTORIAL_LEVELS;
+    const levelNum = isTutorial ? 'Tutorial' : ref.index + 1;
+    const levelGroup = isTutorial ? 'Tutorial' : ref.chapter.name;
+    trackBoosterUsed('UNDO', levelNum, levelGroup);
   });
   // Start over: first tap arms it ("Sure?"), a second tap within 3s clears
   // the board. Still undoable, and lost hearts stay lost as before.
@@ -1092,6 +1136,12 @@ function init() {
     }
     disarmReset();
     game.reset(); playLift(); renderBoard();
+    // Track restart booster usage
+    const ref = game.ref;
+    const isTutorial = ref.index < TUTORIAL_LEVELS;
+    const levelNum = isTutorial ? 'Tutorial' : ref.index + 1;
+    const levelGroup = isTutorial ? 'Tutorial' : ref.chapter.name;
+    trackBoosterUsed('RESTART', levelNum, levelGroup);
   });
   $('btnHint').addEventListener('click', onHintPressed);
   $('btnHintAdWatch').addEventListener('click', () => { playTap(); void watchForHint(); });
@@ -1214,6 +1264,7 @@ async function boot() {
   console.info(`KittyDoku v${GAME_VERSION}`);
   platform = await createPlatform();
   await initStorage(platform);
+  initEventTracking(platform);
   loadSoundPref();
   progress = loadProgress();
   subscriber = await platform.isSubscriber();
