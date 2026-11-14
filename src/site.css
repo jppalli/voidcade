@@ -1046,6 +1046,21 @@ body {
   border-color: rgba(47,75,60,0.28);
 }
 
+/* Needle!: a haystack under a sky-blue backdrop, with the needle peeking out
+   under a magnifying glass. */
+.needle-art {
+  display: grid; place-items: center;
+  background:
+    radial-gradient(ellipse at 50% 15%, rgba(255,255,255,0.35), transparent 60%),
+    #8dd4ea;
+}
+.nd-draw { width: 82%; height: 82%; }
+.game-tag-hay {
+  color: #8a5f1c;
+  background: rgba(217,164,65,0.12);
+  border-color: rgba(217,164,65,0.32);
+}
+
 /* KittyDoku: pastel colour patches with a cat sitting on one — the art is
    light where every other card is dark, which suits the cosy pitch. */
 .kittydoku-art {
