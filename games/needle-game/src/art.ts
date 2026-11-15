@@ -43,16 +43,18 @@ export const FAN_ART = `<svg viewBox="0 0 64 64" aria-hidden="true">
 <path d="M15 17a19 19 0 0 1 11-9" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity=".75"/>
 </svg>`;
 export const VACUUM_ART = `<svg viewBox="0 0 64 64" aria-hidden="true">
-<ellipse cx="30" cy="59" rx="22" ry="3" fill="#2a1a08" opacity=".18"/>
-<path d="M44 24c0 14-6 22-18 26" fill="none" stroke="#5c6770" stroke-width="7" stroke-linecap="round"/>
-<path d="M44 24c0 14-6 22-18 26" fill="none" stroke="#a9b6bf" stroke-width="3.200" stroke-linecap="round" stroke-dasharray="1.500 5"/>
-<path d="M6 46h26l4 11H2Z" fill="#f3cf5a" stroke="#b8891b" stroke-width="2.500" stroke-linejoin="round"/>
-<path d="M12 50l-3 6M19 50l-1 6M26 50l1 6" stroke="#b8891b" stroke-width="1.800" stroke-linecap="round"/>
-<rect x="36" y="6" width="24" height="26" rx="8" fill="#6fcf9d" stroke="#2f8a5c" stroke-width="2.500"/>
-<rect x="41" y="11" width="14" height="6" rx="3" fill="#c9f5df" stroke="#2f8a5c" stroke-width="1.800"/>
-<circle cx="48" cy="24" r="3.200" fill="#2f8a5c"/>
-<path d="M40 12v14" stroke="#ffffff" stroke-width="2.600" stroke-linecap="round" opacity=".55"/>
-<circle cx="10" cy="38" r="1.800" fill="#d9b86a"/><circle cx="20" cy="34" r="1.400" fill="#d9b86a"/><circle cx="28" cy="39" r="1.800" fill="#d9b86a"/>
+<ellipse cx="34" cy="60" rx="25" ry="3" fill="#2a1a08" opacity=".18"/>
+<path d="M32 38C20 38 25 19 15 19" fill="none" stroke="#6a53a6" stroke-width="7" stroke-linecap="round"/>
+<path d="M32 38C20 38 25 19 15 19" fill="none" stroke="#a790e0" stroke-width="4" stroke-linecap="round"/>
+<path d="M32 38C20 38 25 19 15 19" fill="none" stroke="#e1d6ff" stroke-width="1.600" stroke-dasharray="3 3.500" stroke-linecap="round"/>
+<rect x="30" y="26" width="29" height="27" rx="11" fill="#b79df0" stroke="#6a53a6" stroke-width="2.800"/>
+<rect x="35" y="31" width="14" height="6" rx="3" fill="#ece5ff"/>
+<circle cx="53" cy="42" r="3.200" fill="#ffd54f" stroke="#a97c1c" stroke-width="2"/>
+<circle cx="39" cy="55" r="5" fill="#6a53a6"/><circle cx="39" cy="55" r="1.800" fill="#d9ccf5"/>
+<circle cx="53" cy="55" r="5" fill="#6a53a6"/><circle cx="53" cy="55" r="1.800" fill="#d9ccf5"/>
+<path d="M4 15 15 11l5 12L8 27Z" fill="#8f78c8" stroke="#5f4a96" stroke-width="2.600" stroke-linejoin="round"/>
+<path d="M7 18l9-3" stroke="#d9ccf5" stroke-width="2" stroke-linecap="round"/>
+<path d="M3 36c5 3 10 1 10-3M5 44c6 3 12 0 12-6" fill="none" stroke="#7fc4e8" stroke-width="2.600" stroke-linecap="round"/>
 </svg>`;
 
 /** One art tile per helper: index 0 detector, 1 fan, 2 vacuum. */

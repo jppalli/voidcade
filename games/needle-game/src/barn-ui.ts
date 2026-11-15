@@ -31,7 +31,7 @@ export function initBarn(hooks: Hooks = {}) {
       const action = done ? '<span class="maxed">Built</span>' : `<button class="buy" data-build="${imp.id}" ${b.bales >= imp.bales ? '' : 'disabled'}><span class="price">${imp.bales} bales</span><small>Build it</small></button>`;
       return `<div class="shop-row${done ? ' built' : ''}"><div class="info"><strong>${imp.name}</strong><span>${imp.blurb}</span>${gift ? `<small>Unlocks: ${gift}</small>` : ''}</div>${action}</div>`;
     }).join('');
-    screen.innerHTML = `<div class="shop-panel"><div class="shop-top"><button class="shop-back" aria-label="Close the barn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Back</span></button><h2 id="barn-title">The Barn</h2><p class="shop-balance">${COIN}<b>${saved.cheat ? '\u221E' : saved.coins}</b> coins</p></div><div class="shop-cols">${left}<section class="shop-col"><h3>Improvements</h3>${rows}</section></div></div>`;
+    screen.innerHTML = `<div class="shop-panel"><div class="shop-top"><button class="shop-back" aria-label="Close the barn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Back</span></button><h2 id="barn-title">The Barn</h2><p class="shop-balance">${COIN}<b>${saved.coins}</b> coins</p></div><div class="shop-cols">${left}<section class="shop-col"><h3>Improvements</h3>${rows}</section></div></div>`;
   };
 
   const close = () => {

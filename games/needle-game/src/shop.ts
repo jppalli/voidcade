@@ -58,7 +58,7 @@ const coinView = { shown: saved.coins, hold: false, pending: 0 };
 const cellView = { shown: saved.cells, hold: false, last: -1, pending: 0 };
 let roll = 0;
 
-const coinText = () => (saved.cheat ? '\u221E' : String(Math.round(coinView.shown)));
+const coinText = () => (String(Math.round(coinView.shown)));
 function paintCoins() {
   const t = coinText();
   $('coin-count').textContent = t;
@@ -74,7 +74,7 @@ function bump(el: Element | null) {
 function rollCoins(target: number) {
   cancelAnimationFrame(roll);
   const from = coinView.shown;
-  if (saved.cheat || reducedMotion || from === target) {
+  if (reducedMotion || from === target) {
     coinView.shown = target;
     paintCoins();
     return;
@@ -158,10 +158,10 @@ export function flyCoins(from: Pt, amount: number) {
 
 function paintCells() {
   const badge = $('cells-badge'),
-    t = saved.cheat ? '\u221E' : String(Math.round(cellView.shown));
+    t = String(Math.round(cellView.shown));
   $('cells-count').textContent = t;
-  badge.setAttribute('aria-label', saved.cheat ? 'Unlimited battery cells' : `${t} battery cells`);
-  badge.classList.toggle('empty', !saved.cheat && cellView.shown <= 0);
+  badge.setAttribute('aria-label', `${t} battery cells`);
+  badge.classList.toggle('empty', cellView.shown <= 0);
   if (cellView.last !== -1 && cellView.last !== cellView.shown && !badge.classList.contains('hidden')) bump(badge);
   cellView.last = cellView.shown;
 }
@@ -260,7 +260,7 @@ export function initShop(imageOf: (kind: string) => string | null, hooks: { onOp
           .join('')}</ul><button class="primary sell" data-act="sell">Sell all <span class="plus">+${bagValue()}</span> ${COIN}</button>`
       : `<p class="shop-empty">Nothing to sell yet.<br>Bonus items you find in the hay land here.</p>`;
 
-    const have = saved.cheat ? '∞' : String(saved.cells);
+    const have = String(saved.cells);
     const videoBtn = adsLeft() > 0 ? `<button class="buy video" data-act="video"><span class="price">Free</span><small>Watch a video: +1 cell (${adsLeft()} left today)</small></button>` : '';
     const helpers = `<div class="shop-row"><span class="art">${CELLS_ART}</span><div class="info"><strong>Battery cells</strong><span>In your stock: ${have}</span><small>Every helper runs on them. You also get some in the daily gift.</small></div><div class="buys"><button class="buy" data-act="cells" ${canBuyCells() ? '' : 'disabled'}><span class="price">${CELLS.cost} ${COIN}</span><small>+${CELLS.pack} cells</small></button>${videoBtn}</div></div>`;
     const rows = (Object.keys(TRACKS) as Track[])

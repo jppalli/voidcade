@@ -73,7 +73,7 @@ The cell total sits in the top bar next to the coins. While the detector or the 
 
 **Events.** `src/events.ts` lists date ranges. While one is on, 30% of drops come from its set.
 
-**Helpers.** Detector (level 5), Fan (9), Vacuum (17). The vacuum uses one cell for 8 to 15 seconds: tap it, tap the hay, then move the nozzle and it draws in the top layer.
+**Helpers.** Detector (level 5), Fan (9), Vacuum (17). The vacuum: tap its button, then hold down on the hay and move the nozzle. It draws the top layer in only while you hold, and uses a cell for 8 to 15 seconds of holding (the next cell takes over by itself, like the detector).
 
 **New levels.** From world 3: night levels (only a light circle around the pointer is visible) and decoys (pins and nails that look like the needle and do no harm).
 

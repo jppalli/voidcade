@@ -183,11 +183,12 @@ export function resetProgress() {
   persist();
 }
  
-/** Test mode: opens every level and fills the purse. While it is on, buying costs nothing. */
-export const TEST_COINS = 999999;
+/** Test mode: opens every level and helper, and sets 999 coins, 99 cells and 999 hay. Nothing is unlimited. */
 export function enableTestMode() {
   saved.cheat = true;
   saved.unlocked = TOTAL_LEVELS;
-  saved.coins = TEST_COINS;
+  saved.coins = 999;
+  saved.cells = 99;
+  saved.barn.hay = 999;
   persist();
 }

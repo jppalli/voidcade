@@ -13,7 +13,7 @@ import { LOOKS, type Slot } from './cosmetics';
  * - Battery cells are the one thing that runs out: see CELLS and the daily gift.
  */
 import { LEVELS_PER_WORLD } from './levels';
-import { saved, persist, TEST_COINS, STARTER_CELLS } from './progress';
+import { saved, persist, STARTER_CELLS } from './progress';
 import { ITEM_BY_ID, SETS, itemsOfSet, type SetDef } from './items';
 
 /** Numbers the config file may change. */
@@ -139,7 +139,7 @@ export const anyAffordable = () => (Object.keys(TRACKS) as Track[]).some(canBuy)
 export function buy(t: Track): boolean {
   const n = nextTier(t);
   if (!n || saved.coins < n.cost) return false;
-  saved.coins = saved.cheat ? TEST_COINS : saved.coins - n.cost;
+  saved.coins = saved.coins - n.cost;
   saved.upgrades[t]++;
   persist();
   return true;
@@ -177,7 +177,7 @@ export function recordFinds(ids: string[]) {
   }
   const coins = done.reduce((a, s) => a + s.reward.coins, 0);
   const cells = done.reduce((a, s) => a + s.reward.cells, 0);
-  if (coins) saved.coins = saved.cheat ? TEST_COINS : saved.coins + coins;
+  if (coins) saved.coins = saved.coins + coins;
   saved.cells = Math.min(999, saved.cells + cells);
   persist();
   return { fresh, done, coins, cells };
@@ -200,7 +200,7 @@ export const CELLS = { starter: STARTER_CELLS, pack: 3, cost: 30 };
 export const canBuyCells = () => helpersUnlocked() && saved.coins >= CELLS.cost;
 export function buyCells(): boolean {
   if (!canBuyCells()) return false;
-  saved.coins = saved.cheat ? TEST_COINS : saved.coins - CELLS.cost;
+  saved.coins = saved.coins - CELLS.cost;
   saved.cells += CELLS.pack;
   persist();
   return true;
@@ -233,7 +233,7 @@ export function dailyPlan() {
 /** Hands over today's gift and moves the cycle on. */
 export function claimDaily() {
   const plan = dailyPlan();
-  saved.coins = saved.cheat ? TEST_COINS : saved.coins + plan.coins;
+  saved.coins = saved.coins + plan.coins;
   saved.cells = Math.min(999, saved.cells + plan.cells);
   saved.daily = { last: today(), day: (plan.day + 1) % DAILY.length };
   persist();
@@ -253,7 +253,7 @@ export function dailyHayReward() {
 export function claimDailyHay() {
   if (dailyHayDone()) return null;
   const r = dailyHayReward();
-  saved.coins = saved.cheat ? TEST_COINS : saved.coins + r.coins;
+  saved.coins = saved.coins + r.coins;
   saved.cells = Math.min(999, saved.cells + r.cells);
   saved.dailyHay = { last: today(), streak: r.streak };
   persist();
@@ -273,7 +273,7 @@ export function buyLook(slot: Slot, id: string): boolean {
   const look = LOOKS[slot].find(l => l.id === id);
   const key = slot + ':' + id;
   if (!look || look.cost <= 0 || saved.cosmetics.owned.includes(key) || saved.coins < look.cost) return false;
-  saved.coins = saved.cheat ? TEST_COINS : saved.coins - look.cost;
+  saved.coins = saved.coins - look.cost;
   saved.cosmetics.owned.push(key);
   saved.cosmetics[slot] = id;
   persist();

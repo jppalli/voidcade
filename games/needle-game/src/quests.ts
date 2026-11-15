@@ -3,7 +3,7 @@
  * No penalties and nothing is lost by ignoring them. They are picked from the date, so they
  * are the same on every device, and they reset at midnight.
  */
-import { saved, persist, TEST_COINS } from './progress';
+import { saved, persist } from './progress';
 import { today, helpersUnlocked } from './economy';
 
 export type QuestEvent = 'clear' | 'find' | 'uncommon' | 'fan' | 'detector' | 'vacuum' | 'pluck';
@@ -117,7 +117,7 @@ export function claimQuest(index: number) {
   if (!q || q.claimed || q.n < q.goal) return null;
   q.claimed = true;
   const r = questReward(q.id, q.goal);
-  saved.coins = saved.cheat ? TEST_COINS : saved.coins + r.coins;
+  saved.coins = saved.coins + r.coins;
   saved.cells = Math.min(999, saved.cells + r.cells);
   persist();
   return r;

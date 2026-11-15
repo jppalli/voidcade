@@ -143,7 +143,7 @@ class Haystack extends Phaser.Scene {
    this.aimX=w.x;this.aimY=w.y;this.cursor.setPosition(w.x,w.y);
    if(this.selected>=0){this.showAim();return;}
    // Brushing only happens while the button/finger is held and has moved past the tap slop.
-   if(!p.isDown||this.gesture||this.detOn||(!this.stroking&&p.getDistance()<STROKE_SLOP))return;
+   if(!p.isDown||this.gesture||this.detOn||this.vacOn||(!this.stroking&&p.getDistance()<STROKE_SLOP))return;
    this.stroking=true;
    if(this.time.now-this.lastBrushAt>=BRUSH_TICK_MS)this.brush(w.x,w.y);
   });
@@ -151,7 +151,7 @@ class Haystack extends Phaser.Scene {
    this.lastSX=p.x;this.lastSY=p.y;
    if(this.input.pointer1?.isDown&&this.input.pointer2?.isDown){this.gesture=true;this.stroking=false;this.pinchDist=0;return;}
    this.downAt=this.time.now;this.boardDown=true;
-  const w=world(p);this.stroking=false;this.lastBX=w.x;this.lastBY=w.y;this.lastBrushAt=this.time.now;
+  const w=world(p);this.stroking=false;this.lastBX=w.x;this.lastBY=w.y;this.lastBrushAt=this.time.now;if(this.vacOn){this.aimX=w.x;this.aimY=w.y;}
   });
   this.input.on('pointerup',(p:Phaser.Input.Pointer)=>{
    const wasStroke=this.stroking;this.stroking=false;
@@ -165,12 +165,12 @@ class Haystack extends Phaser.Scene {
    if(this.selected>=0){this.useTool(w.x,w.y);return;}
    if(wasStroke||p.getDistance()>25)return;
    // A long hold with the detector on was scanning, not a tap.
-   if(scanned)return;
+   if(scanned||(this.vacOn&&this.time.now-this.downAt>=SCAN_DELAY))return;
    this.tap(w.x,w.y,p.wasTouch);
   });
   this.input.on('wheel',(p:Phaser.Input.Pointer,_over:unknown,_dx:number,dy:number)=>{if(this.active&&!this.won)this.zoomAt(Math.exp(-dy*.0013),p.x,p.y);});
   this.input.on('gameout',()=>{this.mouseIn=false;this.cursor.setVisible(false);this.ring.setVisible(false);});
-  this.input.on('gameover',()=>{this.mouseIn=true;this.cursor.setVisible(this.selected<0&&!this.detOn);if(this.selected>=0)this.showAim();});
+  this.input.on('gameover',()=>{this.mouseIn=true;this.cursor.setVisible(this.selected<0&&!this.detOn&&!this.vacOn);if(this.selected>=0)this.showAim();});
   this.input.keyboard?.on('keydown',(e:KeyboardEvent)=>{
    if(($('instructions') as HTMLDialogElement).open)return;
    if(e.key==='+'||e.key==='='){this.zoomBy(1.3);return;}
@@ -179,7 +179,7 @@ class Haystack extends Phaser.Scene {
    const arrows:Record<string,[number,number]>={ArrowLeft:[1,0],ArrowRight:[-1,0],ArrowUp:[0,1],ArrowDown:[0,-1]};
    if(arrows[e.key]&&this.active&&!this.won){this.panBy(arrows[e.key][0]*90,arrows[e.key][1]*90);e.preventDefault();return;}
    if(e.repeat)return;
-   if(e.key==='Escape'){if(this.selected>=0||this.detOn)sfx.cancel();this.pauseDetector(true);this.cancelTool();}
+   if(e.key==='Escape'){if(this.selected>=0||this.detOn||this.vacOn)sfx.cancel();this.pauseDetector(true);this.pauseVacuum();this.cancelTool();}
    if(['1','2','3'].includes(e.key))this.power(Number(e.key)-1);
   });
   // No level starts until the player picks one on the map.
@@ -457,7 +457,7 @@ class Haystack extends Phaser.Scene {
  }
  /** Night levels: the hay shows only in a circle of light around the pointer. */
  setNight(on:boolean){this.nightOn=on;$('night').classList.toggle('hidden',!on);if(on)this.moveVeil(innerWidth/2,innerHeight/2);}
- moveVeil(cx:number,cy:number){const v=$('night'),r=v.parentElement!.getBoundingClientRect();v.style.setProperty('--x',(cx-r.left)+'px');v.style.setProperty('--y',(cy-r.top)+'px');v.style.setProperty('--r',Math.round(r.width*.14)+'px');} introduceTool(){const index=TOOL_LEVELS.findIndex((level,i)=>saved.level===level&&!saved.introduced.includes(i));if(index<0)return;this.active=false;const pauseAt=this.time.now;const modal=document.createElement('dialog');modal.className='tool-intro';modal.innerHTML=`<div class="unlock-icon">${HELPER_ART[index]}</div><h2>New helper:<br>${HELPER_NAME[index]}</h2><p>${['Tap it, then hold down and sweep over the hay.<br>White ping: working. Green: something is near.<br>Let go to switch it off.<br>Here are '+CELLS.starter+' battery cells to start.','Tap it, then tap the hay.<br>The fan blows the hay away.','Tap it, then tap the hay.<br>Move the nozzle over the hay and it draws the top layer in.<br>Tap it again to pause.'][index]}</p><button class="primary">Got it!</button>`;document.body.append(modal);let origin={x:innerWidth/2,y:innerHeight/2};
+ moveVeil(cx:number,cy:number){const v=$('night'),r=v.parentElement!.getBoundingClientRect();v.style.setProperty('--x',(cx-r.left)+'px');v.style.setProperty('--y',(cy-r.top)+'px');v.style.setProperty('--r',Math.round(r.width*.14)+'px');} introduceTool(){const index=TOOL_LEVELS.findIndex((level,i)=>saved.level===level&&!saved.introduced.includes(i));if(index<0)return;this.active=false;const pauseAt=this.time.now;const modal=document.createElement('dialog');modal.className='tool-intro';modal.innerHTML=`<div class="unlock-icon">${HELPER_ART[index]}</div><h2>New helper:<br>${HELPER_NAME[index]}</h2><p>${['Tap it, then hold down and sweep over the hay.<br>White ping: working. Green: something is near.<br>Let go to switch it off.<br>Here are '+CELLS.starter+' battery cells to start.','Tap it, then tap the hay.<br>The fan blows the hay away.','Tap it, then hold down on the hay.<br>The nozzle draws the top layer in while you hold.<br>Let go to pause.'][index]}</p><button class="primary">Got it!</button>`;document.body.append(modal);let origin={x:innerWidth/2,y:innerHeight/2};
  modal.addEventListener('close',()=>{saved.introduced.push(index);if(index===0){saved.cells+=CELLS.starter;holdCells(CELLS.starter);}persist();updateCellsPill();this.updateTools();if(index===0)flyCells(origin,CELLS.starter);const tool=$(TOOLIDS[index]);tool.classList.add('just-unlocked','guide');window.setTimeout(()=>tool.classList.remove('just-unlocked'),800);this.started+=this.time.now-pauseAt;this.active=true;modal.remove();},{once:true});modal.querySelector('button')!.onclick=e=>{sfx.select();origin=centerOf(e.currentTarget as HTMLElement);modal.close();};modal.showModal();sfx.unlockTool();}
  /** Out of battery cells: offer a short video for one, or the shop. */
  askForCells(){
@@ -474,7 +474,7 @@ class Haystack extends Phaser.Scene {
   dlg.querySelector('.later')!.addEventListener('click',()=>{sfx.cancel();dlg.close();});
   dlg.showModal();
  }
- power(index:number){if(this.won||!this.active)return;if(index===0&&this.detOn){sfx.cancel();this.pauseDetector();return;}if(index===2&&this.vacOn){sfx.cancel();this.vacOn=false;this.ring?.setVisible(false);this.cursor?.setVisible(true);this.updateTools();return;}if(this.selected===index){sfx.cancel();this.cancelTool();return;}if(!saved.cheat&&saved.level<TOOL_LEVELS[index]){sfx.denied();return;}if(index===2&&this.vacLeft>0){this.cancelTool();this.pauseDetector(true);sfx.select();this.vacOn=true;this.cursor.setVisible(false);this.ring.setVisible(true);this.updateTools();return;}if(this.cells()<=0&&!(index===0&&this.detLeft>0)){sfx.denied();this.askForCells();return;}if(index===0){this.cancelTool();this.startDetector();return;}this.pauseDetector(true);this.cancelTool();sfx.select();$(TOOLIDS[index]).classList.remove('guide');this.selected=index;this.cursor.setVisible(false);this.showAim();this.updateTools();this.say(this.resting());}
+ power(index:number){if(this.won||!this.active)return;if(index===0&&this.detOn){sfx.cancel();this.pauseDetector();return;}if(index===2&&this.vacOn){sfx.cancel();this.pauseVacuum();return;}if(index!==2&&this.vacOn)this.pauseVacuum();if(this.selected===index){sfx.cancel();this.cancelTool();return;}if(!saved.cheat&&saved.level<TOOL_LEVELS[index]){sfx.denied();return;}if(index===2){this.cancelTool();this.pauseDetector(true);if(this.vacLeft<=0){if(this.cells()<=0){sfx.denied();this.askForCells();return;}this.spendCell();this.vacLeft=vacuum().ms;}sfx.select();this.armVacuum();return;}if(this.cells()<=0&&!(index===0&&this.detLeft>0)){sfx.denied();this.askForCells();return;}if(index===0){this.cancelTool();this.startDetector();return;}this.pauseDetector(true);this.cancelTool();sfx.select();$(TOOLIDS[index]).classList.remove('guide');this.selected=index;this.cursor.setVisible(false);this.showAim();this.updateTools();this.say(this.resting());}
  cancelTool(){this.selected=-1;this.ring?.setVisible(false);this.cursor?.setVisible(true);this.updateTools();if(this.straws.length)this.say(this.resting());}
  /** Detector: one charge, DET_MS of sweeping. It beeps faster and higher the closer the pointer is to the needle or a bonus item, covered or not. */
  startDetector(){
@@ -570,7 +570,7 @@ class Haystack extends Phaser.Scene {
  } showAim(){this.ring.setPosition(this.aimX,this.aimY).setVisible(true);this.drawAim();}
  /** The fan, held over the hay while you aim: a calm picture of where the blast reaches. A dashed edge, three slow swirls and the fan head turning gently. */
  drawAim(){
-  const i=this.selected;if(i===2){this.drawVac();return;}if(i!==1)return;
+  const i=this.selected;if(i!==1)return;
   const g=this.ring,t=reduced?0:this.time.now/1000,R=fan().r,S=Math.max(30,R*.3);
   g.clear();
   // The reach: a faint disc with a dashed edge that barely turns.
@@ -586,7 +586,6 @@ class Haystack extends Phaser.Scene {
   this.fanHead(g,S,t*1.4);
  } useTool(x:number,y:number){const index=this.selected;if(index<0||this.cells()<=0)return;this.spendCell();this.selected=-1;this.ring.setVisible(false);this.cursor.setVisible(true);this.updateTools();
   if(index===1){quest('fan');logEvent('helper_used',{helper:'fan',level:this.mode==='daily'?0:saved.level});sfx.wind(panAt(x));this.gust(x,y,fan().r);this.pop(x,y,'WHOOSH!','#c4f5ff');this.say('Hay blown away!',{passing:true});}
-  if(index===2){quest('vacuum');logEvent('helper_used',{helper:'vacuum',level:this.mode==='daily'?0:saved.level});this.vacLeft=vacuum().ms;this.vacOn=true;this.vacAcc=0;this.cursor.setVisible(false);this.ring.setPosition(x,y).setVisible(true);this.updateTools();this.say('Move the nozzle over the hay.',{passing:true});}
  }
  /** The fan's head: a soft guard with five curved blades. Used by the aiming picture and the blast. */
  fanHead(g:Phaser.GameObjects.Graphics,S:number,turn:number,alpha=1){
@@ -603,32 +602,71 @@ class Haystack extends Phaser.Scene {
   g.fillStyle(0xf3cf5a,alpha).fillCircle(0,0,S*.17);g.lineStyle(2,0xb8891b,alpha).strokeCircle(0,0,S*.17);
  }
  /** The blast. The fan head spins up and fades; the top layer of hay in the circle sweeps outward in a spiral, the inner straws first, and settles out of sight. Thin tapered swirls and a few specks turn with it. */
-  /** The vacuum's nozzle: a soft disc with a dashed rim and a few specks drawn inward. */
-  drawVac(){
+  /** The vacuum, held over the hay: a reach circle, air spiralling in, and a humming nozzle that shudders while it sucks. */
+  drawVac(held:boolean){
    const g=this.ring,t=reduced?0:this.time.now/1000,R=vacuum().r;
    g.clear();
-   g.fillStyle(0xe9dcff,.1).fillCircle(0,0,R);
-   const n=36;
-   for(let k=0;k<n;k+=2){const a0=k/n*Math.PI*2-t*.2;g.lineStyle(2.5,0xf3ecff,.6).beginPath().arc(0,0,R,a0,a0+Math.PI*2/n*.9).strokePath();}
-   for(let k=0;k<6;k++){const a=k*Math.PI/3+t*.5,u=1-((t*.8+k/6)%1),r=R*(.25+.7*u);g.fillStyle(0xf3ecff,.5*u).fillCircle(Math.cos(a)*r,Math.sin(a)*r,3);}
-   g.fillStyle(0x8f78c8,.9).fillCircle(0,0,R*.16);g.lineStyle(3,0x5f4a96,.9).strokeCircle(0,0,R*.16);g.fillStyle(0x2d2150,.8).fillCircle(0,0,R*.08);
+   g.fillStyle(0xe9dcff,held?.26:.1).fillCircle(0,0,R);
+   const n=36,spin=held?-t*1.6:-t*.2;
+   for(let k=0;k<n;k+=2){const a0=k/n*Math.PI*2+spin;g.lineStyle(held?4.5:3,0xf3ecff,held?.95:.6).beginPath().arc(0,0,R,a0,a0+Math.PI*2/n*.9).strokePath();}
+   // Three arms of air that curl into the nozzle, turning much faster while held.
+   for(let k=0;k<3;k++){
+    g.lineStyle(held?6:3,0xf3ecff,held?.8:.35).beginPath();
+    for(let s=0;s<=20;s++){const u=s/20,r=R*(1-u*.82),a=k*Math.PI*2/3+u*2.4-t*(held?5:.8);if(s===0)g.moveTo(Math.cos(a)*r,Math.sin(a)*r);else g.lineTo(Math.cos(a)*r,Math.sin(a)*r);}
+    g.strokePath();
+   }
+   // Specks of dust drawn inward.
+   const specks=held?12:5;
+   for(let k=0;k<specks;k++){const ph=(t*(held?1.5:.5)+k/specks)%1,r=R*(1-ph*.9),a=k*2.4+ph*3+t*.3;g.fillStyle(0xf3ecff,.75*Math.sin(ph*Math.PI)).fillCircle(Math.cos(a)*r,Math.sin(a)*r,held?3.5:2.5);}
+   // The nozzle: a rounded rim with a dark mouth and little blades turning inside.
+   const sh=held&&!reduced?Math.sin(t*60)*1.4:0,N=R*.2*(held?1+.04*Math.sin(t*28):1);
+   g.fillStyle(0x2a1a08,.16).fillEllipse(sh,N*.95,N*2.1,N*.7);
+   g.fillStyle(0xa790e0,1).fillCircle(sh,0,N);g.lineStyle(4,0x6a53a6,1).strokeCircle(sh,0,N);
+   g.lineStyle(2,0xe1d6ff,.9).strokeCircle(sh,0,N*.84);
+   g.fillStyle(0x2d2150,.92).fillCircle(sh,0,N*.62);
+   if(held)for(let k=0;k<3;k++){const a=t*16+k*Math.PI*2/3;g.lineStyle(3,0xb7a4ee,.95).beginPath().moveTo(sh,0).lineTo(sh+Math.cos(a)*N*.58,Math.sin(a)*N*.58).strokePath();}
+  }
+  /** Waking the vacuum: it follows the pointer, and sucks only while you hold down. */
+  armVacuum(){
+   this.vacOn=true;this.vacAcc=0;this.cursor.setVisible(false);this.ring.setPosition(this.aimX,this.aimY).setVisible(true);$('vacuum').classList.remove('guide');
+   quest('vacuum');logEvent('helper_used',{helper:'vacuum',level:this.mode==='daily'?0:saved.level});
+   this.updateTools();this.say('Hold down on the hay to suck it up.',{passing:true});
+  }
+  pauseVacuum(){
+   if(!this.vacOn)return;
+   this.vacOn=false;this.ring?.setVisible(false);this.cursor?.setVisible(true);this.updateTools();
   }
   vacuumTick(delta:number){
    if(!this.vacOn)return;
    if(this.won){this.vacOn=false;this.vacLeft=0;this.ring?.setVisible(false);return;}
    if(!this.active)return;
-   const v=vacuum(),x=this.aimX,y=this.aimY;
+   const v=vacuum(),x=this.aimX,y=this.aimY,held=this.boardDown&&!this.gesture;
+   this.ring.setPosition(x,y).setVisible(true);this.drawVac(held);
+   if(!held)return;
    this.vacLeft-=delta;
-   this.ring.setPosition(x,y).setVisible(true);this.drawVac();
-   if(this.vacLeft<=0){this.vacLeft=0;this.vacOn=false;this.ring.setVisible(false);this.cursor.setVisible(true);this.updateTools();this.say('The vacuum ran out.',{passing:true});return;}
-   this.vacAcc+=v.rate*delta/1000;const n=Math.floor(this.vacAcc);this.vacAcc-=n;
-   if(n<=0)return;
-   const take=this.straws.filter(s=>s.alpha>.2&&!s.getData('gone')&&Phaser.Math.Distance.Between(x,y,s.x,s.y)<v.r).sort((a,b)=>b.depth-a.depth).slice(0,n);
-   this.hayGot+=take.length;take.forEach(s=>{
+   if(this.vacLeft<=0){
+    if(this.cells()>0){this.spendCell();this.vacLeft+=v.ms;sfx.select();this.renderCells();}
+    else{this.vacLeft=0;this.pauseVacuum();this.say('The vacuum ran out.',{passing:true});return;}
+   }
+   const live=document.getElementById('vac-live'),secs=document.getElementById('vac-secs');
+   if(live)live.style.setProperty('--fill',String(Math.max(0,this.vacLeft/v.ms)));
+   if(secs)secs.textContent=Math.ceil(this.vacLeft/1000)+'s';
+   if(this.time.now-this.vacSfxAt>200){this.vacSfxAt=this.time.now;sfx.suck(panAt(x));}
+   this.vacAcc+=v.rate*delta/1000;const cnt=Math.floor(this.vacAcc);this.vacAcc-=cnt;
+   if(cnt<=0)return;
+   const take=this.straws.filter(s=>s.alpha>.2&&!s.getData('gone')&&Phaser.Math.Distance.Between(x,y,s.x,s.y)<v.r).sort((a,b)=>b.depth-a.depth).slice(0,cnt);
+   this.hayGot+=take.length;
+   take.forEach((s,i)=>{
     s.setData('gone',true);this.moving.delete(s);this.tweens.killTweensOf(s);
-    if(reduced)s.setAlpha(0);else this.tweens.add({targets:s,x,y,scale:0,alpha:0,angle:s.angle+180,duration:260,ease:'Sine.In',onComplete:()=>s.setAlpha(0)});
+    if(reduced){s.setAlpha(0);return;}
+    // Each straw curls in toward the nozzle, spinning and shrinking, a little after the one before.
+    const dx=s.x-x,dy=s.y-y,r0=Math.hypot(dx,dy),a0=Math.atan2(dy,dx),swirl=Phaser.Math.FloatBetween(1.3,2.2),ang0=s.angle,kx=s.scaleX,ky=s.scaleY;
+    s.setDepth(1400);
+    this.tweens.addCounter({from:0,to:1,duration:Phaser.Math.Between(340,520),delay:i*14,ease:'Sine.In',onUpdate:tw=>{
+     const q=tw.getValue()??0,r=r0*(1-q),a=a0-swirl*q;
+     s.setPosition(x+Math.cos(a)*r,y+Math.sin(a)*r).setAngle(ang0+q*520).setScale(kx*(1-.75*q),ky*(1-.75*q)).setAlpha(1-q*q*q);
+    },onComplete:()=>s.setAlpha(0)});
    });
-   if(take.length&&this.time.now-this.vacSfxAt>240){this.vacSfxAt=this.time.now;sfx.suck(panAt(x));}
   }
   gust(x:number,y:number,R:number){
   // The fan lifts only the top layers of what is in the circle; the hay below stays.
@@ -722,9 +760,9 @@ class Haystack extends Phaser.Scene {
   ($('zoom-in') as HTMLButtonElement).disabled=z>=MAX_ZOOM-.001;($('zoom-out') as HTMLButtonElement).disabled=z<=this.minZoom+.001;($('zoom-fit') as HTMLButtonElement).disabled=this.size<=1&&z<=1.001;
  }
  /** Battery cells left: the free ones this level plus the ones bought in the shop. Any helper runs on them. */
- cells(){return saved.cheat?99:saved.cells;}
+ cells(){return saved.cells;}
  /** Uses a free cell first, then a bought one. */
- spendCell(){if(saved.cheat)return;if(saved.cells>0){saved.cells--;persist();logEvent('cell_spent');}}
+ spendCell(){if(saved.cells>0){saved.cells--;persist();logEvent('cell_spent');}}
  /** The cell count in the top bar, and the battery bar under the board while a helper is out. */
  renderCells(){
   updateCellsPill();
@@ -732,16 +770,20 @@ class Haystack extends Phaser.Scene {
  } /** Under the board: the detector shows the cell it is draining (10 s each) and the cells waiting to take over; the fan shows the whole cell it will use. */
  renderPowerBar(){
   const bar=$('power-bar'),tag=bar.parentElement!;
-  const fanOut=this.selected===1,detOut=!fanOut&&this.detLeft>0,show=!this.won&&(fanOut||detOut);
+  const fanOut=this.selected===1,detOut=!fanOut&&this.detLeft>0,vacOut=!fanOut&&!detOut&&this.vacLeft>0,show=!this.won&&(fanOut||detOut||vacOut);
   tag.classList.toggle('power',show);
   if(!show){bar.innerHTML='';return;}
-  const waiting=saved.cheat?3:Math.max(0,this.cells()),cap=8,shown=Math.min(waiting,cap);
+  const waiting=Math.max(0,this.cells()),cap=8,shown=Math.min(waiting,cap);
   const more=waiting>shown?`<span class="cells-more">+${waiting-shown}</span>`:'';
   const bolt='<svg class="bolt" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6Z"/></svg>';
   if(detOut){
    const f=Math.max(0,this.detLeft/this.detMs),secs=Math.ceil(this.detLeft/1000);
    bar.className='power-bar detector'+(this.detOn?'':' paused');
    bar.innerHTML=`<span class="pw-label">Detector</span><span class="pw-cells"><i class="cell live${f<.25?' low':''}${this.detOn?'':' paused'}" id="cell-live" style="--fill:${f}">${bolt}</i>${'<i class="cell"></i>'.repeat(shown)}${more}</span><b class="pw-secs" id="cell-secs">${secs}s</b><span class="pw-hint">${this.detOn?'Hold down and sweep':'Paused. Tap Detector to carry on'}</span>`;
+  }else if(vacOut){
+   const f=Math.max(0,this.vacLeft/vacuum().ms),secs=Math.ceil(this.vacLeft/1000);
+   bar.className='power-bar vacuum'+(this.vacOn?'':' paused');
+   bar.innerHTML=`<span class="pw-label">Vacuum</span><span class="pw-cells"><i class="cell live${f<.25?' low':''}${this.vacOn?'':' paused'}" id="vac-live" style="--fill:${f}">${bolt}</i>${'<i class="cell"></i>'.repeat(shown)}${more}</span><b class="pw-secs" id="vac-secs">${secs}s</b><span class="pw-hint">${this.vacOn?'Hold down on the hay':'Paused. Tap Vacuum to carry on'}</span>`;
   }else{
    bar.className='power-bar fan';
    bar.innerHTML=waiting>0
@@ -865,8 +907,7 @@ let needleTaps=0,needleLast=0;
 document.querySelector('.title-hero')!.addEventListener('click',()=>{
  const now=performance.now();needleTaps=now-needleLast<1500?needleTaps+1:1;needleLast=now;
  if(needleTaps<10)return;needleTaps=0;
- if(saved.cheat){toast('Test mode is already on');return;}
- enableTestMode();sfx.found(0,true);updateCoinPill();updateCellsPill();renderTitle();toast('Test mode on: every level open, unlimited coins');
+  enableTestMode();sfx.found(0,true);updateCoinPill();updateCellsPill();renderTitle();toast('Test mode: 999 coins, 99 cells, 999 hay, every level open');
 });
 $('btn-play').onclick=()=>{startLevel(allSolved()?1:playTarget());};
 $('btn-levels').onclick=()=>{sfx.select();show('map');};
