@@ -127,3 +127,17 @@ body[data-frame="gold"] .play-area{border-color:#e8c64a;box-shadow:0 7px #a07f1c
 .barn-meter i { display: block; height: 100%; background: #e3b44d; border-radius: 8px }
 .shop-row.built { opacity: .8 }
 body[data-frame="barn"] .play-area{border-color:#b5473a;box-shadow:0 7px #7a2c24,0 10px 0 4px #538c3c44,inset 0 0 0 3px #f0b8a8}
+
+/* Helper buttons: a tag on the bottom edge says what each one is doing, or at what level a locked one opens. */
+.tool.locked { display: flex }
+.tool .state { display: none; position: absolute; left: 50%; bottom: -17px; transform: translateX(-50%); z-index: 2; font-style: normal; font-size: 13px; font-weight: 900; line-height: 1; padding: 4px 11px; border-radius: 12px; text-shadow: none; white-space: nowrap; border: 2px solid #fff8 }
+.tool .state:not(:empty) { display: block }
+.tool .state.on { background: #2f8f46; color: #fff }
+.tool .state.paused { background: #c98a1c; color: #fff }
+.tool .state.lock { background: #6f6a5d; color: #fff6e0 }
+.tool.locked { filter: grayscale(.85) brightness(.95); opacity: .78 }
+.tool.locked .charge { background: #d9d2c4 }
+.tool.selected .state.on { animation: soft-pulse 1.4s ease-in-out infinite }
+@media (max-width: 600px) { .tool .state { font-size: 10px; padding: 3px 7px; bottom: -11px } .tool .state .long { display: none } }
+@media (min-width: 601px) { .tool-tray { bottom: 24px } }
+@media (max-height: 550px) and (min-width: 601px) { .tool-tray { bottom: 20px } }

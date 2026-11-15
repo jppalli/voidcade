@@ -44,7 +44,7 @@ ${titleHtml}<section id="screen-map" class="screen off" aria-label="Levels"><div
 <main id="screen-game" class="screen off"><section class="intro"><div class="eyebrow"><span></span> SMALL DISCOVERIES. SIMPLE JOYS.</div><h1>A little patience.<br>A little <em>discovery.</em></h1><p>One tiny needle. A whole lot of hay.<br>Take a breath, brush around, and look a little closer.</p></section>
 <section class="game-shell" aria-label="Needle in a haystack game"><div class="game-top"><div class="level-label"><strong>Level <span id="level">1</span></strong><span class="level-name" id="level-name"></span></div></div>
 <div class="play-area"><div id="game" tabindex="0" aria-label="Search the hay. Hold and drag to brush, or tap a straw to pluck it. Click or tap the needle. Zoom with the scroll wheel, pinch, or the plus and minus keys. Helper shortcuts: 1, 2."></div><div id="night" class="night-veil hidden"></div><div class="zoom-ctl" role="group" aria-label="View"><button id="zoom-in" class="zoom-btn" aria-label="Zoom in" title="Zoom in (+)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button><button id="zoom-out" class="zoom-btn" aria-label="Zoom out" title="Zoom out (-)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg></button><button id="zoom-fit" class="zoom-btn" aria-label="See the whole haystack" title="See it all (0)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button></div><div id="coach" class="coach hidden" aria-hidden="true"><span class="ring"></span><span class="ghost"></span></div><div class="board-tag out" role="status"><span class="live-dot"></span><span id="board-message"></span><div id="power-bar" class="power-bar"></div></div><div id="mission" class="mission"></div><div id="win" class="win hidden" role="dialog" aria-labelledby="win-title"><div class="win-card"><div class="win-hero" aria-hidden="true"><span class="win-rays"></span><span class="win-glow"></span><svg class="win-needle" viewBox="0 0 220 40"><defs><linearGradient id="steel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4f1e6"/><stop offset=".45" stop-color="#c3c7c0"/><stop offset=".7" stop-color="#7d847b"/><stop offset="1" stop-color="#d9d6c4"/></linearGradient></defs><path d="M6 20 L182 13 C214 11 214 29 182 27 Z" fill="url(#steel)" stroke="#6d6a5c" stroke-width="2"/><ellipse cx="188" cy="20" rx="10" ry="3.2" fill="#5a4a30"/><path d="M40 18 L170 14" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".75"/></svg><span class="win-spark s1">✦</span><span class="win-spark s2">✦</span><span class="win-spark s3">✦</span><span class="win-spark s4">✦</span></div><h2 id="win-title">You found it!</h2><div id="win-items" class="win-items"></div><p id="win-copy"></p><p id="win-coins" class="win-coins hidden"></p><button id="next" class="primary"><span id="next-label">Next level</span> <span>→</span></button><button id="win-map" class="text-button">Back to the map</button></div></div></div>
-<div class="tool-tray"><div class="tool-caption"><span class="tiny">A LITTLE HELP</span><span>When you need a fresh perspective.</span></div><div class="tools"><button class="tool" id="magnet" title="Detector - shortcut 1"><span class="tool-art">${HELPER_ART[0]}</span><span>Detector<small>Beeps near hidden things</small></span><kbd>1</kbd><b class="charge">2</b></button><button class="tool" id="wind" title="Fan - shortcut 2"><span class="tool-art">${HELPER_ART[1]}</span><span>Fan<small>Blows hay away</small></span><kbd>2</kbd><b class="charge">2</b></button><button class="tool" id="vacuum" title="Vacuum - shortcut 3"><span class="tool-art">${HELPER_ART[2]}</span><span>Vacuum<small>Draws the top hay in</small></span><kbd>3</kbd><b class="charge">2</b></button></div></div>
+<div class="tool-tray"><div class="tool-caption"><span class="tiny">A LITTLE HELP</span><span>When you need a fresh perspective.</span></div><div class="tools"><button class="tool" id="magnet" title="Detector - shortcut 1"><span class="tool-art">${HELPER_ART[0]}</span><span>Detector<small>Beeps near hidden things</small></span><em class="state"></em><kbd>1</kbd><b class="charge">2</b></button><button class="tool" id="wind" title="Fan - shortcut 2"><span class="tool-art">${HELPER_ART[1]}</span><span>Fan<small>Blows hay away</small></span><em class="state"></em><kbd>2</kbd><b class="charge">2</b></button><button class="tool" id="vacuum" title="Vacuum - shortcut 3"><span class="tool-art">${HELPER_ART[2]}</span><span>Vacuum<small>Draws the top hay in</small></span><em class="state"></em><kbd>3</kbd><b class="charge">2</b></button></div></div>
 </section><div class="below-board"><span>↖ <strong>Hold and drag to brush.</strong> Tap a straw to pluck it. Scroll or pinch to zoom.</span><span>MADE FOR A MOMENT OF CALM <span class="flower">✳</span></span></div></main>
 <dialog id="instructions"><button class="close" aria-label="Close">×</button><h2>How to play</h2><ul class="howto"><li>Find the needle and tap it.</li><li>Drag to brush hay away.<br>Tap one straw to lift it.</li><li>No timer, no score. Take your time.</li><li>Zoom with the scroll wheel,<br>pinching, or the + and − buttons.</li><li>Stuck? Try a helper below the hay.</li></ul><button class="primary close-help">Let’s play!</button><button id="reset" class="text-button">Delete progress</button></dialog><dialog id="confirm-reset"><h2>Delete progress?</h2><p class="confirm-text">Every level starts again from level 1. This can’t be undone.</p><div class="confirm-actions"><button id="reset-cancel" class="secondary">Keep it</button><button id="reset-yes" class="danger">Yes, delete</button></div></dialog><section id="shop" class="shop-screen hidden" role="dialog" aria-modal="true" aria-labelledby="shop-title"></section><section id="collection" class="shop-screen hidden" role="dialog" aria-modal="true" aria-labelledby="col-title"></section><section id="barn" class="shop-screen hidden" role="dialog" aria-modal="true" aria-labelledby="barn-title"></section>`;
 const $=(id:string)=>document.getElementById(id)!;
@@ -188,7 +188,7 @@ class Haystack extends Phaser.Scene {
  /** Starts the level in saved.level (the player picked it on the map). */
  begin(){if(!this.ready){this.pending=true;return;}this.newRound();}
  /** The player left the board for the map or title: stop everything. */
- leave(){this.inLevel=false;this.setNight(false);this.active=false;this.pending=false;this.coach='';hideCoach();window.clearTimeout(this.msgTimer);$('win').classList.add('hidden');if(!this.ready)return;this.round++;this.time.removeAllEvents();this.endDetector(true);this.cancelTool();}
+ leave(){this.inLevel=false;this.setNight(false);this.active=false;this.pending=false;this.coach='';hideCoach();window.clearTimeout(this.msgTimer);$('win').classList.add('hidden');if(!this.ready)return;this.round++;this.time.removeAllEvents();this.pauseDetector(true);this.pauseVacuum();this.cancelTool();}
  makeTextures(){
   for(const id of [...ITEMS.map(i=>i.id),...DECOYS]){const texture=this.textures.createCanvas('object-'+id,64,64)!;drawItem(id,texture.context);texture.refresh();}
   const ground=this.textures.createCanvas('ground',1200,700)!;const c=ground.context;
@@ -208,9 +208,9 @@ class Haystack extends Phaser.Scene {
  buildRound(){
   this.round++;this.time.removeAllEvents();
   this.treasures.forEach(t=>t.sprite.destroy());this.treasures=[];this.bonusFound=0;this.decoys.forEach(d=>d.sprite.destroy());this.decoys=[];
-  this.vacOn=false;this.vacLeft=0;this.cancelTool();this.effects.forEach(e=>e.destroy());this.effects=[];
+  this.pauseVacuum();this.cancelTool();this.effects.forEach(e=>e.destroy());this.effects=[];
   this.tweens.killAll();this.moving.clear();this.straws.forEach(s=>s.destroy());this.straws=[];this.needle?.destroy();this.glint?.destroy();
-  this.inLevel=true;this.endDetector(true);this.ring.setVisible(false);this.gesture=false;this.panning=false;this.pinchDist=0;
+  this.inLevel=true;this.pauseDetector(true);this.ring.setVisible(false);this.gesture=false;this.panning=false;this.pinchDist=0;
   this.won=false;this.started=this.time.now;this.elapsed=0;this.stroking=false;this.brushedOnce=false;this.active=true;this.coach='';this.coverStraw=null;this.coachCheck=0;hideCoach();
   $('win').classList.add('hidden');
   const daily=this.mode==='daily';
@@ -499,7 +499,7 @@ class Haystack extends Phaser.Scene {
  detectorTick(delta:number){
   if(this.detLeft<=0||!this.detOn)return;
   const DET_R=this.detR,DET_MS=this.detMs;
-  if(this.won){this.endDetector(true);return;}
+  if(this.won){this.pauseDetector(true);return;}
   if(!this.active)return;
   // It only scans while the button (or a finger) is held down, and only that time uses up the cell.
   const held=this.input.activePointer.isDown&&!this.gesture&&this.time.now-this.downAt>=SCAN_DELAY;
@@ -534,40 +534,41 @@ class Haystack extends Phaser.Scene {
  }
  /** The detector itself, held over the hay: a coil on a soft shadow, a light that goes from grey to green to gold, and signal waves that grow as you near something. */
  drawDetector(held:boolean,close:number,now:number){
-  const g=this.detG,R=Math.max(34,this.detR*.32),lift=held?0:-9,t=reduced?0:now/1000;
-  // Held down it is solid; let go and it turns into a faint ghost you can see and tap straight through.
-  g.clear().setPosition(this.aimX,this.aimY).setVisible(true).setAlpha(held?.92:.28);
-  // Shadow on the hay: closer and darker when the coil is down.
-  g.fillStyle(0x2a1a08,held?.28:.16).fillEllipse(0,R*.2+(held?2:8),R*2.05,R*1.1);
-  // The coil: a dark rim, a steel-blue disc, a lighter inner ring and a cap.
-  g.fillStyle(0x3e6f8c,1).fillEllipse(0,lift+4,R*2,R*1.22);
-  g.fillStyle(0x8ec9e6,1).fillEllipse(0,lift,R*1.94,R*1.16);
-  g.lineStyle(2.5,0x3e6f8c,1).strokeEllipse(0,lift,R*1.94,R*1.16);
-  g.fillStyle(0xc9ecf8,1).fillEllipse(0,lift,R*1.2,R*.7);
-  g.lineStyle(2,0x3e6f8c,.8).strokeEllipse(0,lift,R*1.2,R*.7);
-  g.fillStyle(0x3e6f8c,1).fillEllipse(0,lift,R*.5,R*.3);
-  // The light: grey while waiting, green while scanning, gold near something.
-  const warm=Phaser.Display.Color.Interpolate.ColorWithColor(new Phaser.Display.Color(255,255,255),new Phaser.Display.Color(86,214,92),100,Math.min(100,close*140));
-  const led=held?Phaser.Display.Color.GetColor(warm.r,warm.g,warm.b):0x9aa7ae;
-  const pulse=held&&!reduced?.5+.5*Math.sin(t*(6+close*14)):1;
-  if(held)g.fillStyle(led,.25*pulse).fillCircle(0,lift,10+8*close);
-  g.fillStyle(led,1).fillCircle(0,lift,4.5);
-  // Signal waves, more of them and brighter the closer you are; each beep sends a wave out.
-  // Nothing near: a short white ping now and then, just to show it is working. Near something: green waves, more of them and brighter.
-  if(held){
-   if(close<=0&&now>=this.detPingAt){this.detPingAt=now+1100;this.detPulseAt=now;}
-   const p=Math.min(1,(now-this.detPulseAt)/this.detPulseMs),wave=Phaser.Display.Color.GetColor(warm.r,warm.g,warm.b);
-   if(close>0){
-    const n=Math.max(1,Math.ceil(close*3));
-    for(let k=0;k<n;k++){
-     const r=R*(1.25+.3*k)+(reduced?0:p*8);
-     g.lineStyle(4,wave,(.4+.5*close)*(reduced?1:1-p*.6)).beginPath().arc(0,lift,r,-Math.PI*.82,-Math.PI*.18).strokePath();
+   const g=this.detG,R=this.detR,S=Math.max(24,R*.17),t=reduced?0:now/1000;
+   // Held down it shows in full; let go and it fades to a faint ghost you can tap straight through.
+   g.clear().setPosition(this.aimX,this.aimY).setVisible(true).setAlpha(held?1:.32);
+   // The light: grey while waiting, green while scanning, gold near something.
+   const warm=Phaser.Display.Color.Interpolate.ColorWithColor(new Phaser.Display.Color(255,255,255),new Phaser.Display.Color(86,214,92),100,Math.min(100,close*140));
+   const wave=Phaser.Display.Color.GetColor(warm.r,warm.g,warm.b),led=held?wave:0x9aa7ae;
+   const pulse=held&&!reduced?.5+.5*Math.sin(t*(6+close*14)):1;
+   // The reach: a faint disc with a dashed edge, like the other helpers.
+   g.fillStyle(0xdff4ff,held?.1:.06).fillCircle(0,0,R);
+   const n=40,spin=held?t*.6:t*.1;
+   for(let k=0;k<n;k+=2){const a0=k/n*Math.PI*2+spin;g.lineStyle(held?3.5:2.5,0xf4fdff,held?.8:.5).beginPath().arc(0,0,R,a0,a0+Math.PI*2/n*.9).strokePath();}
+   if(held){
+    // A slow sweep turning round the head, with a soft tail.
+    for(let s=0;s<14;s++){const an=t*2.4-s*.06;g.lineStyle(3,0xf4fdff,.34*(1-s/14)).beginPath().moveTo(Math.cos(an)*S*1.3,Math.sin(an)*S*1.3).lineTo(Math.cos(an)*R,Math.sin(an)*R).strokePath();}
+    // Nothing near: a white ring now and then, just to show it is working. Near something: green rings, more of them and brighter.
+    if(close<=0&&now>=this.detPingAt){this.detPingAt=now+1100;this.detPulseAt=now;}
+    const p=Math.min(1,(now-this.detPulseAt)/this.detPulseMs);
+    if(close>0){
+     const rings=Math.max(1,Math.ceil(close*3));
+     for(let k=0;k<rings;k++){const q=reduced?.5:p-k*.2;if(q<0||q>1)continue;g.lineStyle(4,wave,(.35+.55*close)*(reduced?1:1-q)).strokeCircle(0,0,S+(R-S)*(1-Math.pow(1-q,2)));}
+    }else if(p<1){
+     g.lineStyle(4,0xffffff,reduced?.6:.75*(1-p)).strokeCircle(0,0,S+(R-S)*(1-Math.pow(1-p,2)));
     }
-   }else if(p<1){
-    g.lineStyle(4,0xffffff,reduced?.6:.7*(1-p)).beginPath().arc(0,lift,R*(1.2+.5*p),-Math.PI*.82,-Math.PI*.18).strokePath();
    }
-  }
- } showAim(){this.ring.setPosition(this.aimX,this.aimY).setVisible(true);this.drawAim();}
+   // The coil, seen from above: a rim, a steel-blue disc, a pale ring and a light in the middle.
+   g.fillStyle(0x2a1a08,.2).fillCircle(0,S*.16,S*1.02);
+   g.fillStyle(0x3e6f8c,1).fillCircle(0,0,S);
+   g.fillStyle(0x8ec9e6,1).fillCircle(0,0,S*.9);
+   g.lineStyle(2.5,0x3e6f8c,1).strokeCircle(0,0,S*.9);
+   g.fillStyle(0xc9ecf8,1).fillCircle(0,0,S*.58);
+   g.lineStyle(2,0x3e6f8c,.8).strokeCircle(0,0,S*.58);
+   g.fillStyle(0x3e6f8c,1).fillCircle(0,0,S*.3);
+   if(held)g.fillStyle(led,.3*pulse).fillCircle(0,0,S*(.5+.4*close));
+   g.fillStyle(led,1).fillCircle(0,0,S*.17);
+  } showAim(){this.ring.setPosition(this.aimX,this.aimY).setVisible(true);this.drawAim();}
  /** The fan, held over the hay while you aim: a calm picture of where the blast reaches. A dashed edge, three slow swirls and the fan head turning gently. */
  drawAim(){
   const i=this.selected;if(i!==1)return;
@@ -638,7 +639,7 @@ class Haystack extends Phaser.Scene {
   }
   vacuumTick(delta:number){
    if(!this.vacOn)return;
-   if(this.won){this.vacOn=false;this.vacLeft=0;this.ring?.setVisible(false);return;}
+   if(this.won){this.pauseVacuum();return;}
    if(!this.active)return;
    const v=vacuum(),x=this.aimX,y=this.aimY,held=this.boardDown&&!this.gesture;
    this.ring.setPosition(x,y).setVisible(true);this.drawVac(held);
@@ -770,7 +771,7 @@ class Haystack extends Phaser.Scene {
  } /** Under the board: the detector shows the cell it is draining (10 s each) and the cells waiting to take over; the fan shows the whole cell it will use. */
  renderPowerBar(){
   const bar=$('power-bar'),tag=bar.parentElement!;
-  const fanOut=this.selected===1,detOut=!fanOut&&this.detLeft>0,vacOut=!fanOut&&!detOut&&this.vacLeft>0,show=!this.won&&(fanOut||detOut||vacOut);
+  const fanOut=this.selected===1,who=fanOut?'':this.detOn?'det':this.vacOn?'vac':this.detLeft>0?'det':this.vacLeft>0?'vac':'',detOut=who==='det',vacOut=who==='vac',show=!this.won&&(fanOut||detOut||vacOut);
   tag.classList.toggle('power',show);
   if(!show){bar.innerHTML='';return;}
   const waiting=Math.max(0,this.cells()),cap=8,shown=Math.min(waiting,cap);
@@ -790,10 +791,10 @@ class Haystack extends Phaser.Scene {
     ?`<span class="pw-label">Fan</span><span class="pw-cells"><i class="cell use">${bolt}</i>${'<i class="cell"></i>'.repeat(Math.max(0,shown-1))}${waiting>shown?more:''}</span><span class="pw-hint"><i class="cell mini"></i>Uses 1 whole cell. Tap the hay.</span>`
     :`<span class="pw-label">Fan</span><span class="pw-hint">No cells left</span>`;
   }
- } updateTools(){this.renderCells();TOOLIDS.forEach((id,i)=>{($(id) as HTMLButtonElement).disabled=this.won;$(id).classList.toggle('empty',this.cells()===0&&!(i===0&&this.detLeft>0)&&!(i===2&&this.vacLeft>0));const on=this.selected===i||(i===0&&this.detOn)||(i===2&&this.vacOn);$(id).classList.toggle('selected',on);$(id).setAttribute('aria-pressed',String(on));const locked=!saved.cheat&&saved.level<TOOL_LEVELS[i];$(id).classList.toggle('locked',locked);$(id).querySelector('.charge')!.textContent=locked?'🔒':'';$(id).title=locked?'Unlocks at level '+TOOL_LEVELS[i]:HELPER_NAME[i]+' - shortcut '+(i+1);});}
+ } updateTools(){this.renderCells();TOOLIDS.forEach((id,i)=>{($(id) as HTMLButtonElement).disabled=this.won;$(id).classList.toggle('empty',this.cells()===0&&!(i===0&&this.detLeft>0)&&!(i===2&&this.vacLeft>0));const on=this.selected===i||(i===0&&this.detOn)||(i===2&&this.vacOn);$(id).classList.toggle('selected',on);$(id).setAttribute('aria-pressed',String(on));const locked=!saved.cheat&&saved.level<TOOL_LEVELS[i];$(id).classList.toggle('locked',locked);$(id).querySelector('.charge')!.textContent=locked?'🔒':'';{const st=$(id).querySelector('.state') as HTMLElement,paused=!on&&((i===0&&this.detLeft>0)||(i===2&&this.vacLeft>0));st.className='state'+(locked?' lock':on?' on':paused?' paused':'');st.innerHTML=locked?'<span class="long">Unlocks at </span>Level '+TOOL_LEVELS[i]:on?(i===1?'Aiming':'On'):paused?'Paused':'';}$(id).title=locked?'Unlocks at level '+TOOL_LEVELS[i]:HELPER_NAME[i]+' - shortcut '+(i+1);});}
  /** The find: the hay parts, the needle rises out of it glowing, then the win card. */
  finish(){
-  if(this.won)return;this.cancelTool();this.vacOn=false;this.vacLeft=0;this.won=true;
+  if(this.won)return;this.cancelTool();this.pauseVacuum();this.won=true;
   const def=levelDef(saved.level);
   // Coins for solving a level the first time; every bonus item found goes into the bag to be sold.
    const daily=this.mode==='daily',chest=daily?claimDailyHay():null,chestCells=chest?chest.cells:0;
@@ -907,7 +908,7 @@ let needleTaps=0,needleLast=0;
 document.querySelector('.title-hero')!.addEventListener('click',()=>{
  const now=performance.now();needleTaps=now-needleLast<1500?needleTaps+1:1;needleLast=now;
  if(needleTaps<10)return;needleTaps=0;
-  enableTestMode();sfx.found(0,true);updateCoinPill();updateCellsPill();renderTitle();toast('Test mode: 999 coins, 99 cells, 999 hay, every level open');
+  enableTestMode();sfx.found(0,true);updateCoinPill();updateCellsPill();renderTitle();toast('Test mode: 999 coins, 99 cells, 9999 hay, every level open');
 });
 $('btn-play').onclick=()=>{startLevel(allSolved()?1:playTarget());};
 $('btn-levels').onclick=()=>{sfx.select();show('map');};

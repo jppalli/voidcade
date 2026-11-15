@@ -183,12 +183,12 @@ export function resetProgress() {
   persist();
 }
  
-/** Test mode: opens every level and helper, and sets 999 coins, 99 cells and 999 hay. Nothing is unlimited. */
+/** Test mode: opens every level and helper, and sets 999 coins, 99 cells and 9999 hay. Nothing is unlimited. */
 export function enableTestMode() {
   saved.cheat = true;
   saved.unlocked = TOTAL_LEVELS;
   saved.coins = 999;
   saved.cells = 99;
-  saved.barn.hay = 999;
+  saved.barn.hay = 9999;
   persist();
 }
