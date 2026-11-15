@@ -9,7 +9,8 @@
  *   level 3   a first bonus item
  *   level 4   practice
  *   level 5   detector; from here the needle starts 90% under hay
- *   level 9   wind (first level of world 2)
+ *   level 9   fan (first level of world 2)
+ *   level 17  vacuum (first level of world 3)
  *   from world 2 on the haystack grows and gets denser (see WORLD_SIZE); you zoom and pan to search it
  *   worlds 4 and 5 mix everything, with much bigger, denser hay and smaller needles.
  *
@@ -17,11 +18,11 @@
  * bonus items.
  */
 
-export const OBJECTS = ['button', 'key', 'feather', 'spool', 'horseshoe', 'acorn'] as const;
-export type Treasure = typeof OBJECTS[number];
+/** The id of a collectable item (see items.ts). */
+export type Treasure = string;
 
-/** The level at which each helper (detector, wind) unlocks. */
-export const TOOL_LEVELS = [5, 9] as const;
+/** The level at which each helper (detector, fan, vacuum) unlocks. */
+export const TOOL_LEVELS = [5, 9, 17] as const;
 
 /** How many times larger (in each direction) the haystack is than the 1200 x 700 view, per world. */
 export const WORLD_SIZE = [1, 1.25, 1.5, 1.8, 2.1] as const;
@@ -69,7 +70,12 @@ export interface LevelDef {
   dome: boolean;
   /** Straws in the pile, before the extra ones laid over hidden objects. */
   count: number;
-  bonus: Treasure[];
+  /** How many bonus items the level holds. Which ones is rolled every time it is played (see drops.ts). */
+  slots: number;
+  /** A night level: only a small circle of light around the pointer shows the hay. */
+  night: boolean;
+  /** Look-alikes of the needle lying in the hay (a pin, a nail). Tapping one is harmless. */
+  decoys: number;
   /** Share (0 to 1) of the needle and of each bonus item that starts under hay. */
   hidden: number;
   /** Where the needle and bonus items sit in the pile, as a share of its depth (1 is the top). */
@@ -141,7 +147,10 @@ function baseDef(level: number): LevelDef {
     dome: false,
     // Bigger worlds hold more straws per square metre too, up to a ceiling the browser handles comfortably.
     count: Math.min(10000, Math.round(Math.min(2100, 700 + n * 45) * WORLD_SIZE[world] ** 2 * (1 + world * 0.08))),
-    bonus: Array.from({ length: bonusCount }, (_, i) => OBJECTS[(n * 2 + i) % OBJECTS.length]),
+    slots: bonusCount,
+    // Worlds 4 and 5 have a few night levels; decoys start in world 3.
+    night: world >= 3 && (inWorld === 4 || inWorld === 6),
+    decoys: world >= 2 ? (inWorld === LEVELS_PER_WORLD ? 2 : inWorld === 3 || inWorld === 5 || inWorld === 7 ? 1 : 0) : 0,
     hidden: early ? EARLY_HIDDEN[n - 1] : inWorld === 1 ? 0.85 : 0.9,
     depth: early ? EARLY_DEPTH[n - 1] : [0.35, 0.65],
     needle: Math.min(0.82, Math.max(0.53, 0.82 - n * 0.012)),
@@ -189,4 +198,28 @@ export function pilePoint(shape: string, random: () => number = Math.random): { 
     angle = random() * Math.PI * 2;
   }
   return { x, y, angle };
+}
+
+/** The look of the daily haystack: the same on every device on a given date, because `rng` is seeded from the date. */
+export function dailyDef(rng: () => number): LevelDef {
+  const world = 2 + Math.floor(rng() * 3);
+  const size = WORLD_SIZE[world];
+  return {
+    n: 0,
+    world,
+    inWorld: 0,
+    finale: false,
+    shape: SHAPES[Math.floor(rng() * SHAPES.length)],
+    tint: WORLDS[world].tint,
+    size,
+    dome: false,
+    count: Math.min(10000, Math.round(Math.min(2100, 700 + 24 * 45) * size ** 2 * (1 + world * 0.08))),
+    slots: 3,
+    night: rng() < 0.25,
+    decoys: rng() < 0.5 ? 1 : 0,
+    hidden: 0.9,
+    depth: [0.35, 0.65],
+    needle: 0.6,
+    cover: false,
+  };
 }

@@ -4,9 +4,13 @@
  * All prices live in economy.ts.
  */
 import { saved } from './progress';
-import { CELLS, FIND_VALUE, TRACKS, anyAffordable, bagCount, bagValue, buy, buyCells, canBuyCells, helpersUnlocked, nextTier, sellAll, type Track } from './economy';
+import { LOOKS, SLOT_NAME, type Slot } from './cosmetics';
+import { buyLook, equipLook, ownsLook, CELLS, TRACKS, adsLeft, anyAffordable, bagCount, bagValue, buy, buyCells, canBuyCells, helpersUnlocked, itemValue, nextTier, recordAd, sellAll, trackVisible, type Track } from './economy';
+import { platform } from './platform';
+import { track } from './analytics';
+import { itemName } from './items';
 import type { Treasure } from './levels';
-import { CELLS_ART, DETECTOR_ART, FAN_ART } from './art';
+import { CELLS_ART, DETECTOR_ART, FAN_ART, VACUUM_ART } from './art';
 import * as sfx from './sound';
 
 const $ = (id: string) => document.getElementById(id) as HTMLElement;
@@ -19,6 +23,7 @@ const ART: Record<Track, string> = {
   brush: `<svg viewBox="0 0 64 64" aria-hidden="true"><g transform="rotate(-28 32 32)"><rect x="29" y="2" width="6" height="30" rx="3" fill="#b0743a"/><rect x="17" y="30" width="30" height="9" rx="3.5" fill="#8a5424"/><path d="M17 39h30l3.5 21h-37Z" fill="#f3cf5a" stroke="#b8891b" stroke-width="2.5" stroke-linejoin="round"/><path d="M24 43v15M32 43v16M40 43v15" stroke="#c9a02b" stroke-width="2.2" stroke-linecap="round"/></g></svg>`,
   detector: DETECTOR_ART,
   fan: FAN_ART,
+  vacuum: VACUUM_ART,
 };
 
 /** A market stall with a striped awning, for the top of the screen. */
@@ -49,8 +54,8 @@ export const centerOf = (el: Element): Pt => {
   const r = el.getBoundingClientRect();
   return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
 };
-const coinView = { shown: saved.coins, hold: false };
-const cellView = { shown: saved.cells, hold: false, last: -1 };
+const coinView = { shown: saved.coins, hold: false, pending: 0 };
+const cellView = { shown: saved.cells, hold: false, last: -1, pending: 0 };
 let roll = 0;
 
 const coinText = () => (saved.cheat ? '\u221E' : String(Math.round(coinView.shown)));
@@ -88,12 +93,19 @@ function rollCoins(target: number) {
 export function holdCoins(amount: number) {
   cancelAnimationFrame(roll);
   coinView.hold = true;
-  coinView.shown = Math.max(0, saved.coins - amount);
+  coinView.pending += amount;
+  coinView.shown = Math.max(0, saved.coins - coinView.pending);
   paintCoins();
+}
+/** One flight of coins has landed: when nothing is left on its way, the counter shows the real amount. */
+function settleCoins(amount: number) {
+  coinView.pending = Math.max(0, coinView.pending - amount);
+  if (coinView.pending === 0) releaseCoins();
 }
 /** Lets the counter show the real amount again (used when a gift is never shown arriving). */
 export function releaseCoins() {
   coinView.hold = false;
+  coinView.pending = 0;
   coinView.shown = saved.coins;
   paintCoins();
 }
@@ -141,7 +153,7 @@ export function flyCoins(from: Pt, amount: number) {
     paintCoins();
     bump(to?.closest('.coin-badge, .shop-balance') ?? null);
     sfx.coin(i);
-  }, releaseCoins);
+  }, () => settleCoins(amount));
 }
 
 function paintCells() {
@@ -161,7 +173,8 @@ export function updateCellsPill() {
 }
 export function holdCells(amount: number) {
   cellView.hold = true;
-  cellView.shown = Math.max(0, saved.cells - amount);
+  cellView.pending += amount;
+  cellView.shown = Math.max(0, saved.cells - cellView.pending);
   paintCells();
 }
 export function flyCells(from: Pt, amount: number) {
@@ -173,10 +186,58 @@ export function flyCells(from: Pt, amount: number) {
     paintCells();
     sfx.coin(i + 2);
   }, () => {
-    cellView.hold = false;
-    cellView.shown = saved.cells;
-    paintCells();
+    cellView.pending = Math.max(0, cellView.pending - amount);
+    if (cellView.pending === 0) {
+      cellView.hold = false;
+      cellView.shown = saved.cells;
+      paintCells();
+    }
   });
+}
+
+export function releaseCells() {
+  cellView.hold = false;
+  cellView.pending = 0;
+  cellView.shown = saved.cells;
+  paintCells();
+}
+
+/** A short message that fades by itself. */
+export function toast(text: string) {
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.setAttribute('role', 'status');
+  el.textContent = text;
+  document.body.append(el);
+  window.setTimeout(() => el.remove(), 3200);
+}
+
+/** Plays a rewarded video (on the Arkadium Arena, a real one) and, if it was watched, gives one battery cell. */
+let watching = false;
+export async function watchForCell(from: Pt): Promise<boolean> {
+  if (watching) return false;
+  if (adsLeft() <= 0) {
+    toast('No more videos today. Come back tomorrow!');
+    return false;
+  }
+  watching = true;
+  track('reward_ad_request');
+  let ok = false;
+  try {
+    ok = await platform().showRewardAd();
+  } finally {
+    watching = false;
+  }
+  if (!ok) {
+    toast('No video is available right now.');
+    return false;
+  }
+  recordAd();
+  track('reward_ad_earned');
+  holdCells(1);
+  updateCellsPill();
+  flyCells(from, 1);
+  return true;
 }
 
 /** Refreshes the coin counter and the shop button in the header. The shop button glows when there is something to do. */
@@ -194,14 +255,16 @@ export function initShop(imageOf: (kind: string) => string | null, hooks: { onOp
       ? `<ul class="shop-bag">${kinds
           .map(k => {
             const img = imageOf(k);
-            return `<li><span class="thumb">${img ? `<img alt="" src="${img}">` : ''}<b class="count">×${saved.bag[k]}</b></span><span class="name">${k}</span><span class="worth">${FIND_VALUE[k] ?? 0} ${COIN}</span></li>`;
+            return `<li><span class="thumb">${img ? `<img alt="" src="${img}">` : ''}<b class="count">×${saved.bag[k]}</b></span><span class="name">${itemName(k)}</span><span class="worth">${itemValue(k)} ${COIN}</span></li>`;
           })
           .join('')}</ul><button class="primary sell" data-act="sell">Sell all <span class="plus">+${bagValue()}</span> ${COIN}</button>`
       : `<p class="shop-empty">Nothing to sell yet.<br>Bonus items you find in the hay land here.</p>`;
 
     const have = saved.cheat ? '∞' : String(saved.cells);
-    const helpers = `<div class="shop-row"><span class="art">${CELLS_ART}</span><div class="info"><strong>Battery cells</strong><span>In your stock: ${have}</span><small>Every helper runs on them. You also get some in the daily gift.</small></div><button class="buy" data-act="cells" ${canBuyCells() ? '' : 'disabled'}><span class="price">${CELLS.cost} ${COIN}</span><small>+${CELLS.pack} cells</small></button></div>`;
+    const videoBtn = adsLeft() > 0 ? `<button class="buy video" data-act="video"><span class="price">Free</span><small>Watch a video: +1 cell (${adsLeft()} left today)</small></button>` : '';
+    const helpers = `<div class="shop-row"><span class="art">${CELLS_ART}</span><div class="info"><strong>Battery cells</strong><span>In your stock: ${have}</span><small>Every helper runs on them. You also get some in the daily gift.</small></div><div class="buys"><button class="buy" data-act="cells" ${canBuyCells() ? '' : 'disabled'}><span class="price">${CELLS.cost} ${COIN}</span><small>+${CELLS.pack} cells</small></button>${videoBtn}</div></div>`;
     const rows = (Object.keys(TRACKS) as Track[])
+      .filter(trackVisible)
       .map(t => {
         const tiers = TRACKS[t].tiers,
           have = saved.upgrades[t],
@@ -213,12 +276,23 @@ export function initShop(imageOf: (kind: string) => string | null, hooks: { onOp
       })
       .join('');
 
+    const looks = (Object.keys(LOOKS) as Slot[])
+      .map(slot => `<div class="look-row"><strong>${SLOT_NAME[slot]}</strong><div class="look-chips">${LOOKS[slot]
+        .map(l => {
+          const own = ownsLook(slot, l.id), on = saved.cosmetics[slot] === l.id;
+          const label = on ? 'In use' : own ? 'Use' : `${l.cost} ${COIN}`;
+          const dis = !own && saved.coins < l.cost ? 'disabled' : '';
+          return `<button class="look-chip${on ? ' on' : ''}" data-look="${slot}:${l.id}" aria-pressed="${on}" ${dis}><i style="background:${l.swatch}"></i><span>${l.name}</span><small>${label}</small></button>`;
+        })
+        .join('')}</div></div>`)
+      .join('');
+
     screen.innerHTML = `<div class="shop-panel">
       <div class="shop-top"><button class="shop-back" aria-label="Close the shop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Back</span></button>
         <span class="stall">${stall()}</span><h2 id="shop-title">The Shop</h2><p class="shop-balance">${COIN}<b>${coinText()}</b> coins</p></div>
       <div class="shop-cols">
         <section class="shop-col"><h3>Your finds</h3>${sell}${helpersUnlocked() ? `<h3>Energy</h3>${helpers}` : ''}</section>
-        <section class="shop-col"><h3>Upgrades</h3>${rows}</section>
+        <section class="shop-col"><h3>Upgrades</h3>${rows}<h3>Looks</h3>${looks}</section>
       </div></div>`;
   };
 
@@ -258,20 +332,37 @@ export function initShop(imageOf: (kind: string) => string | null, hooks: { onOp
         gain = sellAll();
       if (gain > 0) {
         sfx.found(0, false);
+        track('coins_earned', { source: 'sell', amount: gain });
         holdCoins(gain);
         updateCoinPill();
         render();
         flyCoins(from, gain);
         return;
       }
+    } else if (el.dataset.look) {
+      const [slot, id] = el.dataset.look.split(':') as [Slot, string];
+      if (ownsLook(slot, id) ? equipLook(slot, id) : buyLook(slot, id)) {
+        sfx.found(0, false);
+        document.body.dataset.frame = saved.cosmetics.frame;
+        track('shop_buy', { item: el.dataset.look });
+      } else sfx.denied();
     } else if (el.dataset.buy) {
-      if (buy(el.dataset.buy as Track)) sfx.found(0, false);
+      if (buy(el.dataset.buy as Track)) {
+        sfx.found(0, false);
+        track('shop_buy', { item: el.dataset.buy as string });
+      }
       else sfx.denied();
     } else if (el.dataset.act === 'cells') {
       if (buyCells()) {
         sfx.found(0, false);
         updateCellsPill();
       } else sfx.denied();
+    } else if (el.dataset.act === 'video') {
+      void watchForCell(centerOf(el)).then(() => {
+        updateCoinPill();
+        render();
+      });
+      return;
     } else return;
     updateCoinPill();
     render();

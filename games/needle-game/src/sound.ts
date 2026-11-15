@@ -251,7 +251,36 @@ export function coin(step: number) {
   if (!c) return;
   marimba(c, c.currentTime, penta(72, Math.min(step, 9)), 0.04, 0);
 }
-/** The shovel: a longer, rounder rustle, with two soft wooden notes. `n` is how many straws it lifted. */
+/** A rare find: a quick rising run of wooden notes with a bell on top. */
+export function rare(pan: number) {
+  const c = live();
+  if (!c) return;
+  const t = c.currentTime;
+  [0, 1, 2, 4, 6].forEach((s, i) => marimba(c, t + i * 0.07, penta(72, s), 0.05, pan));
+  tone(c, t + 0.4, penta(84, 2), { peak: 0.04, decay: 0.7, pan, reverb: 0.4, attack: 0.004 });
+}
+/** A treasure: the same run, then a fuller chord that rings on. */
+export function treasure(pan: number) {
+  rare(pan);
+  const c = live();
+  if (!c) return;
+  const t = c.currentTime + 0.5;
+  [0, 2, 4].forEach((s, i) => tone(c, t + i * 0.05, penta(76, s), { peak: 0.04, decay: 1.1, pan, reverb: 0.5, attack: 0.006 }));
+}
+/** A look-alike of the needle: a soft wooden knock, nothing worse. */
+export function decoy(pan: number) {
+  const c = live();
+  if (!c) return;
+  const t = c.currentTime;
+  marimba(c, t, penta(55, 2), 0.045, pan);
+  marimba(c, t + 0.12, penta(55, 0), 0.04, pan);
+}
+/** The vacuum, called every so often while it runs: a short airy pull that falls in pitch. */
+export function suck(pan: number) {
+  const c = live();
+  if (!c) return;
+  grain(c, c.currentTime, { dur: 0.16, freq: 1100, sweepTo: 320, q: 0.7, peak: 0.03, attack: 0.02, pan, reverb: 0.1 });
+}/** The shovel: a longer, rounder rustle, with two soft wooden notes. `n` is how many straws it lifted. */
 export function scoop(pan: number, n: number) {
   const c = live();
   if (!c) return;

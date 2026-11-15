@@ -1,0 +1,5 @@
+{
+  "tuning": { "levelBase": 15, "levelPerWorld": 5, "repeatPct": 0.35, "valueMult": 1, "adsPerDay": 3 },
+  "drops": { "pity": 11, "eventShare": 0.3, "weights": { "common": 60, "uncommon": 28, "rare": 10, "treasure": 2 } },
+  "cells": { "pack": 3, "cost": 30 }
+}

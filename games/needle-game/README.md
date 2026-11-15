@@ -64,3 +64,23 @@ The last level is one huge haystack (`GRAND_FINALE` in `levels.ts`): size 3 and 
 ## Battery cells in the interface
 
 The cell total sits in the top bar next to the coins. While the detector or the fan is out, the message pill under the board becomes a battery bar: the detector shows the cell it is draining (with seconds left) and the cells waiting to take over; the fan shows the whole cell it will use. The bar is hidden when no helper is out. A cell left partly used when a level ends is lost. every level starts with `CELLS.free` fresh ones.
+
+## Content and live ops
+
+**Items and drops.** `src/items.ts` holds 43 items in 7 sets (5 world sets plus the seasonal `harvest` and `festive`), each with a rarity: common, uncommon, rare, treasure. Every play rerolls the level's bonus items (`src/drops.ts`). Weights are 60/28/10/2, and 11 finds without a rare or better guarantee one (pity). Levels 1 to 4 only drop common items. The first copy of an item goes to the collection; later copies go to the bag and sell in the shop. Finishing a set pays a one-time reward.
+
+**Collection, Today, quests.** The title screen has three tiles: Levels, Today and Collection. Today shows the seasonal event banner, the 7-day gift, the daily haystack (same layout for everyone on a date, with a streak chest) and three quests chosen from the date.
+
+**Events.** `src/events.ts` lists date ranges. While one is on, 30% of drops come from its set.
+
+**Helpers.** Detector (level 5), Fan (9), Vacuum (17). The vacuum uses one cell for 8 to 15 seconds: tap it, tap the hay, then move the nozzle and it draws in the top layer.
+
+**New levels.** From world 3: night levels (only a light circle around the pointer is visible) and decoys (pins and nails that look like the needle and do no harm).
+
+**Looks.** The shop sells hay colours, board frames and needle finishes. They change nothing about play.
+
+**Tuning without a build.** Put numbers in `public/needle-config.json` (copied next to the game). Missing or out of range values are ignored, and the file is never run as code. The accepted keys are listed at the top of `src/config.ts`. `node sim-economy.mjs` prints coin income against the shop's prices. `node test-levels.mjs` checks levels, drop rates over 20,000 rolls and the economy rules.
+
+**Analytics.** `src/analytics.ts` queues events and prints them in the console with `?debug`. `ANALYTICS_KEY` is empty on purpose: set it to an Application Insights key for this game and events start flowing. With no key nothing is sent.
+
+**Platform.** `src/platform.ts` wraps the Arkadium SDK (rewarded video for cells, pause and resume, level hooks) and falls back to a local stand-in outside the portal.

@@ -673,12 +673,6 @@ dialog[open] { animation: dlg-in .38s cubic-bezier(.3,1.45,.5,1) }
 .win-coins span { display: inline-flex; align-items: center; gap: 6px; padding: 5px 16px; border-radius: 999px; background: #fff8e0; border: 3px solid #e8c77a; box-shadow: 0 3px #e8c77a; font-weight: 800; color: #70451f }
 
 /* Title: the daily gift button, with a red dot while a gift is waiting. */
-#btn-levels, .gift-btn { min-width: min(70vw, 250px) }
-.gift-btn { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 10px }
-.gift-btn .gi svg { width: 34px; height: 34px; display: block }
-.gift-btn .dot { display: none; position: absolute; top: -7px; right: -7px; width: 22px; height: 22px; border-radius: 50%; background: #ff5a4a; border: 3px solid #fff; box-shadow: 0 2px #0003 }
-.gift-btn.ready .dot { display: block; animation: soft-pulse 1.4s ease-in-out infinite }
-.gift-btn.ready .gi { animation: gift-wiggle 4.2s ease-in-out infinite }
 @keyframes gift-wiggle { 0%, 84%, 100% { transform: none } 88% { transform: rotate(-9deg) } 92% { transform: rotate(8deg) } 96% { transform: rotate(-4deg) } }
 
 /* ---- The daily gift card ---- */

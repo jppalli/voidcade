@@ -42,9 +42,22 @@ export const FAN_ART = `<svg viewBox="0 0 64 64" aria-hidden="true">
 <circle cx="30.500" cy="23.500" r="1.800" fill="#fff" opacity=".7"/>
 <path d="M15 17a19 19 0 0 1 11-9" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity=".75"/>
 </svg>`;
-/** One art tile per helper: index 0 detector, 1 fan. */
-export const HELPER_ART = [DETECTOR_ART, FAN_ART] as const;
-export const HELPER_NAME = ['Detector', 'Fan'] as const;
+export const VACUUM_ART = `<svg viewBox="0 0 64 64" aria-hidden="true">
+<ellipse cx="30" cy="59" rx="22" ry="3" fill="#2a1a08" opacity=".18"/>
+<path d="M44 24c0 14-6 22-18 26" fill="none" stroke="#5c6770" stroke-width="7" stroke-linecap="round"/>
+<path d="M44 24c0 14-6 22-18 26" fill="none" stroke="#a9b6bf" stroke-width="3.200" stroke-linecap="round" stroke-dasharray="1.500 5"/>
+<path d="M6 46h26l4 11H2Z" fill="#f3cf5a" stroke="#b8891b" stroke-width="2.500" stroke-linejoin="round"/>
+<path d="M12 50l-3 6M19 50l-1 6M26 50l1 6" stroke="#b8891b" stroke-width="1.800" stroke-linecap="round"/>
+<rect x="36" y="6" width="24" height="26" rx="8" fill="#6fcf9d" stroke="#2f8a5c" stroke-width="2.500"/>
+<rect x="41" y="11" width="14" height="6" rx="3" fill="#c9f5df" stroke="#2f8a5c" stroke-width="1.800"/>
+<circle cx="48" cy="24" r="3.200" fill="#2f8a5c"/>
+<path d="M40 12v14" stroke="#ffffff" stroke-width="2.600" stroke-linecap="round" opacity=".55"/>
+<circle cx="10" cy="38" r="1.800" fill="#d9b86a"/><circle cx="20" cy="34" r="1.400" fill="#d9b86a"/><circle cx="28" cy="39" r="1.800" fill="#d9b86a"/>
+</svg>`;
+
+/** One art tile per helper: index 0 detector, 1 fan, 2 vacuum. */
+export const HELPER_ART = [DETECTOR_ART, FAN_ART, VACUUM_ART] as const;
+export const HELPER_NAME = ['Detector', 'Fan', 'Vacuum'] as const;
 
 /** Three green battery cells, for the energy shown on the helpers and in the shop. */
 export const CELLS_ART = `<svg viewBox="0 0 64 64" aria-hidden="true">
@@ -92,4 +105,43 @@ export const GIFT_ART = `<svg viewBox="0 0 64 64" aria-hidden="true">
 <path d="M32 20c10 0 16-6 12-11-5-3-11 3-12 11Z" fill="#ffd24a" stroke="#b9780f" stroke-width="2" stroke-linejoin="round"/>
 <circle cx="32" cy="20" r="3.200" fill="#f3b53a" stroke="#b9780f" stroke-width="1.800"/>
 <path d="M14 36v15" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".45"/>
+</svg>`;
+
+/** Title-screen tiles and the daily hub. */
+export const MAP_ART = `<svg viewBox="0 0 64 64" aria-hidden="true">
+<ellipse cx="32" cy="60" rx="24" ry="3" fill="#2a1a08" opacity=".18"/>
+<path d="M5 15 22 10 42 16 59 10V49L42 55 22 49 5 55Z" fill="#f6e4b4" stroke="#a56c30" stroke-width="2.800" stroke-linejoin="round"/>
+<path d="M22 10v39M42 16v39" stroke="#d9bd84" stroke-width="2.200"/>
+<path d="M11 44c6-12 12 0 18-10s8 4 14-6" fill="none" stroke="#d9453d" stroke-width="2.600" stroke-linecap="round" stroke-dasharray="1 5.500"/>
+<path d="M46 20l8 8m0-8-8 8" stroke="#d9453d" stroke-width="3.400" stroke-linecap="round"/>
+<circle cx="14" cy="26" r="5" fill="#8cc152" stroke="#4f7f2e" stroke-width="2"/><path d="M14 31v6" stroke="#8a5a34" stroke-width="2.500" stroke-linecap="round"/>
+</svg>`;
+export const BOOK_ART = `<svg viewBox="0 0 64 64" aria-hidden="true">
+<ellipse cx="32" cy="60" rx="22" ry="3" fill="#2a1a08" opacity=".18"/>
+<rect x="14" y="7" width="38" height="49" rx="5" fill="#fbf1d6" stroke="#8a6a3a" stroke-width="2.500"/>
+<rect x="10" y="6" width="38" height="49" rx="5" fill="#5fa8d8" stroke="#2f6f9c" stroke-width="2.800"/>
+<path d="M17 6v49" stroke="#2f6f9c" stroke-width="2.600"/>
+<path d="M31 20l3.200 6.600 7.200 1-5.200 5 1.300 7.200L31 36.400l-6.500 3.400 1.300-7.200-5.200-5 7.200-1Z" fill="#ffd24a" stroke="#b9780f" stroke-width="2" stroke-linejoin="round"/>
+<path d="M40 55v7l4-3 4 3v-7" fill="#d9453d" stroke="#a52a24" stroke-width="2" stroke-linejoin="round"/>
+</svg>`;
+export const CAL_ART = `<svg viewBox="0 0 64 64" aria-hidden="true">
+<ellipse cx="32" cy="60" rx="22" ry="3" fill="#2a1a08" opacity=".18"/>
+<rect x="8" y="11" width="48" height="45" rx="7" fill="#fff8e6" stroke="#a56c30" stroke-width="2.800"/>
+<path d="M8 25V18a7 7 0 0 1 7-7h34a7 7 0 0 1 7 7v7Z" fill="#e8806a" stroke="#a54d3a" stroke-width="2.800" stroke-linejoin="round"/>
+<path d="M20 6v10M44 6v10" stroke="#8a5a34" stroke-width="4" stroke-linecap="round"/>
+<circle cx="32" cy="40" r="8" fill="#ffd24a" stroke="#b9780f" stroke-width="2.400"/>
+<path d="M32 27v3M32 50v3M19 40h3M42 40h3M23 31l2 2M39 47l2 2M41 31l-2 2M25 47l-2 2" stroke="#e0a526" stroke-width="2.400" stroke-linecap="round"/>
+</svg>`;
+export const HAY_ART = `<svg viewBox="0 0 64 64" aria-hidden="true">
+<ellipse cx="32" cy="57" rx="26" ry="4" fill="#2a1a08" opacity=".2"/>
+<path d="M6 54C8 28 20 10 32 10s24 18 26 44Z" fill="#e8bd5c" stroke="#a5742a" stroke-width="2.800" stroke-linejoin="round"/>
+<path d="M14 54C16 36 24 22 32 20M50 54C48 36 40 22 32 20M32 20v34M22 54c0-14 4-24 10-30M42 54c0-14-4-24-10-30" fill="none" stroke="#c4912f" stroke-width="2" stroke-linecap="round"/>
+<path d="M26 12l-3-6M32 9V3M38 12l3-6" stroke="#c4912f" stroke-width="2.400" stroke-linecap="round"/>
+</svg>`;
+export const SCROLL_ART = `<svg viewBox="0 0 64 64" aria-hidden="true">
+<ellipse cx="32" cy="60" rx="22" ry="3" fill="#2a1a08" opacity=".18"/>
+<path d="M14 10h36a4 4 0 0 1 4 4v34a8 8 0 0 1-8 8H18a8 8 0 0 1-8-8V14a4 4 0 0 1 4-4Z" fill="#fbecc0" stroke="#a56c30" stroke-width="2.800" stroke-linejoin="round"/>
+<path d="M18 10a4 4 0 0 0-8 0v4h8" fill="#e6c27e" stroke="#a56c30" stroke-width="2.400" stroke-linejoin="round"/>
+<path d="M22 22h24M22 32h24M22 42h16" stroke="#c9a66a" stroke-width="3" stroke-linecap="round"/>
+<path d="M44 40l4 4 8-9" fill="none" stroke="#4fa842" stroke-width="4.400" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>`;

@@ -1,13 +1,28 @@
 import Phaser from 'phaser';
 import './casual.css';
-import { levelDef, pilePoint, TOOL_LEVELS, TOTAL_LEVELS, OBJECTS, type LevelDef, type Treasure } from './levels';
-import { scoop, brushMult, addFind, levelCoins, detector, fan, CELLS, dailyReady } from './economy';
-import { maybeShowDaily, openDaily } from './daily';
-import { HELPER_ART, HELPER_NAME, CELL_ART, SHOP_ART, GIFT_ART } from './art';
-import { initShop, updateCoinPill, updateCellsPill, holdCoins, releaseCoins, flyCoins, holdCells, flyCells, centerOf } from './shop';
+import './content.css';
+import { levelDef, dailyDef, pilePoint, TOOL_LEVELS, TOTAL_LEVELS, type LevelDef, type Treasure } from './levels';
+import { ITEMS, DECOYS, DECOY_NAME, RARITIES, itemName, rarityOf, isRarePlus } from './items';
+import { drawItem } from './itemart';
+import { rollItems, rollDaily, nextPity } from './drops';
+import { activeEvent } from './events';
+import { track as quest } from './quests';
+import { track as logEvent } from './analytics';
+import { platform } from './platform';
+import { LOOKS, mulColor, type Slot } from './cosmetics';
+import { scoop, brushMult, recordFinds, levelCoins, repeatCoins, detector, fan, vacuum, CELLS, dailyReady, today, claimDailyHay, adsLeft } from './economy';
+import { maybeShowDaily } from './daily';
+import { openToday, todayPending } from './today';
+import { initCollection, showSetComplete } from './collection';
+import { loadConfig } from './config';
+import { initAnalytics } from './analytics';
+import { bootPlatform } from './platform';
+import { HELPER_ART, HELPER_NAME, CELL_ART, SHOP_ART, MAP_ART, CAL_ART, BOOK_ART } from './art';
+import { initShop, updateCoinPill, updateCellsPill, holdCoins, releaseCoins, releaseCells, flyCoins, holdCells, flyCells, centerOf, watchForCell, toast } from './shop';
 import { enableTestMode, isSolved, saved, persist, recordWin, playTarget, allSolved, solvedCount, hasSeen, markSeen, resetProgress } from './progress';
 import { renderMap, scrollToFrontier } from './worldmap';
 import * as sfx from './sound';
+const TOOLIDS=['magnet','wind','vacuum'];
 import { sceneryHtml, populateScenery, setWorldTheme } from './scenery';
 
 const icons = {
@@ -20,16 +35,16 @@ const icons = {
 const svg=(name:keyof typeof icons)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name]}</svg>`;
 const needleArt=(id:string)=>`<svg viewBox="0 0 220 40" aria-hidden="true"><defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4f1e6"/><stop offset=".45" stop-color="#c3c7c0"/><stop offset=".7" stop-color="#7d847b"/><stop offset="1" stop-color="#d9d6c4"/></linearGradient></defs><path d="M6 20 L182 13 C214 11 214 29 182 27 Z" fill="url(#${id})" stroke="#6d6a5c" stroke-width="2"/><ellipse cx="188" cy="20" rx="10" ry="3.2" fill="#5a4a30"/><path d="M40 18 L170 14" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".75"/></svg>`;
 // The title screen: the big animated lettering, a floating needle, and two buttons.
-const titleHtml=`<section id="screen-title" class="screen" aria-label="Needle in a haystack"><div class="title-hero" aria-hidden="true"><span class="t-rays"></span><span class="t-glow"></span><div class="title-needle">${needleArt('steel-title')}</div><span class="t-spark s1">✦</span><span class="t-spark s2">✦</span><span class="t-spark s3">✦</span><span class="t-spark s4">✦</span></div><h1 class="title-word" aria-label="Needle!">${[...'NEEDLE!'].map((ch,i)=>`<span class="l" aria-hidden="true" style="--i:${i}">${ch}</span>`).join('')}</h1><p class="title-sub">IN A HAYSTACK</p><div class="title-actions"><button id="btn-play" class="primary big"><span id="play-label">Play</span></button><button id="btn-levels" class="secondary">Levels</button><button id="btn-daily" class="secondary gift-btn"><span class="gi">${GIFT_ART}</span><span>Daily gift</span><i class="dot"></i></button><button id="btn-delete" class="text-button">Delete progress</button></div></section>`;
+const titleHtml=`<section id="screen-title" class="screen" aria-label="Needle in a haystack"><div class="title-hero" aria-hidden="true"><span class="t-rays"></span><span class="t-glow"></span><div class="title-needle">${needleArt('steel-title')}</div><span class="t-spark s1">✦</span><span class="t-spark s2">✦</span><span class="t-spark s3">✦</span><span class="t-spark s4">✦</span></div><h1 class="title-word" aria-label="Needle!">${[...'NEEDLE!'].map((ch,i)=>`<span class="l" aria-hidden="true" style="--i:${i}">${ch}</span>`).join('')}</h1><p class="title-sub">IN A HAYSTACK</p><div class="title-actions"><button id="btn-play" class="primary big"><span id="play-label">Play</span></button><div class="dock"><button id="btn-levels" class="dock-btn"><span class="di">${MAP_ART}</span><span>Levels</span></button><button id="btn-today" class="dock-btn"><span class="di">${CAL_ART}</span><span>Today</span><i class="dot"></i></button><button id="btn-collection" class="dock-btn"><span class="di">${BOOK_ART}</span><span>Collection</span></button></div><button id="btn-delete" class="text-button">Delete progress</button></div></section>`;
 document.querySelector('#app')!.innerHTML=`
 ${sceneryHtml()}<header><a class="brand" id="brand" href="./" aria-label="Needle, back to the title screen">${svg('needle')}<span class="word"><span class="letters" aria-hidden="true">${[...'NEEDLE!'].map((ch,i)=>`<span class="l" style="--i:${i}">${ch}</span>`).join('')}</span><small>IN A HAYSTACK</small></span><i class="brand-glint" aria-hidden="true">✦</i></a><div class="header-note">A LITTLE GAME OF LOOKING</div><div class="header-actions"><button id="btn-back" class="icon-button" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><a id="btn-home" class="icon-button" href="../../" aria-label="Back to Voidcade" title="Back to Voidcade" style="color:inherit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v10h13V10"/><path d="M10 20v-5.5h4V20"/></svg></a><div id="coin-badge" class="coin-badge" role="status"><i class="coin"></i><b id="coin-count">0</b></div><div id="cells-badge" class="coin-badge cells-badge hidden" role="status" title="Battery cells"><span class="cb-art">${CELL_ART}</span><b id="cells-count">0</b></div><button id="btn-shop" class="icon-button shop-btn" aria-label="Shop" title="Shop">${SHOP_ART}</button><button id="sound" class="icon-button" aria-label="Toggle sound">${svg('sound')}</button><button id="help" class="help-button">How to play <span>?</span></button></div></header>
 ${titleHtml}<section id="screen-map" class="screen off" aria-label="Levels"><div id="mapWrap"><div id="mapRegions"></div><svg id="mapPath" aria-hidden="true"></svg><div id="mapBanners"></div><div id="mapNodes"></div></div></section>
 <main id="screen-game" class="screen off"><section class="intro"><div class="eyebrow"><span></span> SMALL DISCOVERIES. SIMPLE JOYS.</div><h1>A little patience.<br>A little <em>discovery.</em></h1><p>One tiny needle. A whole lot of hay.<br>Take a breath, brush around, and look a little closer.</p></section>
 <section class="game-shell" aria-label="Needle in a haystack game"><div class="game-top"><div class="level-label"><strong>Level <span id="level">1</span></strong><span class="level-name" id="level-name"></span></div></div>
-<div class="play-area"><div id="game" tabindex="0" aria-label="Search the hay. Hold and drag to brush, or tap a straw to pluck it. Click or tap the needle. Zoom with the scroll wheel, pinch, or the plus and minus keys. Helper shortcuts: 1, 2."></div><div class="zoom-ctl" role="group" aria-label="View"><button id="zoom-in" class="zoom-btn" aria-label="Zoom in" title="Zoom in (+)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button><button id="zoom-out" class="zoom-btn" aria-label="Zoom out" title="Zoom out (-)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg></button><button id="zoom-fit" class="zoom-btn" aria-label="See the whole haystack" title="See it all (0)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button></div><div id="coach" class="coach hidden" aria-hidden="true"><span class="ring"></span><span class="ghost"></span></div><div class="board-tag out" role="status"><span class="live-dot"></span><span id="board-message"></span><div id="power-bar" class="power-bar"></div></div><div id="mission" class="mission"></div><div id="win" class="win hidden" role="dialog" aria-labelledby="win-title"><div class="win-card"><div class="win-hero" aria-hidden="true"><span class="win-rays"></span><span class="win-glow"></span><svg class="win-needle" viewBox="0 0 220 40"><defs><linearGradient id="steel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4f1e6"/><stop offset=".45" stop-color="#c3c7c0"/><stop offset=".7" stop-color="#7d847b"/><stop offset="1" stop-color="#d9d6c4"/></linearGradient></defs><path d="M6 20 L182 13 C214 11 214 29 182 27 Z" fill="url(#steel)" stroke="#6d6a5c" stroke-width="2"/><ellipse cx="188" cy="20" rx="10" ry="3.2" fill="#5a4a30"/><path d="M40 18 L170 14" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".75"/></svg><span class="win-spark s1">✦</span><span class="win-spark s2">✦</span><span class="win-spark s3">✦</span><span class="win-spark s4">✦</span></div><h2 id="win-title">You found it!</h2><div id="win-items" class="win-items"></div><p id="win-copy"></p><p id="win-coins" class="win-coins hidden"></p><button id="next" class="primary"><span id="next-label">Next level</span> <span>→</span></button><button id="win-map" class="text-button">Back to the map</button></div></div></div>
-<div class="tool-tray"><div class="tool-caption"><span class="tiny">A LITTLE HELP</span><span>When you need a fresh perspective.</span></div><div class="tools"><button class="tool" id="magnet" title="Detector - shortcut 1"><span class="tool-art">${HELPER_ART[0]}</span><span>Detector<small>Beeps near hidden things</small></span><kbd>1</kbd><b class="charge">2</b></button><button class="tool" id="wind" title="Fan - shortcut 2"><span class="tool-art">${HELPER_ART[1]}</span><span>Fan<small>Blows hay away</small></span><kbd>2</kbd><b class="charge">2</b></button></div></div>
+<div class="play-area"><div id="game" tabindex="0" aria-label="Search the hay. Hold and drag to brush, or tap a straw to pluck it. Click or tap the needle. Zoom with the scroll wheel, pinch, or the plus and minus keys. Helper shortcuts: 1, 2."></div><div id="night" class="night-veil hidden"></div><div class="zoom-ctl" role="group" aria-label="View"><button id="zoom-in" class="zoom-btn" aria-label="Zoom in" title="Zoom in (+)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button><button id="zoom-out" class="zoom-btn" aria-label="Zoom out" title="Zoom out (-)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg></button><button id="zoom-fit" class="zoom-btn" aria-label="See the whole haystack" title="See it all (0)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button></div><div id="coach" class="coach hidden" aria-hidden="true"><span class="ring"></span><span class="ghost"></span></div><div class="board-tag out" role="status"><span class="live-dot"></span><span id="board-message"></span><div id="power-bar" class="power-bar"></div></div><div id="mission" class="mission"></div><div id="win" class="win hidden" role="dialog" aria-labelledby="win-title"><div class="win-card"><div class="win-hero" aria-hidden="true"><span class="win-rays"></span><span class="win-glow"></span><svg class="win-needle" viewBox="0 0 220 40"><defs><linearGradient id="steel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4f1e6"/><stop offset=".45" stop-color="#c3c7c0"/><stop offset=".7" stop-color="#7d847b"/><stop offset="1" stop-color="#d9d6c4"/></linearGradient></defs><path d="M6 20 L182 13 C214 11 214 29 182 27 Z" fill="url(#steel)" stroke="#6d6a5c" stroke-width="2"/><ellipse cx="188" cy="20" rx="10" ry="3.2" fill="#5a4a30"/><path d="M40 18 L170 14" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".75"/></svg><span class="win-spark s1">✦</span><span class="win-spark s2">✦</span><span class="win-spark s3">✦</span><span class="win-spark s4">✦</span></div><h2 id="win-title">You found it!</h2><div id="win-items" class="win-items"></div><p id="win-copy"></p><p id="win-coins" class="win-coins hidden"></p><button id="next" class="primary"><span id="next-label">Next level</span> <span>→</span></button><button id="win-map" class="text-button">Back to the map</button></div></div></div>
+<div class="tool-tray"><div class="tool-caption"><span class="tiny">A LITTLE HELP</span><span>When you need a fresh perspective.</span></div><div class="tools"><button class="tool" id="magnet" title="Detector - shortcut 1"><span class="tool-art">${HELPER_ART[0]}</span><span>Detector<small>Beeps near hidden things</small></span><kbd>1</kbd><b class="charge">2</b></button><button class="tool" id="wind" title="Fan - shortcut 2"><span class="tool-art">${HELPER_ART[1]}</span><span>Fan<small>Blows hay away</small></span><kbd>2</kbd><b class="charge">2</b></button><button class="tool" id="vacuum" title="Vacuum - shortcut 3"><span class="tool-art">${HELPER_ART[2]}</span><span>Vacuum<small>Draws the top hay in</small></span><kbd>3</kbd><b class="charge">2</b></button></div></div>
 </section><div class="below-board"><span>↖ <strong>Hold and drag to brush.</strong> Tap a straw to pluck it. Scroll or pinch to zoom.</span><span>MADE FOR A MOMENT OF CALM <span class="flower">✳</span></span></div></main>
-<dialog id="instructions"><button class="close" aria-label="Close">×</button><h2>How to play</h2><ul class="howto"><li>Find the needle and tap it.</li><li>Drag to brush hay away.<br>Tap one straw to lift it.</li><li>No timer, no score. Take your time.</li><li>Zoom with the scroll wheel,<br>pinching, or the + and − buttons.</li><li>Stuck? Try a helper below the hay.</li></ul><button class="primary close-help">Let’s play!</button><button id="reset" class="text-button">Delete progress</button></dialog><dialog id="confirm-reset"><h2>Delete progress?</h2><p class="confirm-text">Every level starts again from level 1. This can’t be undone.</p><div class="confirm-actions"><button id="reset-cancel" class="secondary">Keep it</button><button id="reset-yes" class="danger">Yes, delete</button></div></dialog><section id="shop" class="shop-screen hidden" role="dialog" aria-modal="true" aria-labelledby="shop-title"></section>`;
+<dialog id="instructions"><button class="close" aria-label="Close">×</button><h2>How to play</h2><ul class="howto"><li>Find the needle and tap it.</li><li>Drag to brush hay away.<br>Tap one straw to lift it.</li><li>No timer, no score. Take your time.</li><li>Zoom with the scroll wheel,<br>pinching, or the + and − buttons.</li><li>Stuck? Try a helper below the hay.</li></ul><button class="primary close-help">Let’s play!</button><button id="reset" class="text-button">Delete progress</button></dialog><dialog id="confirm-reset"><h2>Delete progress?</h2><p class="confirm-text">Every level starts again from level 1. This can’t be undone.</p><div class="confirm-actions"><button id="reset-cancel" class="secondary">Keep it</button><button id="reset-yes" class="danger">Yes, delete</button></div></dialog><section id="shop" class="shop-screen hidden" role="dialog" aria-modal="true" aria-labelledby="shop-title"></section><section id="collection" class="shop-screen hidden" role="dialog" aria-modal="true" aria-labelledby="col-title"></section>`;
 const $=(id:string)=>document.getElementById(id)!;
 // Keep HUD messages outside the transformed canvas frame.
 document.querySelector('.game-shell')!.append(document.querySelector('.board-tag')!);
@@ -50,6 +65,16 @@ sfx.setEnabled(saved.sound);
 /** Stereo position for a board x coordinate (the board is 1200 wide). */
 const panAt=(x:number)=>Phaser.Math.Clamp((x/(WORLD_W/2)-1)*.7,-.7,.7);
 const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+/** A small seeded random source (mulberry32). */
+const mulberry=(seed:number)=>()=>{seed=(seed+0x6d2b79f5)|0;let t=Math.imul(seed^(seed>>>15),1|seed);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};
+/** Today's number for the daily haystack: the same for everyone on the same date. */
+const dailySeed=()=>{const s='needle-daily-'+today();let h=2166136261;for(let i=0;i<s.length;i++)h=Math.imul(h^s.charCodeAt(i),16777619);return h>>>0;};
+/** Swaps Math.random for a seeded one until the returned function is called, so a level can be built the same way twice. */
+const seedRandom=(seed:number)=>{const original=Math.random;Math.random=mulberry(seed);return()=>{Math.random=original;};};
+/** The look in use for hay, frame or needle. */
+const lookOf=(slot:Slot)=>LOOKS[slot].find(l=>l.id===saved.cosmetics[slot])??LOOKS[slot][0];
+/** Puts the board frame on the page. */
+const applyLooks=()=>{document.body.dataset.frame=saved.cosmetics.frame;};
 /** Win-screen titles; there's no score, just a warm word. */
 const WIN_WORDS=['You found it!','Well done!','Lovely!','There it is!','Nicely found!'];
 // Pointer travel (px) before a press counts as a brush stroke rather than a tap.
@@ -85,13 +110,13 @@ const PASSING_MS=2800;
 class Haystack extends Phaser.Scene {
  straws:Item[]=[]; needle!:Item; glint!:Phaser.GameObjects.Star; ring!:Phaser.GameObjects.Graphics;
  started=0; elapsed=0; won=false; free=0; downAt=0; lastCells=0; dome=false; active=false; ready=false; pending=false; coach:''|'brush'|'pluck'|'tap'=''; coverStraw:Item|null=null; coachCheck=0; private drift=0; cursor!:Phaser.GameObjects.Arc;
- treasures:{sprite:Item;kind:Treasure;collected:boolean}[]=[]; bonusFound=0; ground!:Item;
+ treasures:{sprite:Item;kind:Treasure;collected:boolean}[]=[]; bonusFound=0; decoys:{sprite:Item;kind:string;found:boolean}[]=[]; mode:'level'|'daily'='level'; nightOn=false; levelStartedAt=0; detQuest=0; ground!:Item;
  stroking=false; bends:number[]=[];
  selected=-1; aimX=600; aimY=350; effects:Phaser.GameObjects.GameObject[]=[];
  /** The haystack's size in world units (1200 x 700 times the level's size). */
  worldW=1200; worldH=700; size=1;
  /** Zoom and pan: two fingers pinch and pan, the mouse near the board edge scrolls, arrow keys pan. */
- mouseIn=false; panning=false; detMs=10000; detR=140; detLeft=0; detOn=false; detHeld=false; inLevel=false; detPingAt=0; boardDown=false; detBeepAt=0; detScan=0; detPulseAt=-1e9; detPulseMs=700; detClose=0; detTargets:Item[]=[]; detG!:Phaser.GameObjects.Graphics; gesture=false; pinchDist=0; pinchX=0; pinchY=0; lastSX=600; lastSY=350; brushR=BRUSH_RADIUS;
+ mouseIn=false; panning=false; detMs=10000; vacLeft=0; vacOn=false; vacAcc=0; vacSfxAt=0; detR=140; detLeft=0; detOn=false; detHeld=false; inLevel=false; detPingAt=0; boardDown=false; detBeepAt=0; detScan=0; detPulseAt=-1e9; detPulseMs=700; detClose=0; detTargets:Item[]=[]; detG!:Phaser.GameObjects.Graphics; gesture=false; pinchDist=0; pinchX=0; pinchY=0; lastSX=600; lastSY=350; brushR=BRUSH_RADIUS;
  /** Things currently sliding, with their velocity (px/s) and spin (rad/s). */
  moving=new Map<Item,{vx:number;vy:number;vr:number}>();
  lastBX=0; lastBY=0; lastBrushAt=0; brushedOnce=false; round=0;
@@ -153,7 +178,7 @@ class Haystack extends Phaser.Scene {
    if(arrows[e.key]&&this.active&&!this.won){this.panBy(arrows[e.key][0]*90,arrows[e.key][1]*90);e.preventDefault();return;}
    if(e.repeat)return;
    if(e.key==='Escape'){if(this.selected>=0||this.detOn)sfx.cancel();this.pauseDetector(true);this.cancelTool();}
-   if(['1','2'].includes(e.key))this.power(Number(e.key)-1);
+   if(['1','2','3'].includes(e.key))this.power(Number(e.key)-1);
   });
   // No level starts until the player picks one on the map.
   this.ready=true;if(this.pending){this.pending=false;this.newRound();}
@@ -161,17 +186,9 @@ class Haystack extends Phaser.Scene {
  /** Starts the level in saved.level (the player picked it on the map). */
  begin(){if(!this.ready){this.pending=true;return;}this.newRound();}
  /** The player left the board for the map or title: stop everything. */
- leave(){this.inLevel=false;this.active=false;this.pending=false;this.coach='';hideCoach();window.clearTimeout(this.msgTimer);$('win').classList.add('hidden');if(!this.ready)return;this.round++;this.time.removeAllEvents();this.endDetector(true);this.cancelTool();}
+ leave(){this.inLevel=false;this.setNight(false);this.active=false;this.pending=false;this.coach='';hideCoach();window.clearTimeout(this.msgTimer);$('win').classList.add('hidden');if(!this.ready)return;this.round++;this.time.removeAllEvents();this.endDetector(true);this.cancelTool();}
  makeTextures(){
-  for(const kind of OBJECTS){const texture=this.textures.createCanvas('object-'+kind,64,64)!,c=texture.context;c.lineCap='round';c.lineJoin='round';c.shadowColor='#35261288';c.shadowBlur=3;c.shadowOffsetY=3;c.strokeStyle='#76502b';c.lineWidth=3;
-   if(kind==='button'){c.fillStyle='#cc7756';c.beginPath();c.arc(32,32,19,0,Math.PI*2);c.fill();c.stroke();c.shadowColor='transparent';c.strokeStyle='#edb58c';c.beginPath();c.arc(32,32,14,0,Math.PI*2);c.stroke();c.fillStyle='#67442a';for(const x of [27,37])for(const y of [27,37]){c.beginPath();c.arc(x,y,2.5,0,Math.PI*2);c.fill();}}
-   if(kind==='key'){c.strokeStyle='#b7a05d';c.lineWidth=7;c.beginPath();c.arc(20,22,10,0,Math.PI*2);c.moveTo(27,30);c.lineTo(47,50);c.moveTo(39,42);c.lineTo(44,36);c.moveTo(46,49);c.lineTo(51,43);c.stroke();c.shadowColor='transparent';c.lineWidth=2;c.strokeStyle='#e2cf91';c.beginPath();c.moveTo(27,28);c.lineTo(48,49);c.stroke();}
-   if(kind==='feather'){c.fillStyle='#e8d6ad';c.beginPath();c.moveTo(13,52);c.bezierCurveTo(8,25,28,7,48,10);c.bezierCurveTo(57,35,34,49,13,52);c.fill();c.stroke();c.strokeStyle='#ab8e61';c.lineWidth=2;c.beginPath();c.moveTo(10,56);c.lineTo(45,14);for(let i=0;i<4;i++){c.moveTo(20+i*6,43-i*7);c.lineTo(17+i*5,28-i*5);}c.stroke();}
-   if(kind==='spool'){c.fillStyle='#9b7794';c.fillRect(21,17,22,31);c.strokeRect(21,17,22,31);c.strokeStyle='#d1aac1';c.lineWidth=2;for(let y=21;y<48;y+=4){c.beginPath();c.moveTo(22,y);c.lineTo(42,y-1);c.stroke();}c.fillStyle='#cf9b5d';c.strokeStyle='#76502b';for(const y of [12,46]){c.beginPath();c.roundRect(15,y,34,8,4);c.fill();c.stroke();}}
-   if(kind==='horseshoe'){c.strokeStyle='#817b64';c.lineWidth=12;c.beginPath();c.moveTo(16,15);c.lineTo(14,33);c.bezierCurveTo(11,60,53,60,50,33);c.lineTo(48,15);c.stroke();c.shadowColor='transparent';c.strokeStyle='#b9af8d';c.lineWidth=2;c.stroke();c.fillStyle='#514b3d';for(const [x,y] of [[16,23],[15,35],[23,47],[41,47],[49,35],[48,23]]){c.beginPath();c.arc(x,y,2,0,Math.PI*2);c.fill();}}
-   if(kind==='acorn'){c.fillStyle='#b37a36';c.beginPath();c.moveTo(17,27);c.bezierCurveTo(13,43,25,54,32,57);c.bezierCurveTo(42,52,51,38,47,27);c.closePath();c.fill();c.stroke();c.fillStyle='#80613c';c.beginPath();c.ellipse(32,26,19,11,0,0,Math.PI*2);c.fill();c.stroke();c.beginPath();c.moveTo(32,16);c.lineTo(35,9);c.stroke();c.shadowColor='transparent';c.strokeStyle='#a58a55';c.lineWidth=1;for(let i=0;i<5;i++){c.beginPath();c.moveTo(18+i*6,20);c.lineTo(23+i*5,32);c.stroke();}}
-   texture.refresh();
-  }
+  for(const id of [...ITEMS.map(i=>i.id),...DECOYS]){const texture=this.textures.createCanvas('object-'+id,64,64)!;drawItem(id,texture.context);texture.refresh();}
   const ground=this.textures.createCanvas('ground',1200,700)!;const c=ground.context;
   const grad=c.createRadialGradient(530,280,40,600,350,740);grad.addColorStop(0,'#79602f');grad.addColorStop(.7,'#48391e');grad.addColorStop(1,'#251c12');c.fillStyle=grad;c.fillRect(0,0,1200,700);
   const rng=new Phaser.Math.RandomDataGenerator(['needle-textures']);for(let i=0;i<14000;i++){c.fillStyle=`rgba(${rng.pick(['255,230,170','45,34,17'])},${rng.realInRange(.02,.12)})`;c.fillRect(rng.between(0,1200),rng.between(0,700),rng.between(1,3),rng.between(1,3));}ground.refresh();
@@ -179,15 +196,26 @@ class Haystack extends Phaser.Scene {
   const t=this.textures.createCanvas('needle',86,20)!,x=t.context; x.shadowColor='#302a25';x.shadowBlur=2;x.shadowOffsetY=1;const g=x.createLinearGradient(0,8,0,12);g.addColorStop(0,'#c7b99a');g.addColorStop(.35,'#abaea4');g.addColorStop(.6,'#656c62');g.addColorStop(1,'#c6c3ac');x.fillStyle=g;x.beginPath();x.moveTo(3,10);x.lineTo(73,8);x.bezierCurveTo(83,7,83,13,73,12);x.closePath();x.fill();x.shadowColor='transparent';x.fillStyle='#544329';x.beginPath();x.ellipse(75,10,3,1,0,0,Math.PI*2);x.fill();t.refresh();
  }
  newRound(){
+  // The daily haystack is built from the date, so it is the same layout and items for everyone.
+  const restore=this.mode==='daily'?seedRandom(dailySeed()):null;
+  try{this.buildRound();}finally{restore?.();}
+  this.levelStartedAt=this.time.now;
+  logEvent('level_start',{level:this.mode==='daily'?0:saved.level,mode:this.mode,slots:this.treasures.length});
+  platform().gameStart();platform().levelStart(this.mode==='daily'?0:saved.level);
+ }
+ buildRound(){
   this.round++;this.time.removeAllEvents();
-  this.treasures.forEach(t=>t.sprite.destroy());this.treasures=[];this.bonusFound=0;
-  this.cancelTool();this.effects.forEach(e=>e.destroy());this.effects=[];
+  this.treasures.forEach(t=>t.sprite.destroy());this.treasures=[];this.bonusFound=0;this.decoys.forEach(d=>d.sprite.destroy());this.decoys=[];
+  this.vacOn=false;this.vacLeft=0;this.cancelTool();this.effects.forEach(e=>e.destroy());this.effects=[];
   this.tweens.killAll();this.moving.clear();this.straws.forEach(s=>s.destroy());this.straws=[];this.needle?.destroy();this.glint?.destroy();
   this.inLevel=true;this.endDetector(true);this.ring.setVisible(false);this.gesture=false;this.panning=false;this.pinchDist=0;
   this.won=false;this.started=this.time.now;this.elapsed=0;this.stroking=false;this.brushedOnce=false;this.active=true;this.coach='';this.coverStraw=null;this.coachCheck=0;hideCoach();
   $('win').classList.add('hidden');
-  $('level').textContent=String(saved.level);setWorldTheme(saved.level);this.updateTools();
-  const stage=levelDef(saved.level);this.ground.setTint(stage.tint);
+  const daily=this.mode==='daily';
+  ($('level').parentElement!.firstChild as Text).textContent=daily?'Daily ':'Level ';$('level').textContent=daily?'haystack':String(saved.level);setWorldTheme(daily?TOTAL_LEVELS-12:saved.level);this.updateTools();
+  const stage=daily?dailyDef(Math.random):levelDef(saved.level);this.ground.setTint(stage.tint);
+  const tint=mulColor(stage.tint,lookOf('hay').color);
+  const kinds=daily?rollDaily(Math.random):rollItems(stage.slots,stage.world,Math.random,{pity:saved.pity,easy:stage.n>0&&stage.n<=4,eventSet:activeEvent()?.set});
   // The haystack can be bigger than one screen: the layouts are drawn for 1200 x 700 and stretched to fit.
   this.cameras.main.resetFX();
   this.dome=stage.dome;this.size=stage.size;this.worldW=1200*this.size;this.worldH=700*this.size;WORLD_W=this.worldW;
@@ -195,17 +223,20 @@ class Haystack extends Phaser.Scene {
   this.cameras.main.setBounds(0,0,this.worldW,this.worldH);this.initialView();
   const place=()=>{const p=pilePoint(stage.shape);return{x:p.x*this.size,y:p.y*this.size,angle:p.angle};};
   // 1. The pile.
-  for(let i=0;i<stage.count;i++){const p=place(),depth=this.dome?this.domeDepth(p):i/stage.count*690;this.straws.push(this.add.image(p.x,p.y,'straw'+i%18).setRotation(p.angle+Phaser.Math.FloatBetween(-.6,.6)).setScale(Phaser.Math.FloatBetween(.4,1.15),Phaser.Math.FloatBetween(.6,1.1)).setTint(this.shade(stage.tint,depth)).setDepth(depth));}
+  for(let i=0;i<stage.count;i++){const p=place(),depth=this.dome?this.domeDepth(p):i/stage.count*690;this.straws.push(this.add.image(p.x,p.y,'straw'+i%18).setRotation(p.angle+Phaser.Math.FloatBetween(-.6,.6)).setScale(Phaser.Math.FloatBetween(.4,1.15),Phaser.Math.FloatBetween(.6,1.1)).setTint(this.shade(tint,depth)).setDepth(depth));}
   // 2. The needle and the bonus items, tucked into the middle layers of the pile.
   const target=place();const occupied:Point[]=[target];
-  this.needle=this.add.image(target.x,target.y,'needle').setDepth(690*Phaser.Math.FloatBetween(stage.depth[0],stage.depth[1])).setRotation(Phaser.Math.FloatBetween(-Math.PI,Math.PI)).setScale(stage.needle);
-  for(const kind of stage.bonus){let p=place();for(let tries=0;tries<100&&occupied.some(o=>Phaser.Math.Distance.Between(p.x,p.y,o.x,o.y)<110*this.size);tries++)p=place();occupied.push(p);
+  this.needle=this.add.image(target.x,target.y,'needle').setDepth(690*Phaser.Math.FloatBetween(stage.depth[0],stage.depth[1])).setRotation(Phaser.Math.FloatBetween(-Math.PI,Math.PI)).setScale(stage.needle).setTint(lookOf('needle').color);
+  for(const kind of kinds){let p=place();for(let tries=0;tries<100&&occupied.some(o=>Phaser.Math.Distance.Between(p.x,p.y,o.x,o.y)<110*this.size);tries++)p=place();occupied.push(p);
    this.treasures.push({sprite:this.add.image(p.x,p.y,'object-'+kind).setRotation(Phaser.Math.FloatBetween(-1,1)).setScale(.72).setDepth(690*Phaser.Math.FloatBetween(stage.depth[0],stage.depth[1])),kind,collected:false});}
+  for(let i=0;i<stage.decoys;i++){let p=place();for(let tries=0;tries<100&&occupied.some(o=>Phaser.Math.Distance.Between(p.x,p.y,o.x,o.y)<110*this.size);tries++)p=place();occupied.push(p);
+   const kind=DECOYS[i%DECOYS.length];this.decoys.push({sprite:this.add.image(p.x,p.y,'object-'+kind).setRotation(Phaser.Math.FloatBetween(-Math.PI,Math.PI)).setScale(.95).setDepth(690*Phaser.Math.FloatBetween(stage.depth[0],stage.depth[1])),kind,found:false});}
   // 3. More hay over each one until it's hidden as far as this level asks (level 2 uses one long straw instead).
-  if(stage.cover)this.layCover(stage.tint);else this.bury(this.needle,NEEDLE_SAMPLES,stage.tint,true,stage.hidden);
-  this.treasures.forEach(t=>this.bury(t.sprite,OBJECT_SAMPLES,stage.tint,false,stage.hidden));
+  if(stage.cover)this.layCover(tint);else this.bury(this.needle,NEEDLE_SAMPLES,tint,true,stage.hidden);
+  this.treasures.forEach(t=>this.bury(t.sprite,OBJECT_SAMPLES,tint,false,stage.hidden));
+  this.decoys.forEach(d=>this.bury(d.sprite,NEEDLE_SAMPLES,tint,false,stage.hidden));
   this.glint=this.add.star(target.x,target.y,4,.4,3,0xd5c69b).setDepth(702).setAlpha(0);this.drift=0;
-  this.updateMission();this.say(this.resting(),{instant:true});this.startTeaching(stage);this.introduceTool();
+  this.updateMission();this.setNight(stage.night);this.say(this.resting(),{instant:true});this.startTeaching(stage);this.introduceTool();
   // The first haystack bigger than the screen: say once how to look around it.
   if(stage.size>1&&!hasSeen('zoom')){markSeen('zoom');this.say('Scroll or pinch to zoom in and out',{passing:true});}
   if(!reduced)this.cameras.main.fadeIn(450,35,27,16);
@@ -231,7 +262,7 @@ class Haystack extends Phaser.Scene {
   else if(def.teach==='pluck'&&!hasSeen('pluck'))this.coach='pluck';
   else if(def.teach==='bonus'&&!hasSeen('bonus')&&this.treasures.length){
    markSeen('bonus');$('mission').classList.add('pulse');window.setTimeout(()=>$('mission').classList.remove('pulse'),6500);
-   this.say(`Look for the ${this.treasures[0].kind} too`,{passing:true});
+   this.say(`Look for the ${itemName(this.treasures[0].kind).toLowerCase()} too`,{passing:true});
   }
   if(this.coach)this.say(this.resting(),{instant:true});
   this.syncCoach();
@@ -282,6 +313,8 @@ class Haystack extends Phaser.Scene {
   const f=Math.max(1,.9/this.cameras.main.zoom);
   const t=this.treasures.find(t=>!t.collected&&Phaser.Math.Distance.Between(x,y,t.sprite.x,t.sprite.y)<26*f);
   if(t&&this.visibleShare(t.sprite,OBJECT_SAMPLES)>=VISIBLE_TO_TAP){this.collect(t);return;}
+  const dc=this.decoys.find(d=>!d.found&&Phaser.Math.Distance.Between(x,y,d.sprite.x,d.sprite.y)<30*f);
+  if(dc&&this.visibleShare(dc.sprite,NEEDLE_SAMPLES)>=VISIBLE_TO_TAP){this.decoyTap(dc);return;}
   if(this.onNeedle(x,y,f)&&this.visibleShare(this.needle,NEEDLE_SAMPLES)>=VISIBLE_TO_TAP){this.finish();return;}
   this.pluck(x,y,touch);
  }
@@ -319,7 +352,7 @@ class Haystack extends Phaser.Scene {
    const ax=h.cx-h.s.x,ay=h.cy-h.s.y,half=112*h.s.scaleX;
    this.drag(h.s,vx,vy,(ax*vy-ay*vx)/(half*half)*1.5);
   });
-  for(const o of [this.needle,...this.treasures.filter(t=>!t.collected).map(t=>t.sprite)]){
+  for(const o of [this.needle,...this.treasures.filter(t=>!t.collected).map(t=>t.sprite),...this.decoys.filter(d=>!d.found).map(d=>d.sprite)]){
    const d=Phaser.Math.Distance.Between(x,y,o.x,o.y),reach=R+14;
    if(d<reach){const f=1-d/reach;this.drag(o,ux*speed*CARRY_ITEMS*f,uy*speed*CARRY_ITEMS*f,Phaser.Math.FloatBetween(-.6,.6)*f,.4);}
   }
@@ -341,6 +374,7 @@ class Haystack extends Phaser.Scene {
   }
  /** Lifts one straw out of the hay: it rises toward you, then sails up and away, spinning and fading, with a ring and a puff of dust. */
  flick(s:Item,sound=true,delay=0,dust=true){
+  quest('pluck');
   if(sound)sfx.pluck(panAt(s.x));
   s.setData('gone',true);this.moving.delete(s);this.tweens.killTweensOf(s);
   if(reduced){s.setAlpha(0);return;}
@@ -389,19 +423,56 @@ class Haystack extends Phaser.Scene {
   this.tweens.chain({targets:t,tweens:[{scale:k,alpha:1,duration:reduced?0:280,ease:'Back.Out'},{y:t.y-36,alpha:0,delay:reduced?400:600,duration:reduced?200:700,ease:'Sine.In',onComplete:()=>t.destroy()}]});
  }
  // Bonus items to find, as big pictures. Hidden on levels without bonus items.
- updateMission(justFound?:Treasure){$('mission').classList.toggle('hidden',!this.treasures.length);$('mission').innerHTML=`<span class="bonus-label">Also find</span>`+this.treasures.map(t=>`<span class="bonus-object ${t.collected?'collected':''} ${t.kind===justFound?'just':''}" title="${t.kind}${t.collected?' found':''}" role="img" aria-label="${t.kind}${t.collected?', found':', not found yet'}"><img alt="" src="${this.objectImage(t.kind)}">${t.collected?`<i class="tick">${TICK}</i>`:''}</span>`).join('');}
+ updateMission(justFound?:Treasure){$('mission').classList.toggle('hidden',!this.treasures.length);$('mission').innerHTML=`<span class="bonus-label">Also find</span>`+this.treasures.map(t=>{const r=rarityOf(t.kind),nm=itemName(t.kind);return `<span class="bonus-object r-${r} ${t.collected?'collected':''} ${t.kind===justFound?'just':''}" title="${nm}${t.collected?' found':''} (${RARITIES[r].label})" role="img" aria-label="${nm}, ${RARITIES[r].label}${t.collected?', found':', not found yet'}"><img alt="" src="${this.objectImage(t.kind)}">${t.collected?`<i class="tick">${TICK}</i>`:''}</span>`;}).join('');}
  /** A bonus item's picture as an image URL, for the page around the board. */
  objectImage(kind:Treasure){return (this.textures.get('object-'+kind).getSourceImage() as HTMLCanvasElement).toDataURL();}
  collect(t:{sprite:Item;kind:Treasure;collected:boolean}){
-  t.collected=true;this.bonusFound++;this.moving.delete(t.sprite);sfx.bonus(panAt(t.sprite.x));this.pop(t.sprite.x,t.sprite.y,'BONUS!','#ffdf65');
-  // It lifts out of the hay, then drifts up and fades.
-  const s=t.sprite;s.setDepth(1450);this.tweens.killTweensOf(s);
-  this.tweens.chain({targets:s,tweens:[{scale:s.scaleX*1.6,y:s.y-18,rotation:0,duration:reduced?0:300,ease:'Back.Out'},{y:s.y-70,alpha:0,delay:reduced?0:350,duration:reduced?0:500,ease:'Sine.In'}]});
-  this.updateMission(t.kind);this.say(`You found the ${t.kind}!`,{passing:true});
+   t.collected=true;this.bonusFound++;this.moving.delete(t.sprite);
+   const r=rarityOf(t.kind),nm=itemName(t.kind),pan=panAt(t.sprite.x);
+   saved.pity=nextPity(saved.pity,r);persist();
+   quest('find');if(r!=='common')quest('uncommon');
+   logEvent('item_found',{item:t.kind,rarity:r,level:this.mode==='daily'?0:saved.level,mode:this.mode});
+   if(r==='treasure')sfx.treasure(pan);else if(isRarePlus(r))sfx.rare(pan);else sfx.bonus(pan);
+   const label=r==='treasure'?'TREASURE!':r==='rare'?'RARE!':r==='uncommon'?'NICE!':'BONUS!',color=r==='treasure'?'#ffd24a':r==='rare'?'#8fd0ff':r==='uncommon'?'#a8f08c':'#ffdf65';
+   this.pop(t.sprite.x,t.sprite.y,label,color);
+   if(isRarePlus(r)&&!reduced)this.sparkleBurst(t.sprite.x,t.sprite.y,r==='treasure'?26:14);
+   // It lifts out of the hay, then drifts up and fades.
+   const s=t.sprite;s.setDepth(1450);this.tweens.killTweensOf(s);
+   this.tweens.chain({targets:s,tweens:[{scale:s.scaleX*1.6,y:s.y-18,rotation:0,duration:reduced?0:300,ease:'Back.Out'},{y:s.y-70,alpha:0,delay:reduced?0:350,duration:reduced?0:500,ease:'Sine.In'}]});
+   this.updateMission(t.kind);this.say(`You found the ${nm.toLowerCase()}!`,{passing:true});
  }
- introduceTool(){const index=TOOL_LEVELS.findIndex((level,i)=>saved.level===level&&!saved.introduced.includes(i));if(index<0)return;this.active=false;const pauseAt=this.time.now;const modal=document.createElement('dialog');modal.className='tool-intro';modal.innerHTML=`<div class="unlock-icon">${HELPER_ART[index]}</div><h2>New helper:<br>${HELPER_NAME[index]}</h2><p>${['Tap it, then hold down and sweep over the hay.<br>White ping: working. Green: something is near.<br>Let go to switch it off.<br>Here are '+CELLS.starter+' battery cells to start.','Tap it, then tap the hay.<br>The fan blows the hay away.'][index]}</p><button class="primary">Got it!</button>`;document.body.append(modal);let origin={x:innerWidth/2,y:innerHeight/2};
- modal.addEventListener('close',()=>{saved.introduced.push(index);if(index===0){saved.cells+=CELLS.starter;holdCells(CELLS.starter);}persist();updateCellsPill();this.updateTools();if(index===0)flyCells(origin,CELLS.starter);const tool=$(['magnet','wind'][index]);tool.classList.add('just-unlocked','guide');window.setTimeout(()=>tool.classList.remove('just-unlocked'),800);this.started+=this.time.now-pauseAt;this.active=true;modal.remove();},{once:true});modal.querySelector('button')!.onclick=e=>{sfx.select();origin=centerOf(e.currentTarget as HTMLElement);modal.close();};modal.showModal();sfx.unlockTool();}
- power(index:number){if(this.won||!this.active)return;if(index===0&&this.detOn){sfx.cancel();this.pauseDetector();return;}if(this.selected===index){sfx.cancel();this.cancelTool();return;}if(!saved.cheat&&saved.level<TOOL_LEVELS[index]){sfx.denied();return;}if(this.cells()<=0&&!(index===0&&this.detLeft>0)){sfx.denied();this.say('No battery cells left. Get more in the shop, or in your daily gift.',{passing:true});return;}if(index===0){this.cancelTool();this.startDetector();return;}this.pauseDetector(true);this.cancelTool();sfx.select();$(['magnet','wind'][index]).classList.remove('guide');this.selected=index;this.cursor.setVisible(false);this.showAim();this.updateTools();this.say(this.resting());}
+ /** A pin or a nail: not the needle, and no harm done. It tips over and fades. */
+ decoyTap(d:{sprite:Item;kind:string;found:boolean}){
+   d.found=true;this.moving.delete(d.sprite);sfx.decoy(panAt(d.sprite.x));
+   this.say(`Just ${DECOY_NAME[d.kind]??'something else'}!`,{passing:true});
+   logEvent('decoy_tapped',{level:this.mode==='daily'?0:saved.level});
+   this.tweens.add({targets:d.sprite,y:d.sprite.y-30,rotation:d.sprite.rotation+.8,alpha:0,duration:reduced?0:600,ease:'Sine.Out'});
+ }
+ /** A burst of gold specks for a rare find. */
+ sparkleBurst(x:number,y:number,n:number){
+   for(let i=0;i<n;i++){const a=Phaser.Math.FloatBetween(0,Math.PI*2),r=Phaser.Math.Between(40,110),p=this.add.circle(x,y,Phaser.Math.Between(2,4),i%2?0xffe58a:0xffffff).setDepth(1600);this.effects.push(p);
+    this.tweens.add({targets:p,x:x+Math.cos(a)*r,y:y+Math.sin(a)*r-20,alpha:0,scale:.4,duration:Phaser.Math.Between(500,900),ease:'Sine.Out',onComplete:()=>p.destroy()});}
+ }
+ /** Night levels: the hay shows only in a circle of light around the pointer. */
+ setNight(on:boolean){this.nightOn=on;$('night').classList.toggle('hidden',!on);if(on)this.moveVeil(innerWidth/2,innerHeight/2);}
+ moveVeil(cx:number,cy:number){const v=$('night'),r=v.parentElement!.getBoundingClientRect();v.style.setProperty('--x',(cx-r.left)+'px');v.style.setProperty('--y',(cy-r.top)+'px');v.style.setProperty('--r',Math.round(r.width*.14)+'px');} introduceTool(){const index=TOOL_LEVELS.findIndex((level,i)=>saved.level===level&&!saved.introduced.includes(i));if(index<0)return;this.active=false;const pauseAt=this.time.now;const modal=document.createElement('dialog');modal.className='tool-intro';modal.innerHTML=`<div class="unlock-icon">${HELPER_ART[index]}</div><h2>New helper:<br>${HELPER_NAME[index]}</h2><p>${['Tap it, then hold down and sweep over the hay.<br>White ping: working. Green: something is near.<br>Let go to switch it off.<br>Here are '+CELLS.starter+' battery cells to start.','Tap it, then tap the hay.<br>The fan blows the hay away.','Tap it, then tap the hay.<br>Move the nozzle over the hay and it draws the top layer in.<br>Tap it again to pause.'][index]}</p><button class="primary">Got it!</button>`;document.body.append(modal);let origin={x:innerWidth/2,y:innerHeight/2};
+ modal.addEventListener('close',()=>{saved.introduced.push(index);if(index===0){saved.cells+=CELLS.starter;holdCells(CELLS.starter);}persist();updateCellsPill();this.updateTools();if(index===0)flyCells(origin,CELLS.starter);const tool=$(TOOLIDS[index]);tool.classList.add('just-unlocked','guide');window.setTimeout(()=>tool.classList.remove('just-unlocked'),800);this.started+=this.time.now-pauseAt;this.active=true;modal.remove();},{once:true});modal.querySelector('button')!.onclick=e=>{sfx.select();origin=centerOf(e.currentTarget as HTMLElement);modal.close();};modal.showModal();sfx.unlockTool();}
+ /** Out of battery cells: offer a short video for one, or the shop. */
+ askForCells(){
+  if(document.querySelector('dialog[open]'))return;
+  const was=this.active;this.active=false;
+  const dlg=document.createElement('dialog');dlg.className='cells-out';
+  const left=adsLeft();
+  dlg.innerHTML=`<div class="unlock-icon">${CELL_ART}</div><h2>Out of cells</h2><p>Battery cells run the helpers. You get some in the daily gift, from quests, and in the shop.</p>${left>0?`<button class="primary video">Watch a video: +1 cell</button><small class="left">${left} left today</small>`:''}<button class="secondary shopgo">Open the shop</button><button class="text-button later">Not now</button>`;
+  document.body.append(dlg);
+  let back=false;const resume=()=>{if(back)return;back=true;if(was&&screen==='game')this.active=true;};
+  dlg.addEventListener('close',()=>{dlg.remove();resume();},{once:true});
+  dlg.querySelector('.video')?.addEventListener('click',e=>{const from=centerOf(e.currentTarget as HTMLElement);dlg.close();void watchForCell(from);});
+  dlg.querySelector('.shopgo')!.addEventListener('click',()=>{sfx.select();dlg.close();resume();$('btn-shop').click();});
+  dlg.querySelector('.later')!.addEventListener('click',()=>{sfx.cancel();dlg.close();});
+  dlg.showModal();
+ }
+ power(index:number){if(this.won||!this.active)return;if(index===0&&this.detOn){sfx.cancel();this.pauseDetector();return;}if(index===2&&this.vacOn){sfx.cancel();this.vacOn=false;this.ring?.setVisible(false);this.cursor?.setVisible(true);this.updateTools();return;}if(this.selected===index){sfx.cancel();this.cancelTool();return;}if(!saved.cheat&&saved.level<TOOL_LEVELS[index]){sfx.denied();return;}if(index===2&&this.vacLeft>0){this.cancelTool();this.pauseDetector(true);sfx.select();this.vacOn=true;this.cursor.setVisible(false);this.ring.setVisible(true);this.updateTools();return;}if(this.cells()<=0&&!(index===0&&this.detLeft>0)){sfx.denied();this.askForCells();return;}if(index===0){this.cancelTool();this.startDetector();return;}this.pauseDetector(true);this.cancelTool();sfx.select();$(TOOLIDS[index]).classList.remove('guide');this.selected=index;this.cursor.setVisible(false);this.showAim();this.updateTools();this.say(this.resting());}
  cancelTool(){this.selected=-1;this.ring?.setVisible(false);this.cursor?.setVisible(true);this.updateTools();if(this.straws.length)this.say(this.resting());}
  /** Detector: one charge, DET_MS of sweeping. It beeps faster and higher the closer the pointer is to the needle or a bonus item, covered or not. */
  startDetector(){
@@ -433,7 +504,7 @@ class Haystack extends Phaser.Scene {
   // Starting a scan always uses a minimum slice of the cell, and the first ping waits a moment.
   if(held&&!this.detHeld){this.detLeft-=DET_MIN;this.detPingAt=this.time.now+900;}
   this.detHeld=held;
-  if(held)this.detLeft-=delta;
+  if(held){this.detLeft-=delta;this.detQuest+=delta;if(this.detQuest>=1000){quest('detector',this.detQuest/1000);this.detQuest=0;}}
   // A finished cell hands over to the next one; only when none is left does the detector stop.
   if(this.detLeft<=0){
    if(this.cells()>0){this.spendCell();this.detLeft+=DET_MS;sfx.select();this.updateTools();}
@@ -497,7 +568,7 @@ class Haystack extends Phaser.Scene {
  } showAim(){this.ring.setPosition(this.aimX,this.aimY).setVisible(true);this.drawAim();}
  /** The fan, held over the hay while you aim: a calm picture of where the blast reaches. A dashed edge, three slow swirls and the fan head turning gently. */
  drawAim(){
-  const i=this.selected;if(i!==1)return;
+  const i=this.selected;if(i===2){this.drawVac();return;}if(i!==1)return;
   const g=this.ring,t=reduced?0:this.time.now/1000,R=fan().r,S=Math.max(30,R*.3);
   g.clear();
   // The reach: a faint disc with a dashed edge that barely turns.
@@ -512,7 +583,8 @@ class Haystack extends Phaser.Scene {
   }
   this.fanHead(g,S,t*1.4);
  } useTool(x:number,y:number){const index=this.selected;if(index<0||this.cells()<=0)return;this.spendCell();this.selected=-1;this.ring.setVisible(false);this.cursor.setVisible(true);this.updateTools();
-  if(index===1){sfx.wind(panAt(x));this.gust(x,y,fan().r);this.pop(x,y,'WHOOSH!','#c4f5ff');this.say('Hay blown away!',{passing:true});}
+  if(index===1){quest('fan');logEvent('helper_used',{helper:'fan',level:this.mode==='daily'?0:saved.level});sfx.wind(panAt(x));this.gust(x,y,fan().r);this.pop(x,y,'WHOOSH!','#c4f5ff');this.say('Hay blown away!',{passing:true});}
+  if(index===2){quest('vacuum');logEvent('helper_used',{helper:'vacuum',level:this.mode==='daily'?0:saved.level});this.vacLeft=vacuum().ms;this.vacOn=true;this.vacAcc=0;this.cursor.setVisible(false);this.ring.setPosition(x,y).setVisible(true);this.updateTools();this.say('Move the nozzle over the hay.',{passing:true});}
  }
  /** The fan's head: a soft guard with five curved blades. Used by the aiming picture and the blast. */
  fanHead(g:Phaser.GameObjects.Graphics,S:number,turn:number,alpha=1){
@@ -529,7 +601,34 @@ class Haystack extends Phaser.Scene {
   g.fillStyle(0xf3cf5a,alpha).fillCircle(0,0,S*.17);g.lineStyle(2,0xb8891b,alpha).strokeCircle(0,0,S*.17);
  }
  /** The blast. The fan head spins up and fades; the top layer of hay in the circle sweeps outward in a spiral, the inner straws first, and settles out of sight. Thin tapered swirls and a few specks turn with it. */
- gust(x:number,y:number,R:number){
+  /** The vacuum's nozzle: a soft disc with a dashed rim and a few specks drawn inward. */
+  drawVac(){
+   const g=this.ring,t=reduced?0:this.time.now/1000,R=vacuum().r;
+   g.clear();
+   g.fillStyle(0xe9dcff,.1).fillCircle(0,0,R);
+   const n=36;
+   for(let k=0;k<n;k+=2){const a0=k/n*Math.PI*2-t*.2;g.lineStyle(2.5,0xf3ecff,.6).beginPath().arc(0,0,R,a0,a0+Math.PI*2/n*.9).strokePath();}
+   for(let k=0;k<6;k++){const a=k*Math.PI/3+t*.5,u=1-((t*.8+k/6)%1),r=R*(.25+.7*u);g.fillStyle(0xf3ecff,.5*u).fillCircle(Math.cos(a)*r,Math.sin(a)*r,3);}
+   g.fillStyle(0x8f78c8,.9).fillCircle(0,0,R*.16);g.lineStyle(3,0x5f4a96,.9).strokeCircle(0,0,R*.16);g.fillStyle(0x2d2150,.8).fillCircle(0,0,R*.08);
+  }
+  vacuumTick(delta:number){
+   if(!this.vacOn)return;
+   if(this.won){this.vacOn=false;this.vacLeft=0;this.ring?.setVisible(false);return;}
+   if(!this.active)return;
+   const v=vacuum(),x=this.aimX,y=this.aimY;
+   this.vacLeft-=delta;
+   this.ring.setPosition(x,y).setVisible(true);this.drawVac();
+   if(this.vacLeft<=0){this.vacLeft=0;this.vacOn=false;this.ring.setVisible(false);this.cursor.setVisible(true);this.updateTools();this.say('The vacuum ran out.',{passing:true});return;}
+   this.vacAcc+=v.rate*delta/1000;const n=Math.floor(this.vacAcc);this.vacAcc-=n;
+   if(n<=0)return;
+   const take=this.straws.filter(s=>s.alpha>.2&&!s.getData('gone')&&Phaser.Math.Distance.Between(x,y,s.x,s.y)<v.r).sort((a,b)=>b.depth-a.depth).slice(0,n);
+   take.forEach(s=>{
+    s.setData('gone',true);this.moving.delete(s);this.tweens.killTweensOf(s);
+    if(reduced)s.setAlpha(0);else this.tweens.add({targets:s,x,y,scale:0,alpha:0,angle:s.angle+180,duration:260,ease:'Sine.In',onComplete:()=>s.setAlpha(0)});
+   });
+   if(take.length&&this.time.now-this.vacSfxAt>240){this.vacSfxAt=this.time.now;sfx.suck(panAt(x));}
+  }
+  gust(x:number,y:number,R:number){
   // The fan lifts only the top layers of what is in the circle; the hay below stays.
   const inside=this.straws.filter(s=>s.alpha>.2&&!s.getData('gone')&&Phaser.Math.Distance.Between(x,y,s.x,s.y)<R).sort((a,b)=>b.depth-a.depth);
   const caught=inside.slice(0,Math.ceil(inside.length*fan().peel));
@@ -623,7 +722,7 @@ class Haystack extends Phaser.Scene {
  /** Battery cells left: the free ones this level plus the ones bought in the shop. Any helper runs on them. */
  cells(){return saved.cheat?99:saved.cells;}
  /** Uses a free cell first, then a bought one. */
- spendCell(){if(saved.cheat)return;if(saved.cells>0){saved.cells--;persist();}}
+ spendCell(){if(saved.cheat)return;if(saved.cells>0){saved.cells--;persist();logEvent('cell_spent');}}
  /** The cell count in the top bar, and the battery bar under the board while a helper is out. */
  renderCells(){
   updateCellsPill();
@@ -647,15 +746,19 @@ class Haystack extends Phaser.Scene {
     ?`<span class="pw-label">Fan</span><span class="pw-cells"><i class="cell use">${bolt}</i>${'<i class="cell"></i>'.repeat(Math.max(0,shown-1))}${waiting>shown?more:''}</span><span class="pw-hint"><i class="cell mini"></i>Uses 1 whole cell. Tap the hay.</span>`
     :`<span class="pw-label">Fan</span><span class="pw-hint">No cells left</span>`;
   }
- } updateTools(){this.renderCells();['magnet','wind'].forEach((id,i)=>{($(id) as HTMLButtonElement).disabled=this.won;$(id).classList.toggle('empty',this.cells()===0&&!(i===0&&this.detLeft>0));const on=this.selected===i||(i===0&&this.detOn);$(id).classList.toggle('selected',on);$(id).setAttribute('aria-pressed',String(on));const locked=!saved.cheat&&saved.level<TOOL_LEVELS[i];$(id).classList.toggle('locked',locked);$(id).querySelector('.charge')!.textContent=locked?'🔒':'';$(id).title=locked?'Unlocks at level '+TOOL_LEVELS[i]:HELPER_NAME[i]+' - shortcut '+(i+1);});}
+ } updateTools(){this.renderCells();TOOLIDS.forEach((id,i)=>{($(id) as HTMLButtonElement).disabled=this.won;$(id).classList.toggle('empty',this.cells()===0&&!(i===0&&this.detLeft>0)&&!(i===2&&this.vacLeft>0));const on=this.selected===i||(i===0&&this.detOn)||(i===2&&this.vacOn);$(id).classList.toggle('selected',on);$(id).setAttribute('aria-pressed',String(on));const locked=!saved.cheat&&saved.level<TOOL_LEVELS[i];$(id).classList.toggle('locked',locked);$(id).querySelector('.charge')!.textContent=locked?'🔒':'';$(id).title=locked?'Unlocks at level '+TOOL_LEVELS[i]:HELPER_NAME[i]+' - shortcut '+(i+1);});}
  /** The find: the hay parts, the needle rises out of it glowing, then the win card. */
  finish(){
-  if(this.won)return;this.cancelTool();this.won=true;
+  if(this.won)return;this.cancelTool();this.vacOn=false;this.vacLeft=0;this.won=true;
   const def=levelDef(saved.level);
   // Coins for solving a level the first time; every bonus item found goes into the bag to be sold.
-   const coins=isSolved(saved.level)?0:levelCoins(saved.level);saved.coins+=coins;if(coins>0)holdCoins(coins);
-   let finds=0;for(const t of this.treasures)if(t.collected){addFind(t.kind);finds++;}
-   recordWin(saved.level,this.treasures.length>0&&this.bonusFound===this.treasures.length);updateCoinPill();
+   const daily=this.mode==='daily',chest=daily?claimDailyHay():null,chestCells=chest?chest.cells:0;
+   const coins=daily?(chest?chest.coins:0):isSolved(saved.level)?repeatCoins(saved.level):levelCoins(saved.level);if(!daily)saved.coins+=coins;
+   const found=this.treasures.filter(t=>t.collected).map(t=>t.kind),rec=recordFinds(found);
+   holdCoins(coins+rec.coins);if(chestCells+rec.cells>0)holdCells(chestCells+rec.cells);updateCellsPill();
+   if(daily)logEvent('daily_haystack_done',{streak:chest?chest.streak:0,found:found.length});
+   quest('clear');logEvent('level_end',{level:saved.level,seconds:Math.round((this.time.now-this.levelStartedAt)/1000),found:found.length,slots:this.treasures.length,repeat:isSolved(saved.level)});logEvent('coins_earned',{source:'level',amount:coins});platform().levelEnd(saved.level);
+   if(!daily)recordWin(saved.level,this.treasures.length>0&&this.bonusFound===this.treasures.length);updateCoinPill();
   // The first-time guides are done once the level that taught them is won.
   if(def.teach==='brush')markSeen('brush','tap');else if(def.teach==='pluck')markSeen('pluck','tap');
   this.coach='';this.syncCoach();
@@ -674,26 +777,27 @@ class Haystack extends Phaser.Scene {
   // Let the moment breathe before the card comes up.
   const round=this.round;
   this.time.delayedCall(reduced?300:1500,()=>{
-   if(this.round!==round||!this.active){releaseCoins();return;}
+   if(this.round!==round||!this.active){releaseCoins();releaseCells();return;}
    const all=this.treasures.length>0&&this.bonusFound===this.treasures.length;
    $('win').classList.toggle('chapter',def.finale);
-   $('win-title').textContent=saved.level>=TOTAL_LEVELS?'All done!':def.finale?'World complete!':WIN_WORDS[saved.level%WIN_WORDS.length];
+   $('win-title').textContent=daily?'Haystack found!':saved.level>=TOTAL_LEVELS?'All done!':def.finale?'World complete!':WIN_WORDS[saved.level%WIN_WORDS.length];
    // The last level of a world sends you to the map, where the next world has opened.
-   $('next-label').textContent=def.finale?'To the map':'Next level';
-   $('win-map').classList.toggle('hidden',def.finale);
+   $('next-label').textContent=daily?'Back to the title':def.finale?'To the map':'Next level';
+   $('win-map').classList.toggle('hidden',def.finale||daily);
    // The bonus items, in their own tiles: found ones in gold with a check, missed ones faded.
-   $('win-items').innerHTML=this.treasures.map((t,i)=>`<span class="win-item ${t.collected?'found':'missed'}" style="--i:${i}" role="img" aria-label="${t.kind}, ${t.collected?'found':'missed'}"><img alt="" src="${this.objectImage(t.kind)}">${t.collected?`<i class="tick">${TICK}</i>`:''}</span>`).join('');
+   $('win-items').innerHTML=this.treasures.map((t,i)=>`<span class="win-item r-${rarityOf(t.kind)} ${t.collected?'found':'missed'}" style="--i:${i}" role="img" aria-label="${itemName(t.kind)}, ${t.collected?'found':'missed'}"><img alt="" src="${this.objectImage(t.kind)}">${t.collected?`<i class="tick">${TICK}</i>`:''}${rec.fresh.includes(t.kind)?'<i class="new">NEW</i>':''}</span>`).join('');
    $('win-items').classList.toggle('hidden',!this.treasures.length);
     $('win-copy').textContent=!this.treasures.length?'':all?'You found everything!':`You found ${this.bonusFound} of ${this.treasures.length}`;
     $('win-copy').classList.toggle('hidden',!this.treasures.length);
-    $('win-coins').innerHTML=[coins>0?`<span><i class="coin"></i>+${coins} coins</span>`:'',finds>0?`<span>${finds} ${finds===1?'find':'finds'} in your bag</span>`:''].join('');
-    $('win-coins').classList.toggle('hidden',coins===0&&finds===0);
+    const spare=found.length-rec.fresh.length;
+    $('win-coins').innerHTML=[coins>0?`<span><i class="coin"></i>+${coins} coins</span>`:'',chestCells>0?`<span><i class="cell mini"></i>+${chestCells} ${chestCells===1?'cell':'cells'}</span>`:'',rec.fresh.length>0?`<span>${rec.fresh.length} new in your collection</span>`:'',spare>0?`<span>${spare} spare in your bag</span>`:''].join('');
+    $('win-coins').classList.toggle('hidden',coins===0&&chestCells===0&&!found.length);
    $('win').classList.remove('hidden');$('next').focus();
-   if(coins>0)window.setTimeout(()=>{const el=$('win-coins').querySelector('.coin');flyCoins(el?centerOf(el):{x:innerWidth/2,y:innerHeight/2},coins);},reduced?0:650);
+   window.setTimeout(()=>{const el=$('win-coins').querySelector('.coin'),o=el?centerOf(el):{x:innerWidth/2,y:innerHeight/2};if(coins>0)flyCoins(o,coins);if(chestCells>0)flyCells(o,chestCells);if(rec.done.length)showSetComplete(rec.done,imageOf,rec.coins,rec.cells);},reduced?0:650);
   });
  }
  update(_time:number,delta:number){
-  this.detectorTick(delta);
+  this.detectorTick(delta);this.vacuumTick(delta);
   if(this.active)this.step(Math.min(.05,delta/1000));
   this.edgeScroll(delta);
   if(this.selected>=0&&this.ring.visible)this.drawAim();
@@ -711,11 +815,14 @@ class Haystack extends Phaser.Scene {
 }
 const scene=new Haystack();
 new Phaser.Game({type:Phaser.AUTO,parent:'game',width:1200,height:700,transparent:false,antialias:true,scale:{mode:Phaser.Scale.FIT,autoCenter:Phaser.Scale.CENTER_BOTH},scene,render:{roundPixels:false},input:{activePointers:2},audio:{noAudio:true}});
-['magnet','wind'].forEach((id,i)=>$(id).onclick=()=>scene.power(i));
+TOOLIDS.forEach((id,i)=>$(id).onclick=()=>scene.power(i));
 // Zoom and pan buttons on the board (the mouse wheel, pinch and the + - 0 keys do the same).
 $('zoom-in').onclick=()=>{sfx.select();scene.zoomBy(1.4);};
 let shopPaused=false;
-initShop(k=>{try{return scene.objectImage(k as Treasure);}catch{return null;}},{onOpen:()=>{shopPaused=screen==='game'&&scene.active;if(shopPaused)scene.active=false;},onClose:()=>{if(shopPaused&&screen==='game')scene.active=true;shopPaused=false;}});
+const pauseHooks={onOpen:()=>{shopPaused=screen==='game'&&scene.active;if(shopPaused)scene.active=false;},onClose:()=>{if(shopPaused&&screen==='game')scene.active=true;shopPaused=false;}};
+const imageOf=(k:string)=>{try{return scene.objectImage(k as Treasure);}catch{return null;}};
+initShop(imageOf,pauseHooks);
+const collection=initCollection(imageOf,pauseHooks);
 $('zoom-out').onclick=()=>{sfx.select();scene.zoomBy(1/1.4);};
 $('zoom-fit').onclick=()=>{sfx.select();scene.fitView();};
 // ---------------------------------------------------------------- screens
@@ -727,7 +834,7 @@ let screen:Screen='title';
 let freshWorld=-1;
 
 function renderTitle(){
-  $('btn-daily').classList.toggle('ready',dailyReady());
+  $('btn-today').classList.toggle('ready',todayPending());
   $('play-label').textContent=allSolved()?'Play again':solvedCount()===0?'Play':`Level ${playTarget()}`;
 }
 
@@ -743,15 +850,16 @@ function show(next:Screen){
   if(next==='map'){renderMap(startLevel,freshWorld);freshWorld=-1;requestAnimationFrame(scrollToFrontier);}
 }
 
+/** Starts today's haystack. */
+function startDaily(){sfx.select();scene.mode='daily';show('game');scene.begin();}
 /** Starts a level the player has reached. */
 function startLevel(n:number){
   if(n<1||n>Math.min(TOTAL_LEVELS,saved.unlocked))return;
-  sfx.select();saved.level=n;persist();setWorldTheme(n);show('game');scene.begin();
+  sfx.select();scene.mode='level';saved.level=n;persist();setWorldTheme(n);show('game');scene.begin();
 }
 
 // Hidden test switch: ten quick taps on the needle (its picture area) on the title screen.
 let needleTaps=0,needleLast=0;
-const toast=(text:string)=>{const el=document.createElement('div');el.className='toast';el.setAttribute('role','status');el.textContent=text;document.body.append(el);window.setTimeout(()=>el.remove(),3200);};
 document.querySelector('.title-hero')!.addEventListener('click',()=>{
  const now=performance.now();needleTaps=now-needleLast<1500?needleTaps+1:1;needleLast=now;
  if(needleTaps<10)return;needleTaps=0;
@@ -760,12 +868,14 @@ document.querySelector('.title-hero')!.addEventListener('click',()=>{
 });
 $('btn-play').onclick=()=>{startLevel(allSolved()?1:playTarget());};
 $('btn-levels').onclick=()=>{sfx.select();show('map');};
-$('btn-daily').onclick=()=>{sfx.select();openDaily(renderTitle);};
-$('btn-back').onclick=()=>{sfx.select();show(screen==='game'?'map':'title');};
+$('btn-today').onclick=()=>{sfx.select();openToday({onPlayDaily:startDaily,onClose:renderTitle});};
+$('btn-collection').onclick=()=>collection.open();
+$('btn-back').onclick=()=>{sfx.select();show(screen==='game'&&scene.mode==='level'?'map':'title');};
 $('brand').addEventListener('click',e=>{e.preventDefault();if(screen!=='title'){sfx.select();show('title');}});
 $('win-map').onclick=()=>{sfx.select();show('map');};
 $('next').onclick=()=>{
   sfx.select();
+  if(scene.mode==='daily'){show('title');return;}
   const n=saved.level,def=levelDef(n);
   if(def.finale||n>=TOTAL_LEVELS){freshWorld=n<TOTAL_LEVELS?def.world+1:-1;show('map');}
   else startLevel(n+1);
@@ -789,3 +899,17 @@ $('reset-yes').onclick=()=>{sfx.select();resetProgress();updateCoinPill();update
 show('title');
 // Once a day the title screen offers a gift.
 window.setTimeout(()=>{if(screen==='title')maybeShowDaily(renderTitle);},900);
+window.addEventListener('pointermove',e=>{if(scene.nightOn)scene.moveVeil(e.clientX,e.clientY);},{passive:true});
+window.addEventListener('pointerdown',e=>{if(scene.nightOn)scene.moveVeil(e.clientX,e.clientY);},{passive:true});
+applyLooks();
+// Only in the dev server (`npm run dev`), never in a build: lets the browser tests reach the scene.
+if(import.meta.env.DEV)(window as unknown as {__scene:Haystack}).__scene=scene;
+// Optional extras: tuning from the config file, analytics, and the Arkadium platform (rewarded videos, pause/resume).
+void loadConfig().then(()=>{renderTitle();updateCoinPill();updateCellsPill();});
+void initAnalytics();
+void bootPlatform().then(p=>{
+  p.ready();
+  let resumeTo=false;
+  p.onPause(()=>{resumeTo=scene.active;scene.active=false;sfx.setEnabled(false);});
+  p.onResume(()=>{if(resumeTo&&screen==='game')scene.active=true;resumeTo=false;sfx.setEnabled(saved.sound);});
+});
