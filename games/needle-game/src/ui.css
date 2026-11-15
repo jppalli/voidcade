@@ -1,0 +1,78 @@
+﻿/*
+ * One look for every screen. Loaded last, so it tidies what casual.css and content.css set.
+ *
+ * The top bar is the same everywhere: back (or home) and your coins and cells on the left,
+ * shop, sound and help on the right. In a level the level badge and the "Also find" strip sit
+ * in the middle (or on a second row on narrow screens). Everything in the bar shares one height,
+ * edge, face and corner so nothing looks like it came from another game.
+ */
+:root {
+  --hud-h: 50px;
+  --hud-edge: #b8793d;
+  --hud-face: #fff5d4;
+  --hud-r: 16px;
+  --hud-gap: 10px;
+}
+
+/* ---- The top bar ---- */
+header { display: flex; align-items: flex-start }
+.brand, .header-note { display: none !important }
+.header-actions { flex: 1; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin: 0; pointer-events: none }
+.hdr-left, .hdr-right { display: flex; align-items: center; gap: var(--hud-gap); pointer-events: auto }
+header .icon-button, header .help-button { width: var(--hud-h); height: var(--hud-h); border-radius: var(--hud-r) }
+.coin-badge { height: var(--hud-h); padding: 0 8px 0 14px; font-size: 24px; border-radius: var(--hud-r); gap: 8px; cursor: pointer; user-select: none }
+.coin-badge .coin { font-size: 24px }
+.coin-badge:hover { filter: brightness(1.05) }
+.coin-badge:active { transform: translateY(2px) }
+.coin-badge:focus-visible { outline: 4px solid #fa7b32; outline-offset: 3px }
+/* A small green plus says the pill opens the shop. */
+.coin-badge::after { content: '+'; display: grid; place-items: center; flex: none; width: 26px; height: 26px; border-radius: 50%; background: #82c74e; color: #fff; font-size: 21px; font-weight: 900; line-height: 1; box-shadow: 0 2px #428638, inset 0 2px #b3e47e }
+
+/* ---- In a level: the badge is smaller and matches the rest ---- */
+.level-label { display: flex; align-items: center; height: var(--hud-h); padding: 0 20px; border-radius: var(--hud-r); transform: none; border-width: 3px }
+.level-label strong { font-size: 18px; line-height: 1 }
+.game-top .mission { height: var(--hud-h); border-radius: var(--hud-r) }
+
+/* ---- Shop, barn and collection share one header ---- */
+.shop-top { display: flex; align-items: center; gap: 14px; flex-wrap: nowrap }
+.shop-top h2 { flex: 0 1 auto; min-width: 0; white-space: nowrap }
+.shop-top .shop-balance { margin: 0 0 0 auto; flex: none }
+
+/* ---- Narrow screens ---- */
+@media (max-width: 600px) {
+  :root { --hud-h: 40px; --hud-gap: 6px; --hud-r: 13px }
+  header { top: 10px; left: 10px; right: 10px }
+  .header-actions { gap: 8px }
+  .coin-badge { padding: 0 10px; font-size: 19px; gap: 5px }
+  .coin-badge .coin { font-size: 19px }
+  .coin-badge::after { display: none }
+  header .icon-button svg { width: 20px; height: 20px }
+  .level-label { padding: 0 14px }
+  .level-label strong { font-size: 15px }
+  /* The helpers sit at the bottom, where the thumb is; the board and its message share the space above. */
+  .play-area { margin-top: auto }
+  .tool-tray { margin-top: auto; margin-bottom: 20px }
+  .shop-top { gap: 8px 10px; flex-wrap: wrap }
+  .shop-top .stall { display: none }
+  .shop-top h2 { font-size: 26px }
+  .shop-top .shop-balance { font-size: 17px; padding: 4px 10px }
+  .shop-top .shop-balance .coin { width: 22px; height: 22px }
+}
+
+/* Mid-size windows: drop the shop plus signs and centre the level badge between the pills. */
+@media (min-width: 601px) and (max-width: 1100px) {
+  .coin-badge::after, .cells-badge::after { display: none }
+  .coin-badge { padding: 0 14px }
+  .game-top { left: 50%; transform: translateX(-50%) }
+}
+@media (min-width: 601px) and (max-width: 1100px) {
+  .game-top { gap: 8px }
+  .game-top .bonus-label { display: none }
+  .level-label { padding: 0 14px }
+}
+@media (min-width: 601px) and (max-width: 1100px) {
+  .coin-badge { font-size: 21px; padding: 0 10px; gap: 6px }
+  .coin-badge .coin { font-size: 21px }
+  .hdr-left { gap: 6px }
+  .hdr-right { gap: 6px }
+}
