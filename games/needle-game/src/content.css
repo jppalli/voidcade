@@ -117,3 +117,13 @@ body[data-frame="gold"] .play-area{border-color:#e8c64a;box-shadow:0 7px #a07f1c
 
 .look-chip small svg{width:14px;height:14px;vertical-align:-2px;margin-left:2px}
 .look-chip small .coin{width:14px;height:14px;display:inline-block;vertical-align:-2px;margin-left:2px}
+
+.dock-btn { width: clamp(76px, 22vw, 120px) }
+.barn-hero { display: flex; align-items: center; gap: 14px; margin: 6px 0 12px }
+.barn-hero svg { width: 84px; height: 84px; flex: none }
+.barn-hay { font-size: 40px; font-variant-numeric: tabular-nums }
+.barn-hero small { display: block; margin-top: 6px; font-size: 14px; color: #8d6939 }
+.barn-meter { height: 12px; margin-top: 6px; border-radius: 8px; background: #ecdcae; overflow: hidden; box-shadow: inset 0 2px #0002 }
+.barn-meter i { display: block; height: 100%; background: #e3b44d; border-radius: 8px }
+.shop-row.built { opacity: .8 }
+body[data-frame="barn"] .play-area{border-color:#b5473a;box-shadow:0 7px #7a2c24,0 10px 0 4px #538c3c44,inset 0 0 0 3px #f0b8a8}

@@ -14,6 +14,7 @@ const built = buildSync({
       "export * from './quests.ts';",
       "export * from './progress.ts';",
       "export * from './cosmetics.ts';",
+      "export * from './barn.ts';",
     ].join('\n'),
     resolveDir: fileURLToPath(new URL('./src/', import.meta.url)),
     loader: 'ts',
@@ -266,6 +267,27 @@ assert.equal(G.claimQuest(done[0].index), null);
 // Cosmetics: the defaults are free and the colours multiply.
 assert.ok(['hay', 'frame', 'needle'].every(s => G.LOOKS[s][0].cost === 0));
 assert.equal(G.mulColor(0xffffff, 0x804020), 0x804020);
+// The barn: hay is capped per level, 100 hay makes a bale, one bale sells per day, improvements unlock looks.
+saved.barn = { hay: 0, bales: 0, built: [], sold: '' };
+saved.cosmetics = { owned: [], hay: 'plain', frame: 'wood', needle: 'steel' };
+assert.equal(G.addHay(5000), G.BARN.perLevel);
+assert.equal(G.addHay(-4), 0);
+assert.equal(saved.barn.hay, G.BARN.perLevel);
+assert.equal(G.makeBales(), 3);
+assert.equal(saved.barn.hay, G.BARN.perLevel - 3 * G.BARN.perBale);
+const coinsBefore = saved.coins;
+assert.equal(G.sellBale(), G.BARN.saleCoins);
+assert.equal(G.sellBale(), 0);
+assert.equal(saved.coins, coinsBefore + G.BARN.saleCoins);
+assert.equal(saved.barn.bales, 2);
+assert.equal(G.build('vane'), false);
+saved.barn.bales = 50;
+assert.equal(G.build('vane'), true);
+assert.equal(G.build('vane'), false);
+assert.equal(G.ownsLook('hay', 'wheat'), true);
+assert.equal(G.ownsLook('frame', 'barn'), false);
+assert.equal(G.buyLook('frame', 'barn'), false);
+for (const imp of G.IMPROVEMENTS) if (imp.grants) assert.equal(G.LOOKS[imp.grants.slot].find(l => l.id === imp.grants.id)?.barn, imp.id);
 assert.equal(TUNING.repeatPct > 0 && TUNING.repeatPct < 1, true);
 
-console.log('Passed: 40 levels in 5 worlds, helpers, finales, difficulty limits, night levels and decoys, 7 layouts and 21,000 placement samples, the daily haystack, ' + ITEMS.length + ' items in ' + SETS.length + ' sets, drop rates and pity over 20,000 rolls, events, economy rules, daily gift and quests.');
+console.log('Passed: 40 levels in 5 worlds, helpers, finales, difficulty limits, night levels and decoys, 7 layouts and 21,000 placement samples, the daily haystack, ' + ITEMS.length + ' items in ' + SETS.length + ' sets, drop rates and pity over 20,000 rolls, events, economy rules, daily gift, quests and the barn.');

@@ -281,7 +281,7 @@ export function buyLook(slot: Slot, id: string): boolean {
 }
 export const ownsLook = (slot: Slot, id: string) => {
   const look = LOOKS[slot].find(l => l.id === id);
-  return !!look && (look.cost <= 0 || saved.cosmetics.owned.includes(slot + ':' + id));
+  return !!look && (look.barn ? saved.cosmetics.owned.includes(slot + ':' + id) : look.cost <= 0 || saved.cosmetics.owned.includes(slot + ':' + id));
 };
 export function equipLook(slot: Slot, id: string): boolean {
   if (!ownsLook(slot, id)) return false;

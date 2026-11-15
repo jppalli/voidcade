@@ -280,8 +280,8 @@ export function initShop(imageOf: (kind: string) => string | null, hooks: { onOp
       .map(slot => `<div class="look-row"><strong>${SLOT_NAME[slot]}</strong><div class="look-chips">${LOOKS[slot]
         .map(l => {
           const own = ownsLook(slot, l.id), on = saved.cosmetics[slot] === l.id;
-          const label = on ? 'In use' : own ? 'Use' : `${l.cost} ${COIN}`;
-          const dis = !own && saved.coins < l.cost ? 'disabled' : '';
+          const label = on ? 'In use' : own ? 'Use' : l.barn ? 'Barn' : `${l.cost} ${COIN}`;
+          const dis = !own && (l.barn || saved.coins < l.cost) ? 'disabled' : '';
           return `<button class="look-chip${on ? ' on' : ''}" data-look="${slot}:${l.id}" aria-pressed="${on}" ${dis}><i style="background:${l.swatch}"></i><span>${l.name}</span><small>${label}</small></button>`;
         })
         .join('')}</div></div>`)

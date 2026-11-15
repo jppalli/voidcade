@@ -43,6 +43,8 @@ export interface Save {
   ads: { date: string; n: number };
   /** Looks bought in the shop, and the ones in use. */
   cosmetics: { owned: string[]; hay: string; frame: string; needle: string };
+  /** The barn: hay in store, bales made, improvements built and the date of the last sale. */
+  barn: { hay: number; bales: number; built: string[]; sold: string };
   /** Battery cells: from the starter gift, the daily gift and the shop. Any helper can use one; they are never refilled for free. */
   cells: number;
   /** The daily gift: the date (local, YYYY-MM-DD) it was last claimed, and which day of the cycle comes next (0 to 6). */
@@ -60,7 +62,7 @@ function load(): Save {
   } catch {
     /* unreadable save: start fresh */
   }
-  const s: Save = { level: 1, unlocked: 1, results: {}, sound: raw.sound !== false, introduced: [], seen: [], coins: 0, bag: {}, upgrades: { scoop: 0, brush: 0, detector: 0, fan: 0, vacuum: 0 }, cells: 0, daily: { last: '', day: 0 }, collection: {}, pity: 0, setsDone: [], dailyHay: { last: '', streak: 0 }, quests: { date: '', list: [] }, ads: { date: '', n: 0 }, cosmetics: { owned: [], hay: 'plain', frame: 'wood', needle: 'steel' }, cheat: raw.cheat === true };
+  const s: Save = { level: 1, unlocked: 1, results: {}, sound: raw.sound !== false, introduced: [], seen: [], coins: 0, bag: {}, upgrades: { scoop: 0, brush: 0, detector: 0, fan: 0, vacuum: 0 }, cells: 0, daily: { last: '', day: 0 }, collection: {}, pity: 0, setsDone: [], dailyHay: { last: '', streak: 0 }, quests: { date: '', list: [] }, ads: { date: '', n: 0 }, cosmetics: { owned: [], hay: 'plain', frame: 'wood', needle: 'steel' }, barn: { hay: 0, bales: 0, built: [], sold: '' }, cheat: raw.cheat === true };
 
   if (typeof raw.unlocked === 'number') {
     s.unlocked = clampLevel(raw.unlocked);
@@ -104,6 +106,13 @@ function load(): Save {
     hay: typeof cz.hay === 'string' ? cz.hay : 'plain',
     frame: typeof cz.frame === 'string' ? cz.frame : 'wood',
     needle: typeof cz.needle === 'string' ? cz.needle : 'steel',
+  };
+  const bn = (raw.barn ?? {}) as Record<string, unknown>;
+  s.barn = {
+    hay: n(bn.hay, 999999),
+    bales: n(bn.bales, 9999),
+    built: Array.isArray(bn.built) ? bn.built.filter((x): x is string => typeof x === 'string') : [],
+    sold: typeof bn.sold === 'string' ? bn.sold : '',
   };
   // Older saves kept separate charges per helper: they all become cells.
   const old = Array.isArray(raw.stock) ? raw.stock.reduce((a: number, b: unknown) => a + n(b, 999), 0) : 0;
@@ -167,6 +176,7 @@ export function resetProgress() {
   saved.quests = { date: '', list: [] };
   saved.ads = { date: '', n: 0 };
   saved.cosmetics = { owned: [], hay: 'plain', frame: 'wood', needle: 'steel' };
+  saved.barn = { hay: 0, bales: 0, built: [], sold: '' };
   saved.cells = 0;
   saved.daily = { last: '', day: 0 };
   saved.cheat = false;

@@ -145,3 +145,11 @@ export const SCROLL_ART = `<svg viewBox="0 0 64 64" aria-hidden="true">
 <path d="M22 22h24M22 32h24M22 42h16" stroke="#c9a66a" stroke-width="3" stroke-linecap="round"/>
 <path d="M44 40l4 4 8-9" fill="none" stroke="#4fa842" stroke-width="4.400" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>`;
+export const BARN_ART = `<svg viewBox="0 0 64 64" aria-hidden="true">
+<ellipse cx="32" cy="60" rx="25" ry="3" fill="#2a1a08" opacity=".18"/>
+<path d="M8 28 32 8l24 20v30H8Z" fill="#d9604f" stroke="#8f3328" stroke-width="2.800" stroke-linejoin="round"/>
+<path d="M5 30 32 7l27 23" fill="none" stroke="#8f3328" stroke-width="3.500" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="21" y="34" width="22" height="24" rx="2" fill="#fff4dc" stroke="#8f3328" stroke-width="2.500"/>
+<path d="M21 34l22 24M43 34 21 58" stroke="#c9524a" stroke-width="2.500"/>
+<circle cx="32" cy="23" r="4" fill="#fff4dc" stroke="#8f3328" stroke-width="2.200"/>
+</svg>`;

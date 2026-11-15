@@ -14,10 +14,12 @@ import { scoop, brushMult, recordFinds, levelCoins, repeatCoins, detector, fan, 
 import { maybeShowDaily } from './daily';
 import { openToday, todayPending } from './today';
 import { initCollection, showSetComplete } from './collection';
+import { initBarn } from './barn-ui';
+import { addHay } from './barn';
 import { loadConfig } from './config';
 import { initAnalytics } from './analytics';
 import { bootPlatform } from './platform';
-import { HELPER_ART, HELPER_NAME, CELL_ART, SHOP_ART, MAP_ART, CAL_ART, BOOK_ART } from './art';
+import { HELPER_ART, HELPER_NAME, CELL_ART, SHOP_ART, MAP_ART, CAL_ART, BOOK_ART, BARN_ART } from './art';
 import { initShop, updateCoinPill, updateCellsPill, holdCoins, releaseCoins, releaseCells, flyCoins, holdCells, flyCells, centerOf, watchForCell, toast } from './shop';
 import { enableTestMode, isSolved, saved, persist, recordWin, playTarget, allSolved, solvedCount, hasSeen, markSeen, resetProgress } from './progress';
 import { renderMap, scrollToFrontier } from './worldmap';
@@ -35,7 +37,7 @@ const icons = {
 const svg=(name:keyof typeof icons)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name]}</svg>`;
 const needleArt=(id:string)=>`<svg viewBox="0 0 220 40" aria-hidden="true"><defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4f1e6"/><stop offset=".45" stop-color="#c3c7c0"/><stop offset=".7" stop-color="#7d847b"/><stop offset="1" stop-color="#d9d6c4"/></linearGradient></defs><path d="M6 20 L182 13 C214 11 214 29 182 27 Z" fill="url(#${id})" stroke="#6d6a5c" stroke-width="2"/><ellipse cx="188" cy="20" rx="10" ry="3.2" fill="#5a4a30"/><path d="M40 18 L170 14" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".75"/></svg>`;
 // The title screen: the big animated lettering, a floating needle, and two buttons.
-const titleHtml=`<section id="screen-title" class="screen" aria-label="Needle in a haystack"><div class="title-hero" aria-hidden="true"><span class="t-rays"></span><span class="t-glow"></span><div class="title-needle">${needleArt('steel-title')}</div><span class="t-spark s1">✦</span><span class="t-spark s2">✦</span><span class="t-spark s3">✦</span><span class="t-spark s4">✦</span></div><h1 class="title-word" aria-label="Needle!">${[...'NEEDLE!'].map((ch,i)=>`<span class="l" aria-hidden="true" style="--i:${i}">${ch}</span>`).join('')}</h1><p class="title-sub">IN A HAYSTACK</p><div class="title-actions"><button id="btn-play" class="primary big"><span id="play-label">Play</span></button><div class="dock"><button id="btn-levels" class="dock-btn"><span class="di">${MAP_ART}</span><span>Levels</span></button><button id="btn-today" class="dock-btn"><span class="di">${CAL_ART}</span><span>Today</span><i class="dot"></i></button><button id="btn-collection" class="dock-btn"><span class="di">${BOOK_ART}</span><span>Collection</span></button></div><button id="btn-delete" class="text-button">Delete progress</button></div></section>`;
+const titleHtml=`<section id="screen-title" class="screen" aria-label="Needle in a haystack"><div class="title-hero" aria-hidden="true"><span class="t-rays"></span><span class="t-glow"></span><div class="title-needle">${needleArt('steel-title')}</div><span class="t-spark s1">✦</span><span class="t-spark s2">✦</span><span class="t-spark s3">✦</span><span class="t-spark s4">✦</span></div><h1 class="title-word" aria-label="Needle!">${[...'NEEDLE!'].map((ch,i)=>`<span class="l" aria-hidden="true" style="--i:${i}">${ch}</span>`).join('')}</h1><p class="title-sub">IN A HAYSTACK</p><div class="title-actions"><button id="btn-play" class="primary big"><span id="play-label">Play</span></button><div class="dock"><button id="btn-levels" class="dock-btn"><span class="di">${MAP_ART}</span><span>Levels</span></button><button id="btn-today" class="dock-btn"><span class="di">${CAL_ART}</span><span>Today</span><i class="dot"></i></button><button id="btn-collection" class="dock-btn"><span class="di">${BOOK_ART}</span><span>Collection</span></button><button id="btn-barn" class="dock-btn"><span class="di">${BARN_ART}</span><span>Barn</span></button></div><button id="btn-delete" class="text-button">Delete progress</button></div></section>`;
 document.querySelector('#app')!.innerHTML=`
 ${sceneryHtml()}<header><a class="brand" id="brand" href="./" aria-label="Needle, back to the title screen">${svg('needle')}<span class="word"><span class="letters" aria-hidden="true">${[...'NEEDLE!'].map((ch,i)=>`<span class="l" style="--i:${i}">${ch}</span>`).join('')}</span><small>IN A HAYSTACK</small></span><i class="brand-glint" aria-hidden="true">✦</i></a><div class="header-note">A LITTLE GAME OF LOOKING</div><div class="header-actions"><button id="btn-back" class="icon-button" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><a id="btn-home" class="icon-button" href="../../" aria-label="Back to Voidcade" title="Back to Voidcade" style="color:inherit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v10h13V10"/><path d="M10 20v-5.5h4V20"/></svg></a><div id="coin-badge" class="coin-badge" role="status"><i class="coin"></i><b id="coin-count">0</b></div><div id="cells-badge" class="coin-badge cells-badge hidden" role="status" title="Battery cells"><span class="cb-art">${CELL_ART}</span><b id="cells-count">0</b></div><button id="btn-shop" class="icon-button shop-btn" aria-label="Shop" title="Shop">${SHOP_ART}</button><button id="sound" class="icon-button" aria-label="Toggle sound">${svg('sound')}</button><button id="help" class="help-button">How to play <span>?</span></button></div></header>
 ${titleHtml}<section id="screen-map" class="screen off" aria-label="Levels"><div id="mapWrap"><div id="mapRegions"></div><svg id="mapPath" aria-hidden="true"></svg><div id="mapBanners"></div><div id="mapNodes"></div></div></section>
@@ -44,7 +46,7 @@ ${titleHtml}<section id="screen-map" class="screen off" aria-label="Levels"><div
 <div class="play-area"><div id="game" tabindex="0" aria-label="Search the hay. Hold and drag to brush, or tap a straw to pluck it. Click or tap the needle. Zoom with the scroll wheel, pinch, or the plus and minus keys. Helper shortcuts: 1, 2."></div><div id="night" class="night-veil hidden"></div><div class="zoom-ctl" role="group" aria-label="View"><button id="zoom-in" class="zoom-btn" aria-label="Zoom in" title="Zoom in (+)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button><button id="zoom-out" class="zoom-btn" aria-label="Zoom out" title="Zoom out (-)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg></button><button id="zoom-fit" class="zoom-btn" aria-label="See the whole haystack" title="See it all (0)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button></div><div id="coach" class="coach hidden" aria-hidden="true"><span class="ring"></span><span class="ghost"></span></div><div class="board-tag out" role="status"><span class="live-dot"></span><span id="board-message"></span><div id="power-bar" class="power-bar"></div></div><div id="mission" class="mission"></div><div id="win" class="win hidden" role="dialog" aria-labelledby="win-title"><div class="win-card"><div class="win-hero" aria-hidden="true"><span class="win-rays"></span><span class="win-glow"></span><svg class="win-needle" viewBox="0 0 220 40"><defs><linearGradient id="steel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4f1e6"/><stop offset=".45" stop-color="#c3c7c0"/><stop offset=".7" stop-color="#7d847b"/><stop offset="1" stop-color="#d9d6c4"/></linearGradient></defs><path d="M6 20 L182 13 C214 11 214 29 182 27 Z" fill="url(#steel)" stroke="#6d6a5c" stroke-width="2"/><ellipse cx="188" cy="20" rx="10" ry="3.2" fill="#5a4a30"/><path d="M40 18 L170 14" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".75"/></svg><span class="win-spark s1">✦</span><span class="win-spark s2">✦</span><span class="win-spark s3">✦</span><span class="win-spark s4">✦</span></div><h2 id="win-title">You found it!</h2><div id="win-items" class="win-items"></div><p id="win-copy"></p><p id="win-coins" class="win-coins hidden"></p><button id="next" class="primary"><span id="next-label">Next level</span> <span>→</span></button><button id="win-map" class="text-button">Back to the map</button></div></div></div>
 <div class="tool-tray"><div class="tool-caption"><span class="tiny">A LITTLE HELP</span><span>When you need a fresh perspective.</span></div><div class="tools"><button class="tool" id="magnet" title="Detector - shortcut 1"><span class="tool-art">${HELPER_ART[0]}</span><span>Detector<small>Beeps near hidden things</small></span><kbd>1</kbd><b class="charge">2</b></button><button class="tool" id="wind" title="Fan - shortcut 2"><span class="tool-art">${HELPER_ART[1]}</span><span>Fan<small>Blows hay away</small></span><kbd>2</kbd><b class="charge">2</b></button><button class="tool" id="vacuum" title="Vacuum - shortcut 3"><span class="tool-art">${HELPER_ART[2]}</span><span>Vacuum<small>Draws the top hay in</small></span><kbd>3</kbd><b class="charge">2</b></button></div></div>
 </section><div class="below-board"><span>↖ <strong>Hold and drag to brush.</strong> Tap a straw to pluck it. Scroll or pinch to zoom.</span><span>MADE FOR A MOMENT OF CALM <span class="flower">✳</span></span></div></main>
-<dialog id="instructions"><button class="close" aria-label="Close">×</button><h2>How to play</h2><ul class="howto"><li>Find the needle and tap it.</li><li>Drag to brush hay away.<br>Tap one straw to lift it.</li><li>No timer, no score. Take your time.</li><li>Zoom with the scroll wheel,<br>pinching, or the + and − buttons.</li><li>Stuck? Try a helper below the hay.</li></ul><button class="primary close-help">Let’s play!</button><button id="reset" class="text-button">Delete progress</button></dialog><dialog id="confirm-reset"><h2>Delete progress?</h2><p class="confirm-text">Every level starts again from level 1. This can’t be undone.</p><div class="confirm-actions"><button id="reset-cancel" class="secondary">Keep it</button><button id="reset-yes" class="danger">Yes, delete</button></div></dialog><section id="shop" class="shop-screen hidden" role="dialog" aria-modal="true" aria-labelledby="shop-title"></section><section id="collection" class="shop-screen hidden" role="dialog" aria-modal="true" aria-labelledby="col-title"></section>`;
+<dialog id="instructions"><button class="close" aria-label="Close">×</button><h2>How to play</h2><ul class="howto"><li>Find the needle and tap it.</li><li>Drag to brush hay away.<br>Tap one straw to lift it.</li><li>No timer, no score. Take your time.</li><li>Zoom with the scroll wheel,<br>pinching, or the + and − buttons.</li><li>Stuck? Try a helper below the hay.</li></ul><button class="primary close-help">Let’s play!</button><button id="reset" class="text-button">Delete progress</button></dialog><dialog id="confirm-reset"><h2>Delete progress?</h2><p class="confirm-text">Every level starts again from level 1. This can’t be undone.</p><div class="confirm-actions"><button id="reset-cancel" class="secondary">Keep it</button><button id="reset-yes" class="danger">Yes, delete</button></div></dialog><section id="shop" class="shop-screen hidden" role="dialog" aria-modal="true" aria-labelledby="shop-title"></section><section id="collection" class="shop-screen hidden" role="dialog" aria-modal="true" aria-labelledby="col-title"></section><section id="barn" class="shop-screen hidden" role="dialog" aria-modal="true" aria-labelledby="barn-title"></section>`;
 const $=(id:string)=>document.getElementById(id)!;
 // Keep HUD messages outside the transformed canvas frame.
 document.querySelector('.game-shell')!.append(document.querySelector('.board-tag')!);
@@ -110,7 +112,7 @@ const PASSING_MS=2800;
 class Haystack extends Phaser.Scene {
  straws:Item[]=[]; needle!:Item; glint!:Phaser.GameObjects.Star; ring!:Phaser.GameObjects.Graphics;
  started=0; elapsed=0; won=false; free=0; downAt=0; lastCells=0; dome=false; active=false; ready=false; pending=false; coach:''|'brush'|'pluck'|'tap'=''; coverStraw:Item|null=null; coachCheck=0; private drift=0; cursor!:Phaser.GameObjects.Arc;
- treasures:{sprite:Item;kind:Treasure;collected:boolean}[]=[]; bonusFound=0; decoys:{sprite:Item;kind:string;found:boolean}[]=[]; mode:'level'|'daily'='level'; nightOn=false; levelStartedAt=0; detQuest=0; ground!:Item;
+ treasures:{sprite:Item;kind:Treasure;collected:boolean}[]=[]; bonusFound=0; decoys:{sprite:Item;kind:string;found:boolean}[]=[]; mode:'level'|'daily'='level'; nightOn=false; levelStartedAt=0; hayGot=0; detQuest=0; ground!:Item;
  stroking=false; bends:number[]=[];
  selected=-1; aimX=600; aimY=350; effects:Phaser.GameObjects.GameObject[]=[];
  /** The haystack's size in world units (1200 x 700 times the level's size). */
@@ -199,7 +201,7 @@ class Haystack extends Phaser.Scene {
   // The daily haystack is built from the date, so it is the same layout and items for everyone.
   const restore=this.mode==='daily'?seedRandom(dailySeed()):null;
   try{this.buildRound();}finally{restore?.();}
-  this.levelStartedAt=this.time.now;
+  this.levelStartedAt=this.time.now;this.hayGot=0;
   logEvent('level_start',{level:this.mode==='daily'?0:saved.level,mode:this.mode,slots:this.treasures.length});
   platform().gameStart();platform().levelStart(this.mode==='daily'?0:saved.level);
  }
@@ -373,7 +375,7 @@ class Haystack extends Phaser.Scene {
    return true;
   }
  /** Lifts one straw out of the hay: it rises toward you, then sails up and away, spinning and fading, with a ring and a puff of dust. */
- flick(s:Item,sound=true,delay=0,dust=true){
+ flick(s:Item,sound=true,delay=0,dust=true){this.hayGot++;
   quest('pluck');
   if(sound)sfx.pluck(panAt(s.x));
   s.setData('gone',true);this.moving.delete(s);this.tweens.killTweensOf(s);
@@ -622,7 +624,7 @@ class Haystack extends Phaser.Scene {
    this.vacAcc+=v.rate*delta/1000;const n=Math.floor(this.vacAcc);this.vacAcc-=n;
    if(n<=0)return;
    const take=this.straws.filter(s=>s.alpha>.2&&!s.getData('gone')&&Phaser.Math.Distance.Between(x,y,s.x,s.y)<v.r).sort((a,b)=>b.depth-a.depth).slice(0,n);
-   take.forEach(s=>{
+   this.hayGot+=take.length;take.forEach(s=>{
     s.setData('gone',true);this.moving.delete(s);this.tweens.killTweensOf(s);
     if(reduced)s.setAlpha(0);else this.tweens.add({targets:s,x,y,scale:0,alpha:0,angle:s.angle+180,duration:260,ease:'Sine.In',onComplete:()=>s.setAlpha(0)});
    });
@@ -631,7 +633,7 @@ class Haystack extends Phaser.Scene {
   gust(x:number,y:number,R:number){
   // The fan lifts only the top layers of what is in the circle; the hay below stays.
   const inside=this.straws.filter(s=>s.alpha>.2&&!s.getData('gone')&&Phaser.Math.Distance.Between(x,y,s.x,s.y)<R).sort((a,b)=>b.depth-a.depth);
-  const caught=inside.slice(0,Math.ceil(inside.length*fan().peel));
+  const caught=inside.slice(0,Math.ceil(inside.length*fan().peel));this.hayGot+=caught.length;
   const dir=Math.random()<.5?-1:1;
   const motion=caught.map(s=>{
    s.setData('gone',true);this.moving.delete(s);this.tweens.killTweensOf(s);
@@ -754,7 +756,7 @@ class Haystack extends Phaser.Scene {
   // Coins for solving a level the first time; every bonus item found goes into the bag to be sold.
    const daily=this.mode==='daily',chest=daily?claimDailyHay():null,chestCells=chest?chest.cells:0;
    const coins=daily?(chest?chest.coins:0):isSolved(saved.level)?repeatCoins(saved.level):levelCoins(saved.level);if(!daily)saved.coins+=coins;
-   const found=this.treasures.filter(t=>t.collected).map(t=>t.kind),rec=recordFinds(found);
+   const found=this.treasures.filter(t=>t.collected).map(t=>t.kind),rec=recordFinds(found),hay=addHay(this.hayGot);
    holdCoins(coins+rec.coins);if(chestCells+rec.cells>0)holdCells(chestCells+rec.cells);updateCellsPill();
    if(daily)logEvent('daily_haystack_done',{streak:chest?chest.streak:0,found:found.length});
    quest('clear');logEvent('level_end',{level:saved.level,seconds:Math.round((this.time.now-this.levelStartedAt)/1000),found:found.length,slots:this.treasures.length,repeat:isSolved(saved.level)});logEvent('coins_earned',{source:'level',amount:coins});platform().levelEnd(saved.level);
@@ -790,8 +792,8 @@ class Haystack extends Phaser.Scene {
     $('win-copy').textContent=!this.treasures.length?'':all?'You found everything!':`You found ${this.bonusFound} of ${this.treasures.length}`;
     $('win-copy').classList.toggle('hidden',!this.treasures.length);
     const spare=found.length-rec.fresh.length;
-    $('win-coins').innerHTML=[coins>0?`<span><i class="coin"></i>+${coins} coins</span>`:'',chestCells>0?`<span><i class="cell mini"></i>+${chestCells} ${chestCells===1?'cell':'cells'}</span>`:'',rec.fresh.length>0?`<span>${rec.fresh.length} new in your collection</span>`:'',spare>0?`<span>${spare} spare in your bag</span>`:''].join('');
-    $('win-coins').classList.toggle('hidden',coins===0&&chestCells===0&&!found.length);
+    $('win-coins').innerHTML=[hay>0?`<span>+${hay} hay</span>`:'',coins>0?`<span><i class="coin"></i>+${coins} coins</span>`:'',chestCells>0?`<span><i class="cell mini"></i>+${chestCells} ${chestCells===1?'cell':'cells'}</span>`:'',rec.fresh.length>0?`<span>${rec.fresh.length} new in your collection</span>`:'',spare>0?`<span>${spare} spare in your bag</span>`:''].join('');
+    $('win-coins').classList.toggle('hidden',coins===0&&chestCells===0&&!found.length&&hay===0);
    $('win').classList.remove('hidden');$('next').focus();
    window.setTimeout(()=>{const el=$('win-coins').querySelector('.coin'),o=el?centerOf(el):{x:innerWidth/2,y:innerHeight/2};if(coins>0)flyCoins(o,coins);if(chestCells>0)flyCells(o,chestCells);if(rec.done.length)showSetComplete(rec.done,imageOf,rec.coins,rec.cells);},reduced?0:650);
   });
@@ -822,7 +824,7 @@ let shopPaused=false;
 const pauseHooks={onOpen:()=>{shopPaused=screen==='game'&&scene.active;if(shopPaused)scene.active=false;},onClose:()=>{if(shopPaused&&screen==='game')scene.active=true;shopPaused=false;}};
 const imageOf=(k:string)=>{try{return scene.objectImage(k as Treasure);}catch{return null;}};
 initShop(imageOf,pauseHooks);
-const collection=initCollection(imageOf,pauseHooks);
+const collection=initCollection(imageOf,pauseHooks);const barn=initBarn(pauseHooks);
 $('zoom-out').onclick=()=>{sfx.select();scene.zoomBy(1/1.4);};
 $('zoom-fit').onclick=()=>{sfx.select();scene.fitView();};
 // ---------------------------------------------------------------- screens
@@ -869,7 +871,7 @@ document.querySelector('.title-hero')!.addEventListener('click',()=>{
 $('btn-play').onclick=()=>{startLevel(allSolved()?1:playTarget());};
 $('btn-levels').onclick=()=>{sfx.select();show('map');};
 $('btn-today').onclick=()=>{sfx.select();openToday({onPlayDaily:startDaily,onClose:renderTitle});};
-$('btn-collection').onclick=()=>collection.open();
+$('btn-collection').onclick=()=>collection.open();$('btn-barn').onclick=()=>barn.open();
 $('btn-back').onclick=()=>{sfx.select();show(screen==='game'&&scene.mode==='level'?'map':'title');};
 $('brand').addEventListener('click',e=>{e.preventDefault();if(screen!=='title'){sfx.select();show('title');}});
 $('win-map').onclick=()=>{sfx.select();show('map');};
