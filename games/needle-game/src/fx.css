@@ -190,3 +190,9 @@ body[data-screen=map] #screen-game.off { transform: translateX(6vw) scale(.97) }
 @media (prefers-reduced-motion: reduce) { .firefly, .cue-bob { animation: none } }
 .tod-night .barn-top h2 { color: #fff3c4; text-shadow: 0 3px #0008, 0 0 14px #0006 }
 .tod-night .barn-chip { opacity: .95 }
+
+.text-button[hidden] { display: none }
+
+/* The links under the title buttons sit on one row, with a light halo so they read on the grass. */
+.title-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 28px; margin-top: 18px }
+.title-links .text-button { margin: 0; font-size: 19px; color: #6b4a1f; text-shadow: 0 1px 0 #fffc, 0 0 8px #fff9 }

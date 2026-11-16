@@ -149,4 +149,60 @@ for (const s of slots.filter(x => x.folder !== 'items')) {
 }
 assert.equal([...found.keys()].filter(k => !slots.some(s => `${s.folder}/${s.id}` === k)).length, 0, 'every drawing registered by the game has a slot');
 
-console.log(`Passed: art checker (${slots.length} slots: items, icons and props; PNG and SVG; size, transparency, edges, weight, names, folders, and the game's own drawings).`);
+// The classic look and the new art: what the game uses for each choice.
+const domCode = await bundle(["export * from './artdom.ts';", "export * from './artslots.ts';"]);
+async function freshDom({ files = {}, search = '', stored = null, version = 2 } = {}) {
+  globalThis.window = globalThis;
+  globalThis.location = { search };
+  const store = new Map(stored ? [['needle-art-mode', stored]] : []);
+  globalThis.localStorage = { getItem: k => store.get(k) ?? null, setItem: (k, v) => void store.set(k, v) };
+  globalThis.fetch = async () => ({ json: async () => ({ version, files }) });
+  const mod = await import('data:text/javascript;base64,' + Buffer.from(domCode + `\n//${Math.random()}`).toString('base64'));
+  await mod.loadArtManifest();
+  return { mod, store };
+}
+const allIcons = Object.fromEntries(slots.filter(x => x.folder === 'icons').map(x => [`icons/${x.id}`, { ext: 'svg', v: 'abc123' }]));
+const FB = '<svg viewBox="0 0 64 64">fallback</svg>';
+let d = await freshDom();
+assert.equal(d.mod.pickSvg('icons', 'barn', FB), FB, 'nothing delivered: the game draws its own');
+assert.equal(d.mod.newArtAvailable(), false, 'nothing delivered: no switch to show');
+assert.equal(d.mod.itemArtUrl('button'), null);
+d = await freshDom({ files: allIcons });
+assert.ok(d.mod.pickSvg('icons', 'barn', FB).includes('<image href="./art/icons/barn.svg?v=abc123"'), 'the whole kit is delivered: the new icon is used');
+assert.ok(d.mod.pickSvg('icons', 'barn', FB).includes('viewBox="0 0 64 64"'), "same box as the game's own");
+assert.equal(d.mod.newArtAvailable(), true);
+assert.equal(d.mod.artMode(), 'new', 'the new look is the default');
+// Classic look: the delivered files are ignored, but the switch is still offered.
+d = await freshDom({ files: allIcons, stored: 'classic' });
+assert.equal(d.mod.artMode(), 'classic');
+assert.equal(d.mod.pickSvg('icons', 'barn', FB), FB);
+assert.equal(d.mod.newArtAvailable(), true, 'the switch stays visible in the classic look');
+d.mod.setArtMode('new');
+assert.equal(d.store.get('needle-art-mode'), 'new', 'the choice is remembered');
+assert.equal(d.mod.artMode(), 'new');
+// An incomplete kit is not used (and gives no switch) unless ?art=all.
+const one = { 'props/windmill': { ext: 'svg', v: 'abc123' } };
+d = await freshDom({ files: one });
+assert.equal(d.mod.pickSvg('props', 'windmill', FB), FB);
+assert.equal(d.mod.newArtAvailable(), false);
+d = await freshDom({ files: one, search: '?art=all' });
+assert.ok(d.mod.pickSvg('props', 'windmill', FB).includes('<image'));
+assert.equal(d.mod.newArtAvailable(), true);
+// The address can force either look without changing what is remembered.
+d = await freshDom({ files: allIcons, search: '?art=classic' });
+assert.equal(d.mod.pickSvg('icons', 'barn', FB), FB);
+assert.equal(d.store.has('needle-art-mode'), false);
+d = await freshDom({ files: allIcons, stored: 'classic', search: '?art=new' });
+assert.ok(d.mod.pickSvg('icons', 'barn', FB).includes('<image'));
+// Items are used one by one, in the new look only.
+d = await freshDom({ files: { 'items/button': { ext: 'png', v: 'abc123' } } });
+assert.equal(d.mod.itemArtUrl('button'), './art/items/button.png?v=abc123');
+assert.equal(d.mod.itemArtUrl('spool'), null);
+assert.equal(d.mod.newArtAvailable(), true);
+d = await freshDom({ files: { 'items/button': { ext: 'png', v: 'abc123' } }, stored: 'classic' });
+assert.equal(d.mod.itemArtUrl('button'), null);
+// A list in an unknown format is ignored.
+d = await freshDom({ files: allIcons, version: 1 });
+assert.equal(d.mod.newArtAvailable(), false);
+
+console.log(`Passed: art checker (${slots.length} slots: items, icons and props; PNG and SVG; size, transparency, edges, weight, names, folders, the game's own drawings, and the classic or new look).`);

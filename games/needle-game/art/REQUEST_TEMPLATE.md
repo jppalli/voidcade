@@ -11,6 +11,7 @@ Hi team,
 We are making *Needle in a Haystack*, a cozy hidden-object game (find the needle by brushing aside a haystack) for adults over 55 in the US. The mood is warm, nostalgic and calm. I attach a kit with everything you need:
 
 - `ART_BRIEF.md`: the game, the look, the technical rules and the full list of pictures. **Please read sections 3 to 6 first.**
+- `ART_LIST.md`: every picture with **what to draw** and the colour to use, batch by batch. Start here.
 - `art-slots.csv`: the same list as a table, with the exact file name and size of every picture.
 - `reference/`: what each picture looks like today, at the right size. Match the size and proportions, but redraw it in your own style. Please do not trace it.
 - `incoming/`: the folders to put your finished files in (`items/`, `icons/`, `props/`). File names must be exactly as in the list.

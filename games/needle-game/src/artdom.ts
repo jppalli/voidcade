@@ -1,6 +1,9 @@
 /**
  * Which delivered pictures the game uses, and how icons and props are shown.
  *
+ * The player can choose the classic look (the game's own drawings) or the new art (the delivered
+ * pictures, where there are any). The choice is kept in localStorage and read before the game starts.
+ *
  * `loadArtManifest()` runs once at start (boot.ts) before the rest of the game is loaded.
  * `pickSvg()` then returns either the game's own SVG or a small SVG that shows the delivered file,
  * so the layout and the CSS that style those pictures do not change.
@@ -12,12 +15,18 @@ let files: ArtManifest['files'] = {};
 /** The kits whose pictures have all been delivered. */
 const complete = new Set<string>();
 let showAll = false;
+/** The look the player chose. */
+export type ArtMode = 'classic' | 'new';
+const MODE_KEY = 'needle-art-mode';
+let mode: ArtMode = 'new';
 /** The game's own SVG for every icon and prop that went through pickSvg (used by the tools). */
 const fallbacks = new Map<string, string>();
 
 /** Fetches the list of delivered pictures. Never throws: with no list, the game uses its own pictures. */
 export async function loadArtManifest(): Promise<void> {
-  showAll = typeof location !== 'undefined' && /[?&]art=all\b/.test(location.search);
+  const query = typeof location !== 'undefined' ? (location.search.match(/[?&]art=(all|new|classic)\b/)?.[1] ?? '') : '';
+  showAll = query === 'all';
+  mode = query === 'classic' ? 'classic' : query ? 'new' : readMode();
   try {
     const ctl = new AbortController();
     const timer = window.setTimeout(() => ctl.abort(), 3000);
@@ -34,13 +43,41 @@ export async function loadArtManifest(): Promise<void> {
   for (const [kit, done] of kits) if (done) complete.add(kit);
 }
 
-/** The delivered file for a slot, if the game should use it. */
-function usable(s: ArtSlot): { ext: ArtFormat; v: string } | null {
+function readMode(): ArtMode {
+  try {
+    return localStorage.getItem(MODE_KEY) === 'classic' ? 'classic' : 'new';
+  } catch {
+    return 'new';
+  }
+}
+
+/** The look the player chose. */
+export const artMode = () => mode;
+/** Remembers the look. It takes effect the next time the game starts. */
+export function setArtMode(m: ArtMode) {
+  mode = m;
+  try {
+    localStorage.setItem(MODE_KEY, m);
+  } catch {
+    /* private browsing: the choice just lasts until the page is closed */
+  }
+}
+
+/** The delivered file for a slot, if it exists and the game may use it in the new look. */
+function delivered(s: ArtSlot): { ext: ArtFormat; v: string } | null {
   const f = files[slotKey(s)];
   if (!f || !s.formats.includes(f.ext) || !/^[a-z0-9]+$/i.test(f.v)) return null;
   if (s.gate && !showAll && !complete.has(s.kit)) return null;
   return f;
 }
+
+/** The delivered file for a slot, if the game should use it now (the new look is chosen). */
+function usable(s: ArtSlot): { ext: ArtFormat; v: string } | null {
+  return mode === 'new' ? delivered(s) : null;
+}
+
+/** True when there is new art to switch to: at least one delivered picture the new look would use. */
+export const newArtAvailable = () => [...SLOTS.values()].some(s => delivered(s));
 
 /** Where a delivered picture is served from. */
 export const artUrl = (s: ArtSlot, f: { ext: ArtFormat; v: string }) => `./${ART_SPEC.folder}/${s.folder}/${s.id}.${f.ext}?v=${f.v}`;

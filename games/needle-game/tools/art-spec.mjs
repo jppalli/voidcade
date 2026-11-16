@@ -104,7 +104,7 @@ These rules come from the pictures the game already has. The \`reference/\` fold
 - All 13 icons must look like one family: the same outline weight, the same level of detail, the same light.
 
 **Scenery props**
-- Flat shapes with a little shading and **no outlines**, in the soft colours of each world.
+- Flat shapes with a little shading, in the soft colours of each world. Most have **no outline**; a thin soft edge is fine where it helps (the butterfly and the fence have one).
 - A soft ground shadow under the object (a flat ellipse, about 20% opacity) is welcome, because props stand on the ground.
 - They are shown behind the game, so they should be calm and not draw the eye away from the haystack.
 

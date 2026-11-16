@@ -20,6 +20,8 @@ fs.copyFileSync(DIRS.brief, path.join(DIRS.kit, 'ART_BRIEF.md'));
 fs.copyFileSync(DIRS.csv, path.join(DIRS.kit, 'art-slots.csv'));
 const template = path.join(ROOT, 'art', 'REQUEST_TEMPLATE.md');
 if (fs.existsSync(template)) fs.copyFileSync(template, path.join(DIRS.kit, 'REQUEST_TEMPLATE.md'));
+const list = path.join(ROOT, 'art', 'ART_LIST.md');
+if (fs.existsSync(list)) fs.copyFileSync(list, path.join(DIRS.kit, 'ART_LIST.md'));
 if (fs.existsSync(DIRS.reference)) fs.cpSync(DIRS.reference, path.join(DIRS.kit, 'reference'), { recursive: true });
 for (const f of FOLDERS) {
   const dir = path.join(DIRS.kit, 'incoming', f);

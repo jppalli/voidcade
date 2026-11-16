@@ -103,4 +103,7 @@ Every item, look-alike, icon and scenery prop has an art slot (`src/artslots.ts`
 
 The flow: send the kit and `art/REQUEST_TEMPLATE.md` to the artists. They put files in `art/incoming/items|icons|props/`. Run `art:check`, send back what to fix, then `art:sync` and commit `public/art/`. A new item, icon or prop gets its slot by being added to `src/items.ts` or `src/artslots.ts`.
 
+**Classic look or new art.** Once there is new art the game can use, the title screen shows a link under the buttons: *Switch to the classic look* (the game's own drawings) or *Switch to the new look* (the delivered pictures). The choice is kept in the browser (
+eedle-art-mode) and the page reloads so every picture is drawn the same way. With no new art, the link is hidden. For tests, ?art=classic and ?art=new in the address pick a look without saving it, and ?art=all also shows partly delivered kits.
+
 Not in the system yet (next phases): the barn and map backgrounds, buttons and panels, the board art (straws, ground, frame, needle), the title hero, characters and sound.
