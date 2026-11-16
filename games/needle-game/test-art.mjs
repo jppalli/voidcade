@@ -205,4 +205,12 @@ assert.equal(d.mod.itemArtUrl('button'), null);
 d = await freshDom({ files: allIcons, version: 1 });
 assert.equal(d.mod.newArtAvailable(), false);
 
-console.log(`Passed: art checker (${slots.length} slots: items, icons and props; PNG and SVG; size, transparency, edges, weight, names, folders, the game's own drawings, and the classic or new look).`);
+// The Adobe prompt sheet has a line for every slot, and the artboard of every prop matches its viewBox.
+const prompts = fs.readFileSync(new URL('./art/ADOBE_PROMPTS.md', import.meta.url), 'utf8');
+for (const s of slots) {
+  const row = prompts.split('\n').find(line => line.startsWith(`| \`${s.folder}/${s.id}\` |`));
+  assert.ok(row, `ADOBE_PROMPTS.md has a prompt for ${s.folder}/${s.id}`);
+  if (s.kind === 'prop') assert.ok(row.includes(`| ${s.box[0]} x ${s.box[1]} |`), `${s.id}: the artboard in ADOBE_PROMPTS.md is ${s.box[0]} x ${s.box[1]}`);
+}
+
+console.log(`Passed: art checker (${slots.length} slots: items, icons and props; PNG and SVG; size, transparency, edges, weight, names, folders, the game's own drawings, the classic or new look, and the Adobe prompt sheet).`);

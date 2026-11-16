@@ -1,4 +1,317 @@
 {
   "version": 2,
-  "files": {}
+  "files": {
+    "icons/barn": {
+      "ext": "svg",
+      "v": "41713e45"
+    },
+    "icons/book": {
+      "ext": "svg",
+      "v": "55d60bad"
+    },
+    "icons/calendar": {
+      "ext": "svg",
+      "v": "77ffe949"
+    },
+    "icons/cell": {
+      "ext": "svg",
+      "v": "78ce40d6"
+    },
+    "icons/cells": {
+      "ext": "svg",
+      "v": "f3e7bb13"
+    },
+    "icons/detector": {
+      "ext": "svg",
+      "v": "431fbd71"
+    },
+    "icons/fan": {
+      "ext": "svg",
+      "v": "e133d23d"
+    },
+    "icons/gift": {
+      "ext": "svg",
+      "v": "39a1eba9"
+    },
+    "icons/hay": {
+      "ext": "svg",
+      "v": "e18877cc"
+    },
+    "icons/map": {
+      "ext": "svg",
+      "v": "1a2be929"
+    },
+    "icons/scroll": {
+      "ext": "svg",
+      "v": "ca820851"
+    },
+    "icons/shop": {
+      "ext": "svg",
+      "v": "fc77b28e"
+    },
+    "icons/vacuum": {
+      "ext": "svg",
+      "v": "ea05e4b2"
+    },
+    "items/acorn": {
+      "ext": "png",
+      "v": "13e30fb1"
+    },
+    "items/apple": {
+      "ext": "png",
+      "v": "ff722097"
+    },
+    "items/brooch": {
+      "ext": "png",
+      "v": "2cc67e95"
+    },
+    "items/button": {
+      "ext": "png",
+      "v": "8df0aecd"
+    },
+    "items/candle": {
+      "ext": "png",
+      "v": "56a45cc0"
+    },
+    "items/cherries": {
+      "ext": "png",
+      "v": "e7439eb3"
+    },
+    "items/compass": {
+      "ext": "png",
+      "v": "30c54a24"
+    },
+    "items/corn": {
+      "ext": "png",
+      "v": "fc1dc623"
+    },
+    "items/crystalball": {
+      "ext": "png",
+      "v": "136378bc"
+    },
+    "items/egg": {
+      "ext": "png",
+      "v": "d0439db2"
+    },
+    "items/feather": {
+      "ext": "png",
+      "v": "e1fe8e4c"
+    },
+    "items/gingerbread": {
+      "ext": "png",
+      "v": "6ea091fd"
+    },
+    "items/goldapple": {
+      "ext": "png",
+      "v": "25d9312e"
+    },
+    "items/goldegg": {
+      "ext": "png",
+      "v": "648b82a7"
+    },
+    "items/goldneedle": {
+      "ext": "png",
+      "v": "2f70ff72"
+    },
+    "items/holly": {
+      "ext": "png",
+      "v": "2a53a10c"
+    },
+    "items/honeypot": {
+      "ext": "png",
+      "v": "392c7ec2"
+    },
+    "items/horseshoe": {
+      "ext": "png",
+      "v": "40299d4a"
+    },
+    "items/iceheart": {
+      "ext": "png",
+      "v": "6b191de2"
+    },
+    "items/jar": {
+      "ext": "png",
+      "v": "b5e09289"
+    },
+    "items/key": {
+      "ext": "png",
+      "v": "ed0eabe2"
+    },
+    "items/lantern": {
+      "ext": "png",
+      "v": "900da30a"
+    },
+    "items/leaf": {
+      "ext": "png",
+      "v": "50b298b8"
+    },
+    "items/mitten": {
+      "ext": "png",
+      "v": "bc28d221"
+    },
+    "items/moon": {
+      "ext": "png",
+      "v": "96d7cc14"
+    },
+    "items/mug": {
+      "ext": "png",
+      "v": "24bb9180"
+    },
+    "items/nail": {
+      "ext": "png",
+      "v": "9ac9a55a"
+    },
+    "items/ornament": {
+      "ext": "png",
+      "v": "9bd0881e"
+    },
+    "items/pear": {
+      "ext": "png",
+      "v": "c528253e"
+    },
+    "items/pie": {
+      "ext": "png",
+      "v": "d71384f8"
+    },
+    "items/pin": {
+      "ext": "png",
+      "v": "61f570ff"
+    },
+    "items/pincushion": {
+      "ext": "png",
+      "v": "14a4a5dc"
+    },
+    "items/pumpkin": {
+      "ext": "png",
+      "v": "25c65e5f"
+    },
+    "items/scissors": {
+      "ext": "png",
+      "v": "4fa09e0a"
+    },
+    "items/snowflake": {
+      "ext": "png",
+      "v": "1ccf51ba"
+    },
+    "items/snowglobe": {
+      "ext": "png",
+      "v": "7a7e4557"
+    },
+    "items/spool": {
+      "ext": "png",
+      "v": "89f7c9de"
+    },
+    "items/spyglass": {
+      "ext": "png",
+      "v": "d7779a86"
+    },
+    "items/star": {
+      "ext": "png",
+      "v": "e4c4e9bc"
+    },
+    "items/starstone": {
+      "ext": "png",
+      "v": "603a7cc6"
+    },
+    "items/stocking": {
+      "ext": "png",
+      "v": "cd647e7c"
+    },
+    "items/strawhat": {
+      "ext": "png",
+      "v": "5ebbece2"
+    },
+    "items/thimble": {
+      "ext": "png",
+      "v": "ab21df1c"
+    },
+    "items/wheat": {
+      "ext": "png",
+      "v": "8fb330c5"
+    },
+    "items/wreath": {
+      "ext": "png",
+      "v": "d57a6d50"
+    },
+    "props/autumn_tree": {
+      "ext": "svg",
+      "v": "4bd43b41"
+    },
+    "props/barn": {
+      "ext": "svg",
+      "v": "6b3b3185"
+    },
+    "props/bush": {
+      "ext": "svg",
+      "v": "382f627d"
+    },
+    "props/butterfly": {
+      "ext": "svg",
+      "v": "30fd144a"
+    },
+    "props/cabin": {
+      "ext": "svg",
+      "v": "8b247e34"
+    },
+    "props/chicken": {
+      "ext": "svg",
+      "v": "4e026948"
+    },
+    "props/daisies": {
+      "ext": "svg",
+      "v": "6693e5ca"
+    },
+    "props/fence": {
+      "ext": "svg",
+      "v": "1ac056e6"
+    },
+    "props/haystack": {
+      "ext": "svg",
+      "v": "e9054bb6"
+    },
+    "props/leaf_pile": {
+      "ext": "svg",
+      "v": "fe18dc92"
+    },
+    "props/moon": {
+      "ext": "svg",
+      "v": "9c39db38"
+    },
+    "props/mushrooms": {
+      "ext": "svg",
+      "v": "6aec09ee"
+    },
+    "props/owl": {
+      "ext": "svg",
+      "v": "c8dee258"
+    },
+    "props/pine": {
+      "ext": "svg",
+      "v": "0f72de02"
+    },
+    "props/pumpkin": {
+      "ext": "svg",
+      "v": "c56ec20a"
+    },
+    "props/scarecrow": {
+      "ext": "svg",
+      "v": "81e41931"
+    },
+    "props/snowman": {
+      "ext": "svg",
+      "v": "0bc7e0a0"
+    },
+    "props/sunflower": {
+      "ext": "svg",
+      "v": "062430c6"
+    },
+    "props/tent_fire": {
+      "ext": "svg",
+      "v": "031b068c"
+    },
+    "props/windmill": {
+      "ext": "svg",
+      "v": "7d4a20fc"
+    }
+  }
 }
