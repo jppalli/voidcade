@@ -83,3 +83,18 @@ The cell total sits in the top bar next to the coins. While the detector or the 
 
 **Platform.** `src/platform.ts` wraps the Arkadium SDK (rewarded video for cells, pause and resume, level hooks) and falls back to a local stand-in outside the portal.
 **Barn.** Every straw you lift out of the hay (pluck, shovel, fan, vacuum) counts as hay, up to 300 per level, and the hay goes into the barn when you win. In the Barn tile on the title screen, 100 hay makes a bale. Bales pay for six barn improvements, which show up in the barn picture. (The shop no longer sells looks. The look data and the three unlocks that three improvements still grant in src/barn.ts are kept but have no screen.) One bale a day can be sold for 10 coins, so hay cannot be turned into cells. The numbers are in `BARN` in `src/barn.ts`.
+
+## Art from artists
+
+Every item and every look-alike of the needle has an art slot (`src/artslots.ts`). While no file has been delivered for a slot, the game draws its own picture (`src/itemart.ts`), so nothing waits for the art. When a file is delivered it replaces the stand-in, with the same soft shadow and the same hit areas.
+
+| Command | What it does |
+|---|---|
+| `npm run art:spec` | Writes `art/ART_SPEC.md` and `art/art-slots.csv`: the rules and the full list, with what is done and what is missing. This is what the art team gets. |
+| `npm run art:check` | Checks the files in `art/incoming/` (and the ones in the game) against the spec: size, transparency, space around the object, file weight, name. Says exactly what to fix. Exits with 1 on errors. |
+| `npm run art:sync` | Accepts the files with no errors: copies them to `public/art/items/`, moves the originals to `art/archive/` and rewrites `public/art/manifest.json`. Files with errors stay in `art/incoming/`. |
+| `npm run test:art` | Tests the checker with PNG files made in memory. |
+
+The flow: the developer adds an item in `src/items.ts` (the slot appears by itself), runs `art:spec` and sends the sheet. The artists put PNG files (256 x 256, transparent, named as listed) in `art/incoming/`. Anyone runs `art:check`; the developer runs `art:sync` and commits `public/art/`.
+
+Where the numbers live: `ART_SPEC` in `src/artslots.ts` (size, weight, margin, fill). The game scales the 256 px file down to a 128 px texture, and the object's hit area and the way it hides in the hay do not depend on the picture. New kinds of art (characters, for example) are added as new slot kinds in the same file.

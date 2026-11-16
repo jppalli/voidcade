@@ -6,6 +6,8 @@ import './fx.css';
 import { levelDef, dailyDef, pilePoint, TOOL_LEVELS, TOTAL_LEVELS, type LevelDef, type Treasure } from './levels';
 import { ITEMS, DECOYS, DECOY_NAME, RARITIES, itemName, rarityOf, isRarePlus } from './items';
 import { drawItem } from './itemart';
+import { artPreload, drawArt, hasArt } from './artload';
+import { ART_SPEC, artKey } from './artslots';
 import { rollItems, rollDaily, nextPity } from './drops';
 import { activeEvent } from './events';
 import { track as quest } from './quests';
@@ -126,6 +128,7 @@ class Haystack extends Phaser.Scene {
  lastBX=0; lastBY=0; lastBrushAt=0; brushedOnce=false; round=0;
  msgTimer=0; msgToken=0; msgTarget='';
  constructor(){super('haystack');}
+  preload(){artPreload(this);}
  create(){
   this.makeTextures(); this.cameras.main.setBackgroundColor('#b09a63');
   this.ground=this.add.image(600,350,'ground');
@@ -191,8 +194,11 @@ class Haystack extends Phaser.Scene {
  begin(){if(!this.ready){this.pending=true;return;}this.newRound();}
  /** The player left the board for the map or title: stop everything. */
  leave(){this.inLevel=false;this.setNight(false);this.active=false;this.pending=false;this.coach='';hideCoach();window.clearTimeout(this.msgTimer);$('win').classList.add('hidden');if(!this.ready)return;this.round++;this.time.removeAllEvents();this.pauseDetector(true);this.pauseVacuum();this.cancelTool();}
- makeTextures(){
-  for(const id of [...ITEMS.map(i=>i.id),...DECOYS]){const texture=this.textures.createCanvas('object-'+id,64,64)!;drawItem(id,texture.context);texture.refresh();}
+  /** How much smaller a delivered picture is drawn so it matches the size of the game's own 64 x 64 ones. */
+  texK:Record<string,number>={};
+  artScale(id:string){return this.texK[id]??1;}
+  makeTextures(){
+   for(const id of [...ITEMS.map(i=>i.id),...DECOYS]){const art=hasArt(this,id),size=art?ART_SPEC.texture:64,texture=this.textures.createCanvas('object-'+id,size,size)!;if(art)drawArt(texture.context,this.textures.get(artKey(id)).getSourceImage() as HTMLImageElement,size);else drawItem(id,texture.context);this.texK[id]=64/size;texture.refresh();}
   const ground=this.textures.createCanvas('ground',1200,700)!;const c=ground.context;
   const grad=c.createRadialGradient(530,280,40,600,350,740);grad.addColorStop(0,'#79602f');grad.addColorStop(.7,'#48391e');grad.addColorStop(1,'#251c12');c.fillStyle=grad;c.fillRect(0,0,1200,700);
   const rng=new Phaser.Math.RandomDataGenerator(['needle-textures']);for(let i=0;i<14000;i++){c.fillStyle=`rgba(${rng.pick(['255,230,170','45,34,17'])},${rng.realInRange(.02,.12)})`;c.fillRect(rng.between(0,1200),rng.between(0,700),rng.between(1,3),rng.between(1,3));}ground.refresh();
@@ -232,9 +238,9 @@ class Haystack extends Phaser.Scene {
   const target=place();const occupied:Point[]=[target];
   this.needle=this.add.image(target.x,target.y,'needle').setDepth(690*Phaser.Math.FloatBetween(stage.depth[0],stage.depth[1])).setRotation(Phaser.Math.FloatBetween(-Math.PI,Math.PI)).setScale(stage.needle).setTint(lookOf('needle').color);
   for(const kind of kinds){let p=place();for(let tries=0;tries<100&&occupied.some(o=>Phaser.Math.Distance.Between(p.x,p.y,o.x,o.y)<110*this.size);tries++)p=place();occupied.push(p);
-   this.treasures.push({sprite:this.add.image(p.x,p.y,'object-'+kind).setRotation(Phaser.Math.FloatBetween(-1,1)).setScale(.72).setDepth(690*Phaser.Math.FloatBetween(stage.depth[0],stage.depth[1])),kind,collected:false});}
+   this.treasures.push({sprite:this.add.image(p.x,p.y,'object-'+kind).setRotation(Phaser.Math.FloatBetween(-1,1)).setScale(.72*this.artScale(kind)).setData('k',this.artScale(kind)).setDepth(690*Phaser.Math.FloatBetween(stage.depth[0],stage.depth[1])),kind,collected:false});}
   for(let i=0;i<stage.decoys;i++){let p=place();for(let tries=0;tries<100&&occupied.some(o=>Phaser.Math.Distance.Between(p.x,p.y,o.x,o.y)<110*this.size);tries++)p=place();occupied.push(p);
-   const kind=DECOYS[i%DECOYS.length];this.decoys.push({sprite:this.add.image(p.x,p.y,'object-'+kind).setRotation(Phaser.Math.FloatBetween(-Math.PI,Math.PI)).setScale(.95).setDepth(690*Phaser.Math.FloatBetween(stage.depth[0],stage.depth[1])),kind,found:false});}
+   const kind=DECOYS[i%DECOYS.length];this.decoys.push({sprite:this.add.image(p.x,p.y,'object-'+kind).setRotation(Phaser.Math.FloatBetween(-Math.PI,Math.PI)).setScale(.95*this.artScale(kind)).setData('k',this.artScale(kind)).setDepth(690*Phaser.Math.FloatBetween(stage.depth[0],stage.depth[1])),kind,found:false});}
   // 3. More hay over each one until it's hidden as far as this level asks (level 2 uses one long straw instead).
   if(stage.cover)this.layCover(tint);else this.bury(this.needle,NEEDLE_SAMPLES,tint,true,stage.hidden);
   this.treasures.forEach(t=>this.bury(t.sprite,OBJECT_SAMPLES,tint,false,stage.hidden));
@@ -305,7 +311,7 @@ class Haystack extends Phaser.Scene {
   }
  }
  /** World positions of an object's sample points. */
- samplePoints(obj:Item,samples:Point[]):Point[]{const c=Math.cos(obj.rotation),s=Math.sin(obj.rotation);return samples.map(p=>({x:obj.x+(p.x*c-p.y*s)*obj.scaleX,y:obj.y+(p.x*s+p.y*c)*obj.scaleY}));}
+ samplePoints(obj:Item,samples:Point[]):Point[]{const c=Math.cos(obj.rotation),s=Math.sin(obj.rotation),k=Number(obj.getData('k'))||1,sx=obj.scaleX/k,sy=obj.scaleY/k;return samples.map(p=>({x:obj.x+(p.x*c-p.y*s)*sx,y:obj.y+(p.x*s+p.y*c)*sy}));}
  /** True if a straw above `depth` lies over (x,y). */
  covered(x:number,y:number,depth:number,straws=this.straws){return straws.some(s=>s.depth>depth&&!s.getData('gone')&&s.alpha>.2&&Math.abs(s.x-x)<140&&Math.abs(s.y-y)<140&&this.hitsStraw(s,x,y,STRAW_HALF_WIDTH));}
  /** Share of an object (0 to 1) that the hay doesn't cover. */
