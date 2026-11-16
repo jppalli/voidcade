@@ -150,3 +150,43 @@ body[data-screen=map] #screen-game.off { transform: translateX(6vw) scale(.97) }
   .barn-top h2 { font-size: 22px }
   .barn-top .shop-balance { margin-left: auto; font-size: 17px }
 }
+
+/* ---- The barn: time of day, things to tap, and a tidy header ---- */
+.barn-wrap { --sky1: #8fd0ec; --sky2: #cdeaf0; --sky3: #fff1cf }
+.barn-wrap.tod-dawn { --sky1: #9cc4ea; --sky2: #f7cfc4; --sky3: #ffe6b8 }
+.barn-wrap.tod-dusk { --sky1: #6f8fd0; --sky2: #f2a98a; --sky3: #ffd79a }
+.barn-wrap.tod-night { --sky1: #3c4c88; --sky2: #6674ac; --sky3: #a3a8cc }
+.barn-bg svg, .barn-stage > svg { transition: filter 1s }
+.tod-dawn .sun, .tod-dusk .sun { transform: translateY(190px) }
+.tod-night .sun { opacity: 0 }
+.stars, .moon, .fireflies { opacity: 0 }
+.tod-night .stars, .tod-night .moon, .tod-night .fireflies { opacity: 1 }
+.tod-dusk .stars { opacity: .35 }
+.tod-dusk .fireflies { opacity: .8 }
+.tod-dawn .barn-bg svg { filter: saturate(1.05) brightness(1.02) }
+.tod-dusk .barn-bg svg { filter: sepia(.28) saturate(1.15) brightness(.93) }
+.tod-dusk .barn-stage > svg { filter: sepia(.2) saturate(1.1) brightness(.95) }
+.tod-night .barn-bg svg { filter: brightness(.6) saturate(.85) hue-rotate(8deg) }
+.tod-night .barn-stage > svg { filter: brightness(.72) saturate(.85) hue-rotate(8deg) }
+.night-glow { opacity: 0 }
+.tod-dusk .night-glow { opacity: .5 }
+.tod-night .night-glow { opacity: .95 }
+.firefly { animation: firefly 9s ease-in-out infinite, blink 2.6s ease-in-out infinite }
+@keyframes firefly { 0%, 100% { transform: translate(0, 0) } 33% { transform: translate(40px, -26px) } 66% { transform: translate(-30px, -10px) } }
+@keyframes blink { 0%, 100% { opacity: .15 } 50% { opacity: 1 } }
+.barn-stage [data-imp], .cue { cursor: pointer }
+.cue-bob { animation: cue 1.5s ease-in-out infinite }
+@keyframes cue { 50% { transform: translateY(-7px) scale(1.1) } }
+.cue:focus-visible { outline: none }
+.cue:focus-visible circle { stroke: #fa7b32; stroke-width: 6 }
+.imp-card.afford { border-color: #7fcc58; box-shadow: 0 4px #7fcc58, 0 0 0 4px #7fcc5833 }
+.imp-card.hl { transform: translateY(-3px) }
+.imp-card.attn { animation: attn .6s ease 2 }
+@keyframes attn { 25% { transform: translateY(-9px) rotate(-1.5deg) } 60% { transform: translateY(-4px) rotate(1.2deg) } }
+.barn-chip { padding: 5px 14px; border: 3px solid #b8793d; border-radius: 14px; background: #fff5d4; box-shadow: 0 3px #b8793d; color: #70451f; font-size: 18px; font-weight: 900; white-space: nowrap }
+.barn-chip.full { border-color: #6fae50; background: #e8f6dc; box-shadow: 0 3px #6fae50; color: #35722a }
+.silo { filter: drop-shadow(2px 0 0 #0001) }
+@media (max-width: 760px) { .barn-chip { display: none } }
+@media (prefers-reduced-motion: reduce) { .firefly, .cue-bob { animation: none } }
+.tod-night .barn-top h2 { color: #fff3c4; text-shadow: 0 3px #0008, 0 0 14px #0006 }
+.tod-night .barn-chip { opacity: .95 }
