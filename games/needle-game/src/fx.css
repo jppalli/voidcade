@@ -40,11 +40,6 @@ body[data-screen=map] #screen-game.off { transform: translateX(6vw) scale(.97) }
   color: #fff; -webkit-text-stroke: 5px #8f5a28; paint-order: stroke fill; text-shadow: 0 3px #8f5a2877 }
 .float-text.spend { color: #ffe9a0 }
 
-/* ---- The barn picture ---- */
-.barn-scene { position: relative; margin: 2px 0 12px; border: 4px solid #b8793d; border-radius: 22px; overflow: hidden; background: #cfeaf3;
-  box-shadow: 0 4px #b8793d, inset 0 0 0 3px #fff6 }
-.barn-scene svg { display: block; width: 100%; height: auto; max-height: 42vh }
-.barn-bales { position: absolute; left: 10px; bottom: 8px; padding: 3px 12px; border: 3px solid #b8793d; border-radius: 12px; background: #fff5d4; color: #70451f; font-size: 17px; font-weight: 900 }
 .imp { transition: opacity .3s, filter .3s }
 .imp.ghost { opacity: .28; filter: grayscale(1) }
 .imp.ghost .glow { display: none }
@@ -56,12 +51,12 @@ body[data-screen=map] #screen-game.off { transform: translateX(6vw) scale(.97) }
 @keyframes imp-drop { from { opacity: 0; transform: translateY(-46px) } 60% { filter: brightness(1.5) } }
 .bale.new { animation: bale-in .6s cubic-bezier(.3, 1.5, .5, 1) both }
 @keyframes bale-in { from { opacity: 0; transform: translateY(-50px) } }
-.mill-blades { transform-origin: 278px 106px; animation: spin 7s linear infinite }
+.mill-blades { transform-origin: 795px 350px; animation: spin 7s linear infinite }
 @keyframes spin { to { transform: rotate(360deg) } }
-.vane-turn { transform-origin: 160px 19px; animation: vane 5s ease-in-out infinite }
+.vane-turn { transform-origin: 450px 26px; animation: vane 5s ease-in-out infinite }
 @keyframes vane { 0%, 35% { transform: scaleX(1) } 50%, 85% { transform: scaleX(-1) } 100% { transform: scaleX(1) } }
-.bell-swing { transform-origin: 68px 150px; animation: swing 2.6s ease-in-out infinite }
-@keyframes swing { 0%, 100% { transform: rotate(10deg) } 50% { transform: rotate(-10deg) } }
+.bell-swing { transform-origin: 200px 372px; animation: swing 2.6s ease-in-out infinite }
+@keyframes swing { 0%, 100% { transform: rotate(9deg) } 50% { transform: rotate(-9deg) } }
 .glow { animation: glow 2.4s ease-in-out infinite }
 @keyframes glow { 50% { opacity: .15 } }
 .bs-cloud { animation: drift 16s ease-in-out infinite alternate }
@@ -73,4 +68,85 @@ body[data-screen=map] #screen-game.off { transform: translateX(6vw) scale(.97) }
   .screen, .screen.off { transition: opacity .2s ease }
   .screen.off { transform: none !important }
   .imp.hl { animation: none }
+}
+
+/* ---- The barn: a whole-screen scene with the controls floating over it ---- */
+#barn { padding: 0; align-items: stretch; justify-content: stretch; background: #9fd6ea }
+.barn-wrap { position: relative; display: flex; flex-direction: column; width: 100%; height: 100%; overflow: hidden }
+.barn-bg { position: absolute; inset: 0 }
+.barn-bg svg { display: block; width: 100%; height: 100% }
+.barn-top { position: relative; z-index: 2; padding: 14px 22px 6px }
+.barn-top h2 { text-shadow: 0 3px #fff9, 0 0 14px #fff8 }
+.barn-stage { position: relative; z-index: 1; display: flex; justify-content: center; flex: 1; min-height: 0 }
+.barn-stage > svg { display: block; width: 100%; height: 100%; max-width: 1400px }
+.barn-hay { position: absolute; z-index: 3; top: 92px; left: 22px; width: 320px; padding: 14px 16px 16px; border: 4px solid #b8793d; border-radius: 22px;
+  background: linear-gradient(#fff9e8, #fff0c8); box-shadow: 0 5px #b8793d, 0 12px 26px #4a301030 }
+.barn-hay .barn-hay-n { font-size: 40px; font-weight: 900; font-variant-numeric: tabular-nums; line-height: 1 }
+.barn-hay .barn-hay-n span { font-size: 18px; font-weight: 700; color: #8d6939 }
+.barn-hay small { display: block; margin-top: 6px; font-size: 14px; font-weight: 700; color: #8d6939 }
+.barn-hay .barn-meter { height: 12px; margin-top: 8px }
+.barn-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px }
+.barn-btns .buy { width: 100%; padding: 6px 8px }
+.barn-btns .buy .price { font-size: 21px }
+.barn-tray { position: relative; z-index: 3; display: flex; gap: 12px; padding: 12px 22px 18px; overflow-x: auto; scroll-snap-type: x proximity;
+  background: linear-gradient(#fff5d400, #fff5d4d9 28%) }
+.imp-card { position: relative; display: flex; flex: 1 0 196px; max-width: 280px; flex-direction: column; gap: 4px; padding: 10px 12px 12px; scroll-snap-align: start;
+  border: 3px solid #e0b36e; border-radius: 18px; background: #fffdf3; box-shadow: 0 4px #e0b36e; transition: transform .15s }
+.imp-card:hover { transform: translateY(-2px) }
+.imp-card strong { font-size: 20px; line-height: 1.1 }
+.imp-card > span { font-size: 15px; font-weight: 700; color: #70451f; line-height: 1.2 }
+.imp-card > small { font-size: 13px; font-weight: 700; color: #8d6939 }
+.imp-card .buy { width: 100%; margin-top: auto; padding: 5px 8px }
+.imp-card .buy .price { font-size: 20px }
+.imp-card .maxed { margin-top: auto; max-width: none; padding: 7px 0; border-radius: 12px; background: #e8f6dc; font-size: 18px }
+.imp-card.built { border-color: #9ccf78; box-shadow: 0 4px #9ccf78 }
+.hen-peck { transform-origin: 252px 590px; animation: peck 3.4s ease-in-out infinite }
+@keyframes peck { 0%, 55%, 100% { transform: rotate(0) } 62%, 70% { transform: rotate(16deg) } 66% { transform: rotate(4deg) } 74% { transform: rotate(14deg) } 82% { transform: rotate(0) } }
+.bs-bird { animation: bird 20s linear infinite }
+@keyframes bird { from { transform: translateX(-120px) } to { transform: translateX(1500px) } }
+@media (max-width: 760px), (max-height: 520px) {
+  .barn-top { padding: 8px 10px 2px }
+  .barn-hay { position: relative; z-index: 3; top: auto; left: auto; width: auto; margin: 4px 10px 0; padding: 8px 12px 10px; display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; align-items: center }
+  .barn-hay .barn-hay-n { font-size: 30px }
+  .barn-hay small { display: none }
+  .barn-hay .barn-meter { grid-column: 1 / -1; margin-top: 0 }
+  .barn-btns { grid-column: 1 / -1; margin-top: 4px }
+  .barn-stage { justify-content: flex-start; overflow-x: auto }
+  .barn-stage > svg { flex: none; width: auto; min-width: 560px; max-width: none; height: 100% }
+  .barn-tray { padding: 8px 10px 14px }
+  .imp-card { flex-basis: 170px }
+  .imp-card > span { display: none }
+}
+.barn-tray { align-items: flex-start }
+.imp-card .buy { margin-top: 6px }
+@media (max-width: 760px) {
+  .barn-top { flex-wrap: nowrap; gap: 8px }
+  .barn-top h2 { font-size: 24px; white-space: nowrap }
+  .barn-top .shop-balance { font-size: 18px; padding: 5px 10px; gap: 6px }
+  .barn-top .shop-balance .coin { font-size: 20px }
+}
+/* A wide window that is not tall: the hay card floats at the left, and the cards shrink to a name and a button. */
+@media (max-height: 520px) and (min-width: 761px) {
+  .barn-top h2 { font-size: 30px }
+  .barn-top .shop-back { height: 46px; font-size: 20px }
+  .barn-hay { position: absolute; top: 66px; left: 12px; width: 240px; margin: 0; padding: 8px 10px 10px; display: block }
+  .barn-hay .barn-hay-n { font-size: 26px }
+  .barn-hay .barn-meter { margin-top: 5px }
+  .barn-btns { margin-top: 8px }
+  .barn-btns .buy .price { font-size: 17px }
+  .barn-stage { overflow: visible; justify-content: center }
+  .barn-stage > svg { width: 100%; min-width: 0; height: 100%; max-width: 1400px }
+  .barn-tray { padding: 6px 12px 10px }
+  .imp-card { flex-basis: 150px; padding: 6px 10px 8px }
+  .imp-card strong { font-size: 16px }
+  .imp-card > small { display: none }
+  .imp-card .buy .price { font-size: 17px }
+  .imp-card .buy small { display: none }
+  .imp-card .maxed { padding: 3px 0; font-size: 15px }
+}
+@media (max-width: 760px) {
+  .barn-top .shop-back { height: 42px; padding: 0 12px 0 8px; font-size: 18px }
+  .barn-top .shop-back svg { width: 20px; height: 20px }
+  .barn-top h2 { font-size: 22px }
+  .barn-top .shop-balance { margin-left: auto; font-size: 17px }
 }

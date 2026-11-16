@@ -76,14 +76,18 @@ export function celebrate(root: HTMLElement, idx: number, spent = 0) {
 
 /** Runs a redraw of a panel and keeps whatever was scrolled where it was. */
 export function keepScroll(root: HTMLElement, redraw: () => void) {
-  const kept: [number, number][] = [];
+  const kept: [number, number, number][] = [];
   root.querySelectorAll<HTMLElement>('*').forEach((e, i) => {
-    if (e.scrollTop > 0) kept.push([i, e.scrollTop]);
+    if (e.scrollTop > 0 || e.scrollLeft > 0) kept.push([i, e.scrollTop, e.scrollLeft]);
   });
   redraw();
   if (!kept.length) return;
   const all = root.querySelectorAll<HTMLElement>('*');
-  for (const [i, top] of kept) if (all[i]) all[i].scrollTop = top;
+  for (const [i, top, left] of kept)
+    if (all[i]) {
+      all[i].scrollTop = top;
+      all[i].scrollLeft = left;
+    }
 }
 
 /** Shows a full-screen panel with a fade and a pop. */
