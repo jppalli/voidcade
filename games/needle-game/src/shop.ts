@@ -8,6 +8,7 @@ import { LOOKS, SLOT_NAME, type Slot } from './cosmetics';
 import { buyLook, equipLook, ownsLook, CELLS, TRACKS, adsLeft, anyAffordable, bagCount, bagValue, buy, buyCells, canBuyCells, helpersUnlocked, itemValue, nextTier, recordAd, sellAll, trackVisible, type Track } from './economy';
 import { platform } from './platform';
 import { track } from './analytics';
+import { celebrate, closeOverlay, keepScroll, openOverlay, rowIndex } from './fx';
 import { itemName } from './items';
 import type { Treasure } from './levels';
 import { CELLS_ART, DETECTOR_ART, FAN_ART, VACUUM_ART } from './art';
@@ -146,7 +147,7 @@ function fly(from: Pt, to: HTMLElement | null, count: number, cls: string, land:
 export function flyCoins(from: Pt, amount: number) {
   if (amount <= 0) return;
   if (!coinView.hold) holdCoins(amount);
-  const to = (document.querySelector('#shop:not(.hidden) .shop-balance .coin') ?? $('coin-badge').querySelector('.coin')) as HTMLElement | null;
+  const to = (document.querySelector('.shop-screen:not(.hidden) .shop-balance .coin') ?? $('coin-badge').querySelector('.coin')) as HTMLElement | null;
   const count = Math.min(14, Math.max(3, Math.ceil(amount / 4)));
   fly(from, to, count, 'coin', i => {
     coinView.shown += amount / count;
@@ -249,7 +250,7 @@ export function initShop(imageOf: (kind: string) => string | null, hooks: { onOp
   const screen = $('shop');
   let open = false;
 
-  const render = () => {
+  const paint = () => {
     const kinds = Object.keys(saved.bag).filter(k => saved.bag[k] > 0) as Treasure[];
     const sell = kinds.length
       ? `<ul class="shop-bag">${kinds
@@ -295,11 +296,12 @@ export function initShop(imageOf: (kind: string) => string | null, hooks: { onOp
         <section class="shop-col"><h3>Upgrades</h3>${rows}<h3>Looks</h3>${looks}</section>
       </div></div>`;
   };
+  const render = () => keepScroll(screen, paint);
 
   const close = () => {
     if (!open) return;
     open = false;
-    screen.classList.add('hidden');
+    closeOverlay(screen);
     updateCoinPill();
     hooks.onClose?.();
   };
@@ -309,7 +311,7 @@ export function initShop(imageOf: (kind: string) => string | null, hooks: { onOp
     hooks.onOpen?.();
     open = true;
     render();
-    screen.classList.remove('hidden');
+    openOverlay(screen);
     (screen.querySelector('.shop-back') as HTMLElement | null)?.focus();
   };
   window.addEventListener('keydown', e => {
@@ -327,6 +329,9 @@ export function initShop(imageOf: (kind: string) => string | null, hooks: { onOp
       close();
       return;
     }
+    const idx = rowIndex(screen, el),
+      coinsBefore = saved.coins;
+    let bought = false;
     if (el.dataset.act === 'sell') {
       const from = centerOf(el),
         gain = sellAll();
@@ -341,19 +346,23 @@ export function initShop(imageOf: (kind: string) => string | null, hooks: { onOp
       }
     } else if (el.dataset.look) {
       const [slot, id] = el.dataset.look.split(':') as [Slot, string];
-      if (ownsLook(slot, id) ? equipLook(slot, id) : buyLook(slot, id)) {
+      const owned = ownsLook(slot, id);
+      if (owned ? equipLook(slot, id) : buyLook(slot, id)) {
+        bought = !owned;
         sfx.found(0, false);
         document.body.dataset.frame = saved.cosmetics.frame;
         track('shop_buy', { item: el.dataset.look });
       } else sfx.denied();
     } else if (el.dataset.buy) {
       if (buy(el.dataset.buy as Track)) {
+        bought = true;
         sfx.found(0, false);
         track('shop_buy', { item: el.dataset.buy as string });
       }
       else sfx.denied();
     } else if (el.dataset.act === 'cells') {
       if (buyCells()) {
+        bought = true;
         sfx.found(0, false);
         updateCellsPill();
       } else sfx.denied();
@@ -366,6 +375,7 @@ export function initShop(imageOf: (kind: string) => string | null, hooks: { onOp
     } else return;
     updateCoinPill();
     render();
+    if (bought) celebrate(screen, idx, coinsBefore - saved.coins);
   });
   updateCoinPill();
   updateCellsPill();

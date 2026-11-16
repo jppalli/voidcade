@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import './casual.css';
 import './content.css';
 import './ui.css';
+import './fx.css';
 import { levelDef, dailyDef, pilePoint, TOOL_LEVELS, TOTAL_LEVELS, type LevelDef, type Treasure } from './levels';
 import { ITEMS, DECOYS, DECOY_NAME, RARITIES, itemName, rarityOf, isRarePlus } from './items';
 import { drawItem } from './itemart';

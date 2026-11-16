@@ -1,0 +1,76 @@
+/*
+ * Motion: moving between screens, opening and closing the full-screen panels, buying things,
+ * and the picture of the barn. Everything here stops when the player asks for less motion.
+ */
+
+/* ---- Between screens: the way you are going decides which way the old one leaves ---- */
+.screen { transition: opacity .35s ease, transform .5s cubic-bezier(.25, .9, .35, 1) }
+.screen.off { transform: scale(.97); transition: opacity .28s ease, transform .35s ease, visibility 0s .3s }
+body[data-screen=map] #screen-title.off,
+body[data-screen=game] #screen-title.off,
+body[data-screen=game] #screen-map.off { transform: translateX(-6vw) scale(.97) }
+body[data-screen=title] #screen-map.off,
+body[data-screen=title] #screen-game.off,
+body[data-screen=map] #screen-game.off { transform: translateX(6vw) scale(.97) }
+
+/* ---- Full-screen panels (shop, barn, collection): fade and pop in, fade out ---- */
+.shop-panel { animation: none }
+.shop-screen.enter { animation: ov-in .3s ease both }
+.shop-screen.enter .shop-panel { animation: dlg-in .45s cubic-bezier(.3, 1.45, .5, 1) both }
+.shop-screen.closing { animation: ov-out .23s ease both; pointer-events: none }
+.shop-screen.closing .shop-panel { animation: dlg-out .23s ease both }
+@keyframes ov-in { from { opacity: 0 } }
+@keyframes ov-out { to { opacity: 0 } }
+@keyframes dlg-out { to { opacity: 0; transform: translateY(16px) scale(.96) } }
+
+/* ---- Buying ---- */
+.shop-row.bought { animation: bought .8s ease }
+@keyframes bought {
+  0% { transform: scale(1) }
+  22% { transform: scale(1.04); box-shadow: 0 0 0 7px #ffd24aaa, 0 0 26px 6px #ffe9a0 }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 #ffd24a00 }
+}
+.shop-row.bought .maxed, .shop-row.bought .buy { animation: stamp .5s cubic-bezier(.3, 1.6, .5, 1) }
+@keyframes stamp { from { transform: scale(1.7); opacity: 0 } }
+.shop-balance.spent { animation: spent .45s ease }
+@keyframes spent { 25% { transform: translateX(-4px) } 50% { transform: translateX(4px) } 75% { transform: translateX(-2px) } }
+.spark { position: fixed; left: 0; top: 0; z-index: 400; width: 16px; height: 16px; pointer-events: none;
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%) }
+.float-text { position: fixed; left: 0; top: 0; z-index: 400; pointer-events: none; white-space: nowrap; font-size: 26px; font-weight: 900;
+  color: #fff; -webkit-text-stroke: 5px #8f5a28; paint-order: stroke fill; text-shadow: 0 3px #8f5a2877 }
+.float-text.spend { color: #ffe9a0 }
+
+/* ---- The barn picture ---- */
+.barn-scene { position: relative; margin: 2px 0 12px; border: 4px solid #b8793d; border-radius: 22px; overflow: hidden; background: #cfeaf3;
+  box-shadow: 0 4px #b8793d, inset 0 0 0 3px #fff6 }
+.barn-scene svg { display: block; width: 100%; height: auto; max-height: 42vh }
+.barn-bales { position: absolute; left: 10px; bottom: 8px; padding: 3px 12px; border: 3px solid #b8793d; border-radius: 12px; background: #fff5d4; color: #70451f; font-size: 17px; font-weight: 900 }
+.imp { transition: opacity .3s, filter .3s }
+.imp.ghost { opacity: .28; filter: grayscale(1) }
+.imp.ghost .glow { display: none }
+.imp.hl { opacity: .95; filter: none; animation: imp-hl .9s ease-in-out infinite }
+.imp.ghost.hl { filter: grayscale(.4) drop-shadow(0 0 6px #ffd24a) }
+.imp.on.hl { filter: drop-shadow(0 0 7px #ffd24a) }
+@keyframes imp-hl { 50% { transform: translateY(-3px) } }
+.imp.new { animation: imp-drop .9s cubic-bezier(.3, 1.5, .5, 1) both }
+@keyframes imp-drop { from { opacity: 0; transform: translateY(-46px) } 60% { filter: brightness(1.5) } }
+.bale.new { animation: bale-in .6s cubic-bezier(.3, 1.5, .5, 1) both }
+@keyframes bale-in { from { opacity: 0; transform: translateY(-50px) } }
+.mill-blades { transform-origin: 278px 106px; animation: spin 7s linear infinite }
+@keyframes spin { to { transform: rotate(360deg) } }
+.vane-turn { transform-origin: 160px 19px; animation: vane 5s ease-in-out infinite }
+@keyframes vane { 0%, 35% { transform: scaleX(1) } 50%, 85% { transform: scaleX(-1) } 100% { transform: scaleX(1) } }
+.bell-swing { transform-origin: 68px 150px; animation: swing 2.6s ease-in-out infinite }
+@keyframes swing { 0%, 100% { transform: rotate(10deg) } 50% { transform: rotate(-10deg) } }
+.glow { animation: glow 2.4s ease-in-out infinite }
+@keyframes glow { 50% { opacity: .15 } }
+.bs-cloud { animation: drift 16s ease-in-out infinite alternate }
+.bs-cloud.slow { animation-duration: 24s }
+@keyframes drift { to { transform: translateX(26px) } }
+.shop-row[data-imp]:hover { transform: translateY(-1px) }
+
+@media (prefers-reduced-motion: reduce) {
+  .screen, .screen.off { transition: opacity .2s ease }
+  .screen.off { transform: none !important }
+  .imp.hl { animation: none }
+}

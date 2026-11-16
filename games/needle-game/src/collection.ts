@@ -9,6 +9,7 @@ import { collectionProgress, itemValue } from './economy';
 import { activeEvent, daysLeft } from './events';
 import { centerOf, flyCells, flyCoins, updateCellsPill, updateCoinPill } from './shop';
 import * as sfx from './sound';
+import { closeOverlay, openOverlay } from './fx';
 
 const $ = (id: string) => document.getElementById(id) as HTMLElement;
 const COIN = '<i class="coin"></i>';
@@ -51,7 +52,7 @@ export function initCollection(imageOf: (id: string) => string | null, hooks: Ho
   const close = () => {
     if (!open) return;
     open = false;
-    screen.classList.add('hidden');
+    closeOverlay(screen);
     hooks.onClose?.();
   };
   const show = () => {
@@ -60,7 +61,7 @@ export function initCollection(imageOf: (id: string) => string | null, hooks: Ho
     hooks.onOpen?.();
     open = true;
     render();
-    screen.classList.remove('hidden');
+    openOverlay(screen);
     (screen.querySelector('.shop-back') as HTMLElement | null)?.focus();
   };
   window.addEventListener('keydown', e => {
