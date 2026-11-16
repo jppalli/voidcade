@@ -1,4 +1,4 @@
-// Shared by the art tools: reads the slot list from src/artslots.ts and checks PNG files against the spec.
+// Shared by the art tools: reads the slot list from src/artslots.ts and checks files against the spec.
 import { buildSync } from 'esbuild';
 import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
@@ -7,25 +7,34 @@ import zlib from 'node:zlib';
 import crypto from 'node:crypto';
 
 export const ROOT = fileURLToPath(new URL('../', import.meta.url));
+export const FOLDERS = ['items', 'icons', 'props'];
 export const DIRS = {
-  /** Where artists drop their files. */
+  /** Where artists drop their files, in a folder for each kind: items/, icons/, props/. */
   incoming: path.join(ROOT, 'art', 'incoming'),
   /** Where files go after they have been accepted (a dated folder each time). */
   archive: path.join(ROOT, 'art', 'archive'),
-  /** What the game serves. */
-  items: path.join(ROOT, 'public', 'art', 'items'),
+  /** What the game serves, with the same folders. */
+  delivered: path.join(ROOT, 'public', 'art'),
   manifest: path.join(ROOT, 'public', 'art', 'manifest.json'),
-  sheet: path.join(ROOT, 'art', 'ART_SPEC.md'),
+  brief: path.join(ROOT, 'art', 'ART_BRIEF.md'),
   csv: path.join(ROOT, 'art', 'art-slots.csv'),
+  reference: path.join(ROOT, 'art', 'reference'),
+  kit: path.join(ROOT, 'art', 'kit'),
 };
+
+/** Bundles a few of the game's own source files so the tools can use them. */
+export async function bundle(lines, extra = {}) {
+  const built = buildSync({
+    stdin: { contents: lines.join('\n'), resolveDir: path.join(ROOT, 'src'), loader: 'ts' },
+    bundle: true, format: 'esm', write: false, platform: 'neutral', logLevel: 'silent', ...extra,
+  });
+  return built.outputFiles[0].text;
+}
 
 /** The slots and the spec, straight from the game's own source. */
 export async function loadSlots() {
-  const built = buildSync({
-    stdin: { contents: "export * from './artslots.ts';", resolveDir: path.join(ROOT, 'src'), loader: 'ts' },
-    bundle: true, format: 'esm', write: false, platform: 'neutral', logLevel: 'silent',
-  });
-  const G = await import('data:text/javascript;base64,' + Buffer.from(built.outputFiles[0].text).toString('base64'));
+  const code = await bundle(["export * from './artslots.ts';"]);
+  const G = await import('data:text/javascript;base64,' + Buffer.from(code).toString('base64'));
   return { spec: G.ART_SPEC, slots: G.artSlots() };
 }
 
@@ -96,53 +105,82 @@ const edit = (a, b) => {
   return d[a.length][b.length];
 };
 
-/** The slot a file name was probably meant for, or null. */
-export function suggest(base, slots) {
+/** The slot a file name was probably meant for (inside the same folder), or null. */
+export function suggest(base, slots, folder) {
   const low = base.toLowerCase().replace(/[\s.]+/g, '_');
   let best = null, bestD = 3;
   for (const s of slots) {
+    if (folder && s.folder !== folder) continue;
     const d = edit(low, s.id);
     if (d < bestD) { best = s; bestD = d; }
   }
   return best;
 }
 
-/**
- * Checks one file against its slot. `errors` stop the file from being accepted, `warnings` are
- * worth a look. `slot` is null when the file name matches nothing.
- */
-export function checkFile(name, buf, slot, slots, spec) {
-  const errors = [], warnings = [];
-  const base = name.replace(/\.[^.]+$/, '');
-  if (!slot) {
-    const near = suggest(base, slots);
-    errors.push(`no slot called "${base}"${near ? `. Did you mean ${near.id}.png?` : ''}`);
-    return { errors, warnings };
-  }
-  if (name !== `${slot.id}.png`) errors.push(`file name must be exactly ${slot.id}.png (lower case)`);
-  if (buf.length > spec.maxBytes) errors.push(`file is ${(buf.length / 1000).toFixed(0)} KB, the most allowed is ${(spec.maxBytes / 1000).toFixed(0)} KB. Reduce the colours or run it through a PNG optimiser`);
-  else if (buf.length > spec.maxBytes * 0.75) warnings.push(`file is ${(buf.length / 1000).toFixed(0)} KB, close to the ${(spec.maxBytes / 1000).toFixed(0)} KB limit`);
+/** Checks the pixels of a PNG against its slot. */
+function checkPngPixels(buf, slot, spec, errors, warnings) {
   const png = readPng(buf);
-  if (png.error) { errors.push(png.error); return { errors, warnings }; }
-  if (png.w !== spec.master || png.h !== spec.master) errors.push(`size is ${png.w} x ${png.h}, it must be ${spec.master} x ${spec.master}`);
+  if (png.error) { errors.push(png.error); return; }
+  if (png.w !== slot.w || png.h !== slot.h) errors.push(`size is ${png.w} x ${png.h}, it must be ${slot.w} x ${slot.h}`);
   const a = alphaOf(png);
-  if (a.note) { errors.push(a.note); return { errors, warnings }; }
-  if (png.w !== spec.master || png.h !== spec.master) return { errors, warnings };
-  const { alpha } = a, n = png.w;
-  let minX = n, minY = n, maxX = -1, maxY = -1, opaque = 0;
-  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
-    const v = alpha[y * n + x];
+  if (a.note) { errors.push(a.note); return; }
+  if (png.w !== slot.w || png.h !== slot.h) return;
+  const { alpha } = a, W = png.w, H = png.h;
+  let minX = W, minY = H, maxX = -1, maxY = -1, opaque = 0;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const v = alpha[y * W + x];
     if (v > 240) opaque++;
     if (v > spec.emptyAlpha) { if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y; }
   }
-  if (maxX < 0) { errors.push('the picture is empty (fully transparent)'); return { errors, warnings }; }
-  if (opaque / (n * n) > 0.9) errors.push('the picture looks like it has a solid background. It must be transparent around the object');
-  const gaps = { left: minX, top: minY, right: n - 1 - maxX, bottom: n - 1 - maxY };
-  const tight = Object.entries(gaps).filter(([, g]) => g < spec.margin).map(([k, g]) => `${k} ${g}px`);
-  if (tight.length) errors.push(`the object comes too close to the edge (${tight.join(', ')}). Leave at least ${spec.margin}px of empty space on every side`);
-  const longest = Math.max(maxX - minX + 1, maxY - minY + 1) / n;
-  if (longest < spec.fill[0]) warnings.push(`the object is small (${Math.round(longest * 100)}% of the file). It will be hard to see in the hay. Aim for ${Math.round(spec.fill[0] * 100)}% to ${Math.round(spec.fill[1] * 100)}%`);
-  if (longest > spec.fill[1]) warnings.push(`the object fills ${Math.round(longest * 100)}% of the file, more than ${Math.round(spec.fill[1] * 100)}%`);
+  if (maxX < 0) { errors.push('the picture is empty (fully transparent)'); return; }
+  if (opaque / (W * H) > 0.9) errors.push('the picture looks like it has a solid background. It must be transparent around the object');
+  const gaps = { left: minX, top: minY, right: W - 1 - maxX, bottom: H - 1 - maxY };
+  const tight = Object.entries(gaps).filter(([, g]) => g < slot.margin).map(([k, g]) => `${k} ${g}px`);
+  if (tight.length) errors.push(`the object comes too close to the edge (${tight.join(', ')}). Leave at least ${slot.margin}px of empty space on every side`);
+  if (slot.fill) {
+    const longest = Math.max((maxX - minX + 1) / W, (maxY - minY + 1) / H);
+    if (longest < slot.fill[0]) warnings.push(`the object is small (${Math.round(longest * 100)}% of the file). Aim for ${Math.round(slot.fill[0] * 100)}% to ${Math.round(slot.fill[1] * 100)}%`);
+    if (longest > slot.fill[1]) warnings.push(`the object fills ${Math.round(longest * 100)}% of the file, more than ${Math.round(slot.fill[1] * 100)}%`);
+  }
+}
+
+/** Checks an SVG file against its slot. */
+function checkSvg(text, slot, errors, warnings) {
+  if (!/<svg[\s>]/i.test(text)) { errors.push('not an SVG file'); return; }
+  const vb = text.match(/viewBox\s*=\s*["']([^"']+)["']/i);
+  if (!vb) errors.push(`the SVG has no viewBox. Add viewBox="0 0 ${slot.box[0]} ${slot.box[1]}" (or the same proportions)`);
+  else {
+    const n = vb[1].trim().split(/[\s,]+/).map(Number);
+    if (n.length !== 4 || n.some(Number.isNaN) || n[2] <= 0 || n[3] <= 0) errors.push(`the viewBox "${vb[1]}" is not valid`);
+    else if (Math.abs(n[2] / n[3] / (slot.box[0] / slot.box[1]) - 1) > 0.01) errors.push(`the viewBox is ${n[2]} x ${n[3]}, it must have the same proportions as ${slot.box[0]} x ${slot.box[1]}`);
+  }
+  const bad = text.match(/<script|<foreignObject|<iframe|<audio|<video|javascript:|<!ENTITY|\son[a-z]+\s*=/i);
+  if (bad) errors.push(`contains something that is not allowed in a picture (${bad[0].trim()}). Export a plain SVG with only shapes and gradients`);
+  if (/(?:xlink:)?href\s*=\s*["']\s*(?:https?:)?\/\//i.test(text) || /url\(\s*["']?\s*https?:/i.test(text)) errors.push('refers to files on the internet. Everything must be inside the file');
+  if (/data:image\/(?:png|jpe?g|gif|webp)/i.test(text)) warnings.push('contains an embedded bitmap. It is allowed but makes the file heavy; vector shapes are better');
+  if (/<text[\s>]/i.test(text)) warnings.push('contains live text. Convert the text to outlines so fonts do not matter');
+  if (/<rect[^>]*width\s*=\s*["']100%["'][^>]*height\s*=\s*["']100%["']/i.test(text)) warnings.push('may contain a background rectangle that covers the whole picture. The background must be transparent');
+}
+
+/**
+ * Checks one file against its slot. `errors` stop the file from being accepted, `warnings` are
+ * worth a look. `slot` is null when the file name matches nothing. `folder` is the folder it is in.
+ */
+export function checkFile(name, buf, slot, slots, spec, folder) {
+  const errors = [], warnings = [];
+  const ext = (name.match(/\.([^.]+)$/)?.[1] ?? '').toLowerCase();
+  const base = name.replace(/\.[^.]+$/, '');
+  if (!slot) {
+    const near = suggest(base, slots, folder);
+    errors.push(`no ${folder ? folder.replace(/s$/, '') + ' ' : ''}slot called "${base}"${near ? `. Did you mean ${near.id}.${ext || near.formats[0]}?` : ''}`);
+    return { errors, warnings };
+  }
+  if (!slot.formats.includes(ext)) { errors.push(`${ext || 'this'} files are not accepted here. Deliver ${slot.formats.map(f => f.toUpperCase()).join(' or ')}`); return { errors, warnings }; }
+  if (name !== `${slot.id}.${ext}`) errors.push(`file name must be exactly ${slot.id}.${ext} (lower case)`);
+  if (buf.length > spec.maxBytes) errors.push(`file is ${(buf.length / 1000).toFixed(0)} KB, the most allowed is ${(spec.maxBytes / 1000).toFixed(0)} KB. ${ext === 'png' ? 'Reduce the colours or run it through a PNG optimiser' : 'Simplify the paths or remove hidden layers'}`);
+  else if (buf.length > spec.maxBytes * 0.75) warnings.push(`file is ${(buf.length / 1000).toFixed(0)} KB, close to the ${(spec.maxBytes / 1000).toFixed(0)} KB limit`);
+  if (ext === 'png') checkPngPixels(buf, slot, spec, errors, warnings);
+  else checkSvg(buf.toString('utf8'), slot, errors, warnings);
   return { errors, warnings };
 }
 
@@ -150,16 +188,35 @@ export function checkFile(name, buf, slot, slots, spec) {
 export function listFiles(dir) {
   try { return fs.readdirSync(dir, { withFileTypes: true }).filter(d => d.isFile() && !d.name.startsWith('.')).map(d => d.name).sort(); } catch { return []; }
 }
+const listDirs = dir => { try { return fs.readdirSync(dir, { withFileTypes: true }).filter(d => d.isDirectory()).map(d => d.name); } catch { return []; } };
 
 export const hashOf = buf => crypto.createHash('sha1').update(buf).digest('hex').slice(0, 8);
 
-/** Checks every file in a folder. Returns one result per file. */
-export function checkFolder(dir, slots, spec) {
-  return listFiles(dir).map(name => {
-    const full = path.join(dir, name);
-    if (!/\.png$/i.test(name)) return { name, full, errors: [], warnings: [], ignored: 'not a PNG, so it is ignored. Deliver PNG files only' };
-    const buf = fs.readFileSync(full);
-    const slot = slots.find(s => s.id === name.replace(/\.png$/i, '')) ?? slots.find(s => s.id === name.replace(/\.png$/i, '').toLowerCase()) ?? null;
-    return { name, full, buf, slot, ...checkFile(name, buf, slot, slots, spec) };
-  });
+/**
+ * Checks every file in the folders items/, icons/ and props/ inside `root`. Returns one result
+ * per file: { rel, full, folder, name, slot, errors, warnings, buf } (or `ignored` with the reason).
+ */
+export function checkTree(root, slots, spec) {
+  const results = [];
+  for (const name of listFiles(root)) results.push({ rel: name, name, full: path.join(root, name), errors: [], warnings: [], ignored: `it is not inside a folder. Put it in ${FOLDERS.map(f => f + '/').join(', ')}` });
+  for (const dir of listDirs(root)) {
+    if (!FOLDERS.includes(dir)) { results.push({ rel: dir + '/', name: dir, full: path.join(root, dir), errors: [], warnings: [], ignored: `unknown folder. The folders are ${FOLDERS.join(', ')}` }); continue; }
+    for (const name of listFiles(path.join(root, dir))) {
+      const full = path.join(root, dir, name), rel = `${dir}/${name}`;
+      if (!/\.(png|svg)$/i.test(name)) { results.push({ rel, name, full, folder: dir, errors: [], warnings: [], ignored: 'not a PNG or SVG, so it is ignored' }); continue; }
+      const buf = fs.readFileSync(full);
+      const base = name.replace(/\.[^.]+$/, '');
+      const slot = slots.find(s => s.folder === dir && (s.id === base || s.id === base.toLowerCase())) ?? null;
+      results.push({ rel, name, full, folder: dir, buf, slot, ...checkFile(name, buf, slot, slots, spec, dir) });
+    }
+  }
+  // Both a PNG and an SVG for the same slot: say so, because only one can be used.
+  const seen = new Map();
+  for (const r of results) {
+    if (!r.slot || r.errors.length) continue;
+    const k = `${r.folder}/${r.slot.id}`, first = seen.get(k);
+    if (first) for (const x of [first, r]) x.errors.push(`there are two files for this picture (${first.name} and ${r.name}). Deliver only one`);
+    else seen.set(k, r);
+  }
+  return results;
 }

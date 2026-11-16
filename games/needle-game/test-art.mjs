@@ -1,10 +1,13 @@
 // Tests the art checker with PNG files made in memory. Run: node test-art.mjs
 import assert from 'node:assert/strict';
 import zlib from 'node:zlib';
-import { alphaOf, checkFile, loadSlots, readPng, suggest } from './tools/art-lib.mjs';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { alphaOf, bundle, checkFile, checkTree, loadSlots, readPng, suggest } from './tools/art-lib.mjs';
 
 const { spec, slots } = await loadSlots();
-const slot = slots[0];
+const slot = slots.find(s => s.kind === 'item');
 
 /** Makes a PNG. `px(x, y)` returns [r, g, b, a]. type 6 is RGBA, type 2 is RGB. `filters` picks a row filter for each row. */
 function makePng(w, h, px, { type = 6, depth = 8, mixFilters = false, interlace = 0 } = {}) {
@@ -42,9 +45,9 @@ function makePng(w, h, px, { type = 6, depth = 8, mixFilters = false, interlace 
   return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ihdr), chunk('IDAT', zlib.deflateSync(Buffer.concat(rows))), chunk('IEND', Buffer.alloc(0))]);
 }
 
-const N = spec.master;
+const N = slot.w;
 const disc = r => (x, y) => (Math.hypot(x - N / 2, y - N / 2) < r ? [200, 60, 60, 255] : [0, 0, 0, 0]);
-const check = (buf, name = `${slot.id}.png`, s = slot) => checkFile(name, buf, s, slots, spec);
+const check = (buf, name = `${slot.id}.png`, s = slot) => checkFile(name, buf, s, slots, spec, s?.folder ?? 'items');
 const has = (res, text) => res.errors.some(e => e.includes(text));
 
 // A good file passes.
@@ -81,16 +84,69 @@ assert.ok(r.warnings.some(w => w.includes('small')));
 const noise = () => Math.floor(Math.random() * 256);
 assert.ok(has(check(makePng(N, N, () => [noise(), noise(), noise(), 255])), 'KB'));
 
-// Names: wrong case is an error, and a typo gets a suggestion.
+// Names: wrong case is an error, and a typo gets a suggestion inside the same folder.
 assert.ok(has(check(makePng(N, N, disc(95)), `${slot.id.toUpperCase()}.png`), 'file name must be exactly'));
 const typo = slot.id.slice(0, -1) + 'x';
-assert.equal(suggest(typo, slots)?.id, slot.id);
-r = checkFile(`${typo}.png`, makePng(N, N, disc(95)), null, slots, spec);
+assert.equal(suggest(typo, slots, 'items')?.id, slot.id);
+r = checkFile(`${typo}.png`, makePng(N, N, disc(95)), null, slots, spec, 'items');
 assert.ok(has(r, `Did you mean ${slot.id}.png`), r.errors.join('; '));
-assert.ok(has(checkFile('zzzzzzzzzz.png', makePng(N, N, disc(95)), null, slots, spec), 'no slot called'));
+assert.ok(has(checkFile('zzzzzzzzzz.png', makePng(N, N, disc(95)), null, slots, spec, 'items'), 'no item slot called'));
+assert.ok(has(check(makePng(N, N, disc(95)), `${slot.id}.svg`), 'not accepted here'), 'items are PNG only');
 
-// The slot list covers every item and look-alike once.
-assert.equal(new Set(slots.map(s => s.id)).size, slots.length, 'slot ids are unique');
-assert.ok(slots.length >= 45 && slots.every(s => /^[a-z0-9_-]+$/.test(s.id)));
+// Icons and props accept PNG or SVG, with their own sizes.
+const icon = slots.find(s => s.kind === 'icon'), prop = slots.find(s => s.id === 'windmill');
+assert.equal(icon.w, 128);
+assert.equal(prop.w, 400);
+assert.equal(prop.h, 560);
+const svg = (vb, body = '<circle cx="32" cy="32" r="24" fill="#c33"/>') => Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}">${body}</svg>`);
+const checkSlot = (s, name, buf) => checkFile(name, buf, s, slots, spec, s.folder);
+assert.deepEqual(checkSlot(icon, `${icon.id}.svg`, svg('0 0 64 64')).errors, []);
+assert.deepEqual(checkSlot(icon, `${icon.id}.png`, makePng(128, 128, (x, y) => (Math.hypot(x - 64, y - 64) < 52 ? [200, 60, 60, 255] : [0, 0, 0, 0]))).errors, []);
+assert.deepEqual(checkSlot(prop, `${prop.id}.svg`, svg('0 0 100 140')).errors, []);
+assert.deepEqual(checkSlot(prop, `${prop.id}.svg`, svg('0 0 200 280')).errors, [], 'same proportions at any scale');
+assert.ok(has(checkSlot(prop, `${prop.id}.svg`, svg('0 0 100 100')), 'same proportions'));
+assert.ok(has(checkSlot(icon, `${icon.id}.svg`, Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><circle r="5"/></svg>')), 'no viewBox'));
+assert.ok(has(checkSlot(icon, `${icon.id}.svg`, svg('0 0 64 64', '<script>alert(1)</script>')), 'not allowed'));
+assert.ok(has(checkSlot(icon, `${icon.id}.svg`, svg('0 0 64 64', '<circle r="5" onclick="x()"/>')), 'not allowed'));
+assert.ok(has(checkSlot(icon, `${icon.id}.svg`, svg('0 0 64 64', '<image href="https://example.com/a.png"/>')), 'internet'));
+assert.ok(checkSlot(icon, `${icon.id}.svg`, svg('0 0 64 64', '<text x="1" y="9">Hi</text>')).warnings.some(w => w.includes('text')));
+assert.ok(has(checkSlot(icon, `${icon.id}.png`, makePng(256, 256, disc(100))), 'must be 128 x 128'));
 
-console.log(`Passed: art checker (${slots.length} slots, size, transparency, edges, weight, names, filters and 16-bit files).`);
+// A folder of files: right folder, wrong folder, a file outside any folder, and two files for one picture.
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'art-test-'));
+for (const d of ['items', 'icons', 'misc']) fs.mkdirSync(path.join(tmp, d));
+fs.writeFileSync(path.join(tmp, 'items', `${slot.id}.png`), makePng(N, N, disc(95)));
+fs.writeFileSync(path.join(tmp, 'icons', `${icon.id}.svg`), svg('0 0 64 64'));
+fs.writeFileSync(path.join(tmp, 'icons', `${icon.id}.png`), makePng(128, 128, (x, y) => (Math.hypot(x - 64, y - 64) < 52 ? [200, 60, 60, 255] : [0, 0, 0, 0])));
+fs.writeFileSync(path.join(tmp, 'icons', 'notes.txt'), 'x');
+fs.writeFileSync(path.join(tmp, 'misc', 'a.png'), 'x');
+fs.writeFileSync(path.join(tmp, 'loose.png'), 'x');
+const tree = checkTree(tmp, slots, spec);
+const by = rel => tree.find(t => t.rel === rel);
+assert.deepEqual(by(`items/${slot.id}.png`).errors, []);
+assert.ok(by(`icons/${icon.id}.svg`).errors.some(e => e.includes('two files')));
+assert.ok(by(`icons/${icon.id}.png`).errors.some(e => e.includes('two files')));
+assert.ok(by('icons/notes.txt').ignored);
+assert.ok(by('misc/').ignored && by('loose.png').ignored);
+fs.rmSync(tmp, { recursive: true, force: true });
+
+// The slot list: unique ids in each folder, every icon and prop of the game has one, and the boxes match the game's drawings.
+for (const f of ['items', 'icons', 'props']) {
+  const ids = slots.filter(s => s.folder === f).map(s => s.id);
+  assert.equal(new Set(ids).size, ids.length, `${f}: ids are unique`);
+  assert.ok(ids.every(id => /^[a-z0-9_-]+$/.test(id)));
+}
+assert.ok(slots.filter(s => s.folder === 'items').length >= 45);
+assert.equal(slots.filter(s => s.kind === 'icon').length, 13);
+assert.equal(slots.filter(s => s.kind === 'prop').length, 20);
+const code = await bundle(["import './art.ts';", "import './props.ts';", "export { registeredFallbacks } from './artdom.ts';"]);
+const found = (await import('data:text/javascript;base64,' + Buffer.from(code).toString('base64'))).registeredFallbacks();
+for (const s of slots.filter(x => x.folder !== 'items')) {
+  const own = found.get(`${s.folder}/${s.id}`);
+  assert.ok(own, `the game has a drawing for ${s.folder}/${s.id}`);
+  const vb = own.match(/viewBox="([^"]+)"/)[1].split(/\s+/).map(Number);
+  assert.deepEqual([vb[2], vb[3]], s.box, `${s.id}: the slot box matches the game's own viewBox`);
+}
+assert.equal([...found.keys()].filter(k => !slots.some(s => `${s.folder}/${s.id}` === k)).length, 0, 'every drawing registered by the game has a slot');
+
+console.log(`Passed: art checker (${slots.length} slots: items, icons and props; PNG and SVG; size, transparency, edges, weight, names, folders, and the game's own drawings).`);

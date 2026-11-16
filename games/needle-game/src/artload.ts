@@ -1,26 +1,26 @@
 /**
- * Loads the pictures that artists have delivered (see artslots.ts). Anything that has no file, or
- * whose file fails to load, keeps the picture the game draws itself.
+ * Loads the delivered pictures of items and look-alikes into the game (Phaser). Anything that has
+ * no file, or whose file fails to load, keeps the picture the game draws itself.
+ * Icons and props are handled in artdom.ts.
  */
 import type Phaser from 'phaser';
-import { ART_SPEC, artFile, artKey, type ArtManifest } from './artslots';
+import { ART_SPEC, artKey, artSlots } from './artslots';
+import { itemArtUrl } from './artdom';
 
-const MANIFEST = `./${ART_SPEC.folder}/manifest.json`;
-const url = (id: string, v: string) => `./${ART_SPEC.folder}/${artFile(id)}?v=${encodeURIComponent(v)}`;
-
-/** Queues the manifest and then every picture it lists. Call it from a scene's preload(). */
+/** Queues every delivered item picture. Call it from a scene's preload(). */
 export function artPreload(scene: Phaser.Scene) {
-  scene.load.json('art-manifest', MANIFEST);
-  scene.load.once('filecomplete-json-art-manifest', (_key: string, _type: string, data: ArtManifest | undefined) => {
-    for (const [id, entry] of Object.entries(data?.items ?? {})) {
-      if (/^[a-z0-9_-]+$/.test(id) && entry && typeof entry.v === 'string') scene.load.image(artKey(id), url(id, entry.v));
-    }
-  });
-  // A missing manifest or picture is not an error: the game falls back to its own drawings.
+  for (const s of artSlots()) {
+    if (s.folder !== 'items') continue;
+    const url = itemArtUrl(s.id);
+    if (url) scene.load.image(artKey(s.id), url);
+  }
 }
 
 /** True when a delivered picture for this slot is loaded. */
 export const hasArt = (scene: Phaser.Scene, id: string) => scene.textures.exists(artKey(id));
+
+/** Size of the picture the game keeps in memory for a delivered item. */
+export const ART_TEXTURE = ART_SPEC.item.texture;
 
 /**
  * Draws a delivered picture into a square canvas the way the game draws its own: the same soft

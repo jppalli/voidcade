@@ -6,8 +6,8 @@ import './fx.css';
 import { levelDef, dailyDef, pilePoint, TOOL_LEVELS, TOTAL_LEVELS, type LevelDef, type Treasure } from './levels';
 import { ITEMS, DECOYS, DECOY_NAME, RARITIES, itemName, rarityOf, isRarePlus } from './items';
 import { drawItem } from './itemart';
-import { artPreload, drawArt, hasArt } from './artload';
-import { ART_SPEC, artKey } from './artslots';
+import { ART_TEXTURE, artPreload, drawArt, hasArt } from './artload';
+import { artKey } from './artslots';
 import { rollItems, rollDaily, nextPity } from './drops';
 import { activeEvent } from './events';
 import { track as quest } from './quests';
@@ -198,7 +198,7 @@ class Haystack extends Phaser.Scene {
   texK:Record<string,number>={};
   artScale(id:string){return this.texK[id]??1;}
   makeTextures(){
-   for(const id of [...ITEMS.map(i=>i.id),...DECOYS]){const art=hasArt(this,id),size=art?ART_SPEC.texture:64,texture=this.textures.createCanvas('object-'+id,size,size)!;if(art)drawArt(texture.context,this.textures.get(artKey(id)).getSourceImage() as HTMLImageElement,size);else drawItem(id,texture.context);this.texK[id]=64/size;texture.refresh();}
+   for(const id of [...ITEMS.map(i=>i.id),...DECOYS]){const art=hasArt(this,id),size=art?ART_TEXTURE:64,texture=this.textures.createCanvas('object-'+id,size,size)!;if(art)drawArt(texture.context,this.textures.get(artKey(id)).getSourceImage() as HTMLImageElement,size);else drawItem(id,texture.context);this.texK[id]=64/size;texture.refresh();}
   const ground=this.textures.createCanvas('ground',1200,700)!;const c=ground.context;
   const grad=c.createRadialGradient(530,280,40,600,350,740);grad.addColorStop(0,'#79602f');grad.addColorStop(.7,'#48391e');grad.addColorStop(1,'#251c12');c.fillStyle=grad;c.fillRect(0,0,1200,700);
   const rng=new Phaser.Math.RandomDataGenerator(['needle-textures']);for(let i=0;i<14000;i++){c.fillStyle=`rgba(${rng.pick(['255,230,170','45,34,17'])},${rng.realInRange(.02,.12)})`;c.fillRect(rng.between(0,1200),rng.between(0,700),rng.between(1,3),rng.between(1,3));}ground.refresh();

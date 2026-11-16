@@ -86,15 +86,21 @@ The cell total sits in the top bar next to the coins. While the detector or the 
 
 ## Art from artists
 
-Every item and every look-alike of the needle has an art slot (`src/artslots.ts`). While no file has been delivered for a slot, the game draws its own picture (`src/itemart.ts`), so nothing waits for the art. When a file is delivered it replaces the stand-in, with the same soft shadow and the same hit areas.
+Every item, look-alike, icon and scenery prop has an art slot (`src/artslots.ts`): 78 in all. While no file has been delivered for a slot, the game draws its own picture, so nothing waits for the art. When a file is delivered it replaces the stand-in.
+
+- **Items and look-alikes** (`items/`): PNG, 256 x 256. Used one by one, with the same soft shadow and hit areas as before.
+- **Icons** (`icons/`) and **scenery props** (`props/`): PNG or SVG. They are used only when every picture of their kit is there (all 13 icons; the props of one world), so a screen is never half in the old style. Add `?art=all` to the address to see partial art anyway.
+- The game reads `public/art/manifest.json` before it starts (`src/boot.ts` then `src/artdom.ts`). Icons and props keep their layout because the delivered picture is placed inside the same SVG box the game's own drawing has.
 
 | Command | What it does |
 |---|---|
-| `npm run art:spec` | Writes `art/ART_SPEC.md` and `art/art-slots.csv`: the rules and the full list, with what is done and what is missing. This is what the art team gets. |
-| `npm run art:check` | Checks the files in `art/incoming/` (and the ones in the game) against the spec: size, transparency, space around the object, file weight, name. Says exactly what to fix. Exits with 1 on errors. |
-| `npm run art:sync` | Accepts the files with no errors: copies them to `public/art/items/`, moves the originals to `art/archive/` and rewrites `public/art/manifest.json`. Files with errors stay in `art/incoming/`. |
-| `npm run test:art` | Tests the checker with PNG files made in memory. |
+| `npm run art:kit` | Makes `art/needle-art-kit.zip` for the art team: the brief, the table, the reference pictures and empty folders to fill. Runs the next two first. |
+| `npm run art:spec` | Writes `art/ART_BRIEF.md` and `art/art-slots.csv`: the brief and the full list, with what is done and what is missing. |
+| `npm run art:reference` | Writes the game's own pictures to `art/reference/` (SVG for icons and props, PNG for items, drawn by Chrome). |
+| `npm run art:check` | Checks the files in `art/incoming/` and in `public/art/`: size, transparency, space around the object, SVG rules, weight, names, folders. Says exactly what to fix. Exits with 1 on errors. |
+| `npm run art:sync` | Accepts the files with no errors: copies them to `public/art/`, moves the originals to `art/archive/` and rewrites `public/art/manifest.json`. |
+| `npm run test:art` | Tests the checker with files made in memory, and that the slots match the game's own drawings. |
 
-The flow: the developer adds an item in `src/items.ts` (the slot appears by itself), runs `art:spec` and sends the sheet. The artists put PNG files (256 x 256, transparent, named as listed) in `art/incoming/`. Anyone runs `art:check`; the developer runs `art:sync` and commits `public/art/`.
+The flow: send the kit and `art/REQUEST_TEMPLATE.md` to the artists. They put files in `art/incoming/items|icons|props/`. Run `art:check`, send back what to fix, then `art:sync` and commit `public/art/`. A new item, icon or prop gets its slot by being added to `src/items.ts` or `src/artslots.ts`.
 
-Where the numbers live: `ART_SPEC` in `src/artslots.ts` (size, weight, margin, fill). The game scales the 256 px file down to a 128 px texture, and the object's hit area and the way it hides in the hay do not depend on the picture. New kinds of art (characters, for example) are added as new slot kinds in the same file.
+Not in the system yet (next phases): the barn and map backgrounds, buttons and panels, the board art (straws, ground, frame, needle), the title hero, characters and sound.

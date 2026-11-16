@@ -3,3 +3,5 @@ dist/
 .env*
 *.tar.gz
 art/archive/
+art/kit/
+art/*.zip
