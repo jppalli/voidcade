@@ -77,11 +77,9 @@ The cell total sits in the top bar next to the coins. While the detector or the 
 
 **New levels.** From world 3: night levels (only a light circle around the pointer is visible) and decoys (pins and nails that look like the needle and do no harm).
 
-**Looks.** The shop sells hay colours, board frames and needle finishes. They change nothing about play.
-
 **Tuning without a build.** Put numbers in `public/needle-config.json` (copied next to the game). Missing or out of range values are ignored, and the file is never run as code. The accepted keys are listed at the top of `src/config.ts`. `node sim-economy.mjs` prints coin income against the shop's prices. `node test-levels.mjs` checks levels, drop rates over 20,000 rolls and the economy rules.
 
 **Analytics.** `src/analytics.ts` queues events and prints them in the console with `?debug`. `ANALYTICS_KEY` is empty on purpose: set it to an Application Insights key for this game and events start flowing. With no key nothing is sent.
 
 **Platform.** `src/platform.ts` wraps the Arkadium SDK (rewarded video for cells, pause and resume, level hooks) and falls back to a local stand-in outside the portal.
-**Barn.** Every straw you lift out of the hay (pluck, shovel, fan, vacuum) counts as hay, up to 300 per level, and the hay goes into the barn when you win. In the Barn tile on the title screen, 100 hay makes a bale. Bales pay for six barn improvements, and three of them unlock looks that are not sold in the shop (Wheat hay, Barn red frame, Brass needle). One bale a day can be sold for 10 coins, so hay cannot be turned into cells. The numbers are in `BARN` in `src/barn.ts`.
+**Barn.** Every straw you lift out of the hay (pluck, shovel, fan, vacuum) counts as hay, up to 300 per level, and the hay goes into the barn when you win. In the Barn tile on the title screen, 100 hay makes a bale. Bales pay for six barn improvements, which show up in the barn picture. (The shop no longer sells looks. The look data and the three unlocks that three improvements still grant in src/barn.ts are kept but have no screen.) One bale a day can be sold for 10 coins, so hay cannot be turned into cells. The numbers are in `BARN` in `src/barn.ts`.

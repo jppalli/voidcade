@@ -1,6 +1,6 @@
 /** The barn screen: see the barn, make bales, sell one a day, and pay for improvements. */
 import { saved } from './progress';
-import { BARN, IMPROVEMENTS, IMPROVEMENT_BY_ID, balesReady, build, canSellBale, grantName, isBuilt, makeBales, sellBale } from './barn';
+import { BARN, IMPROVEMENTS, IMPROVEMENT_BY_ID, balesReady, build, canSellBale, isBuilt, makeBales, sellBale } from './barn';
 import { barnBackdrop, barnScene, timeOfDay } from './barn-scene';
 import { centerOf, flyCoins, holdCoins, toast, updateCoinPill } from './shop';
 import { burst, center, closeOverlay, floatText, keepScroll, openOverlay } from './fx';
@@ -29,10 +29,9 @@ export function initBarn(hooks: Hooks = {}) {
     const sellNote = b.bales <= 0 ? 'Make a bale first' : canSellBale() ? 'One bale a day' : 'Back tomorrow';
     const cards = IMPROVEMENTS.map(imp => {
       const done = isBuilt(imp.id),
-        gift = grantName(imp),
         can = !done && b.bales >= imp.bales;
       const action = done ? '<span class="maxed">Built</span>' : `<button class="buy" data-build="${imp.id}" ${can ? '' : 'disabled'}><span class="price">${imp.bales} bales</span><small>${can ? 'Build it' : `Need ${imp.bales - b.bales} more`}</small></button>`;
-      return `<div class="imp-card${done ? ' built' : ''}${can ? ' afford' : ''}" data-imp="${imp.id}"><strong>${imp.name}</strong><span>${imp.blurb}</span>${gift ? `<small>Unlocks: ${gift}</small>` : ''}${action}</div>`;
+      return `<div class="imp-card${done ? ' built' : ''}${can ? ' afford' : ''}" data-imp="${imp.id}"><strong>${imp.name}</strong><span>${imp.blurb}</span>${action}</div>`;
     }).join('');
     const done = b.built.length;
     screen.innerHTML = `<div class="barn-wrap tod-${tod}">

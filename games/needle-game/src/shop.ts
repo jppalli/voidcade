@@ -4,8 +4,7 @@
  * All prices live in economy.ts.
  */
 import { saved } from './progress';
-import { LOOKS, SLOT_NAME, type Slot } from './cosmetics';
-import { buyLook, equipLook, ownsLook, CELLS, TRACKS, adsLeft, anyAffordable, bagCount, bagValue, buy, buyCells, canBuyCells, helpersUnlocked, itemValue, nextTier, recordAd, sellAll, trackVisible, type Track } from './economy';
+import { CELLS, TRACKS, adsLeft, anyAffordable, bagCount, bagValue, buy, buyCells, canBuyCells, helpersUnlocked, itemValue, nextTier, recordAd, sellAll, trackVisible, type Track } from './economy';
 import { platform } from './platform';
 import { track } from './analytics';
 import { celebrate, closeOverlay, keepScroll, openOverlay, rowIndex } from './fx';
@@ -277,23 +276,12 @@ export function initShop(imageOf: (kind: string) => string | null, hooks: { onOp
       })
       .join('');
 
-    const looks = (Object.keys(LOOKS) as Slot[])
-      .map(slot => `<div class="look-row"><strong>${SLOT_NAME[slot]}</strong><div class="look-chips">${LOOKS[slot]
-        .map(l => {
-          const own = ownsLook(slot, l.id), on = saved.cosmetics[slot] === l.id;
-          const label = on ? 'In use' : own ? 'Use' : l.barn ? 'Barn' : `${l.cost} ${COIN}`;
-          const dis = !own && (l.barn || saved.coins < l.cost) ? 'disabled' : '';
-          return `<button class="look-chip${on ? ' on' : ''}" data-look="${slot}:${l.id}" aria-pressed="${on}" ${dis}><i style="background:${l.swatch}"></i><span>${l.name}</span><small>${label}</small></button>`;
-        })
-        .join('')}</div></div>`)
-      .join('');
-
     screen.innerHTML = `<div class="shop-panel">
       <div class="shop-top"><button class="shop-back" aria-label="Close the shop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Back</span></button>
         <span class="stall">${stall()}</span><h2 id="shop-title">The Shop</h2><p class="shop-balance">${COIN}<b>${coinText()}</b> coins</p></div>
       <div class="shop-cols">
         <section class="shop-col"><h3>Your finds</h3>${sell}${helpersUnlocked() ? `<h3>Energy</h3>${helpers}` : ''}</section>
-        <section class="shop-col"><h3>Upgrades</h3>${rows}<h3>Looks</h3>${looks}</section>
+        <section class="shop-col"><h3>Upgrades</h3>${rows}</section>
       </div></div>`;
   };
   const render = () => keepScroll(screen, paint);
@@ -344,15 +332,6 @@ export function initShop(imageOf: (kind: string) => string | null, hooks: { onOp
         flyCoins(from, gain);
         return;
       }
-    } else if (el.dataset.look) {
-      const [slot, id] = el.dataset.look.split(':') as [Slot, string];
-      const owned = ownsLook(slot, id);
-      if (owned ? equipLook(slot, id) : buyLook(slot, id)) {
-        bought = !owned;
-        sfx.found(0, false);
-        document.body.dataset.frame = saved.cosmetics.frame;
-        track('shop_buy', { item: el.dataset.look });
-      } else sfx.denied();
     } else if (el.dataset.buy) {
       if (buy(el.dataset.buy as Track)) {
         bought = true;
