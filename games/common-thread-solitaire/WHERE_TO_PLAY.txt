@@ -1,0 +1,197 @@
+╔═══════════════════════════════════════════════════════════════════╗
+║                                                                   ║
+║     COMMON THREAD SOLITAIRE — NOW PLAYABLE ON VOIDCADE!         ║
+║                                                                   ║
+╚═══════════════════════════════════════════════════════════════════╝
+
+┌─────────────────────────────────────────────────────────────────┐
+│ METHOD 1: FROM VOIDCADE LANDING PAGE                            │
+└─────────────────────────────────────────────────────────────────┘
+
+1. Start preview server:
+   > npm run preview
+
+2. Open: http://localhost:4173
+
+3. Look for "Common Thread" in TWO places:
+
+   ╔═══════════════════════════════════════════════════════════╗
+   ║ VOIDCADE                                    [GAMES] [ABOUT] ║
+   ║                                                             ║
+   ║    ┌────┐ ┌────┐ ┌────┐ [COMMON] ┌────┐ ┌────┐ ┌────┐    ║
+   ║    │    │ │    │ │    │ [THREAD] │    │ │    │ │    │    ║
+   ║    │Pane│ │Ches│ │Stac│ [~~~~~] │Word│ │Hint│ │Pam │    ║
+   ║    │ s  │ │Doku│ │ward│ [Cards ] │Bloo│ │Tac │ │ pa │    ║
+   ║    └────┘ └────┘ └────┘ [     ] └────┘ └────┘ └────┘    ║
+   ║                          ▲                                  ║
+   ║                    Golden threads                           ║
+   ║                    Card preview                             ║
+   ╚═══════════════════════════════════════════════════════════╝
+                               │
+                         Scroll carousel
+                               │
+   ╔═══════════════════════════════════════════════════════════╗
+   ║ THE LINEUP                                                  ║
+   ║                                                             ║
+   ║  ┌─────────────┬─────────────┬─────────────┬─────────────┐ ║
+   ║  │  ColorClues │  Stackward  │    Panes    │ Pips&Paths │ ║
+   ║  ├─────────────┼─────────────┼─────────────┼─────────────┤ ║
+   ║  │   Riftpop   │  ChessDoku  │  KittyDoku  │ *COMMON*   │ ║
+   ║  │             │             │             │ *THREAD*   │ ║
+   ║  │             │             │             │  [Cards]   │ ║
+   ║  │             │             │             │ ~~~~~~~~   │ ║
+   ║  │             │             │             │ Puzzle·    │ ║
+   ║  │             │             │             │ Solitaire  │ ║
+   ║  └─────────────┴─────────────┴─────────────┴─────────────┘ ║
+   ║                                                 ▲            ║
+   ║                                          Full game card      ║
+   ║                                          with description    ║
+   ╚═══════════════════════════════════════════════════════════╝
+
+4. Click either card → Game opens!
+
+
+┌─────────────────────────────────────────────────────────────────┐
+│ METHOD 2: DIRECT LINK (FASTEST)                                 │
+└─────────────────────────────────────────────────────────────────┘
+
+After `npm run preview`:
+→ http://localhost:4173/games/common-thread-solitaire/
+
+
+┌─────────────────────────────────────────────────────────────────┐
+│ METHOD 3: DEV SERVER (FOR DEVELOPMENT)                          │
+└─────────────────────────────────────────────────────────────────┘
+
+From root:
+> npm run dev:common-thread
+
+Or from game folder:
+> cd games/common-thread-solitaire
+> npm run dev
+
+Opens at: http://localhost:5180
+
+
+┌─────────────────────────────────────────────────────────────────┐
+│ WHAT YOU'LL SEE                                                 │
+└─────────────────────────────────────────────────────────────────┘
+
+╔═══════════════════════════════════════════════════════════════╗
+║                   TITLE SCREEN                                  ║
+║                                                                 ║
+║                    ╱╲  ╱╲  ╱╲                                  ║
+║                   ╱  ╲╱  ╲╱  ╲    ← Golden threads             ║
+║                  ╱            ╲                                 ║
+║                                                                 ║
+║               Common Thread                                     ║
+║                 Solitaire                                       ║
+║                                                                 ║
+║        Find the connection. Sort cards                          ║
+║              into themed sets.                                  ║
+║                                                                 ║
+║              [    ▶ Play    ]                                   ║
+║              [  How to Play ]                                   ║
+║              [      🔊       ]                                   ║
+║                                                                 ║
+╚═══════════════════════════════════════════════════════════════╝
+                           │
+                      Click Play
+                           │
+                           ▼
+╔═══════════════════════════════════════════════════════════════╗
+║ [←] Level 1             Moves: 0                         [🔊]  ║
+╟─────────────────────────────────────────────────────────────╢
+║                                                                 ║
+║  [Slot] [Slot] [Slot] [Slot]  ← Row 1 (Fruits category)      ║
+║    🃏    🃏    🃏    🃏                                         ║
+║                                                                 ║
+║  [Slot] [Slot] [Slot] [Slot]  ← Row 2 (Colors category)      ║
+║    🃏    🃏    🃏    🃏                                         ║
+║                                                                 ║
+║  [Slot] [Slot] [Slot] [Slot]  ← Row 3 (Animals category)     ║
+║    🃏    🃏    🃏    🃏                                         ║
+║                                                                 ║
+║     [Stock Cards]  ← Drag these to slots!                      ║
+║      🃏 🃏 🃏 🃏                                                ║
+║                                                                 ║
+╟─────────────────────────────────────────────────────────────╢
+║  [Undo]  [Hint]  [Restart]                                     ║
+╚═══════════════════════════════════════════════════════════════╝
+
+
+┌─────────────────────────────────────────────────────────────────┐
+│ GAMEPLAY                                                        │
+└─────────────────────────────────────────────────────────────────┘
+
+1. DRAG a card from stock area
+2. DROP on any slot
+3. When 4 MATCHING cards fill a slot → ✓ COMPLETE!
+   (Arpeggio sound plays, category revealed)
+4. Complete all 3 sets → 🏆 WIN!
+
+
+┌─────────────────────────────────────────────────────────────────┐
+│ CONTROLS                                                        │
+└─────────────────────────────────────────────────────────────────┘
+
+Mouse/Touch:  Drag cards to move them
+Ctrl+Z:       Undo last move
+H:            Show hint (highlights 2 matching cards)
+Ctrl+R:       Restart level
+
+
+┌─────────────────────────────────────────────────────────────────┐
+│ FEATURES                                                        │
+└─────────────────────────────────────────────────────────────────┘
+
+✓ 3 levels (Fruits/Colors/Animals, more coming soon)
+✓ Smooth drag & drop
+✓ Audio feedback (9 procedural sounds)
+✓ Unlimited undo
+✓ Smart hints
+✓ Progress saves automatically
+✓ Star rating (1-3 based on moves)
+✓ Fully accessible (keyboard + screen reader)
+✓ Responsive (mobile + desktop)
+
+
+┌─────────────────────────────────────────────────────────────────┐
+│ TECH SPECS                                                      │
+└─────────────────────────────────────────────────────────────────┘
+
+Language:     TypeScript (strict mode)
+Framework:    Vanilla TS (no dependencies!)
+Build:        Vite
+Bundle:       ~11 KB gzipped
+Audio:        Web Audio API
+Storage:      localStorage
+Accessibility: WCAG AA compliant
+
+
+┌─────────────────────────────────────────────────────────────────┐
+│ TROUBLESHOOTING                                                 │
+└─────────────────────────────────────────────────────────────────┘
+
+Q: No sound?
+A: Click sound button (top-right) or tap anywhere first
+
+Q: Cards won't drag?
+A: Check browser console (F12) for JavaScript errors
+
+Q: Want to reset progress?
+A: Browser console → localStorage.clear() → Reload
+
+Q: Port already in use?
+A: Change port in vite.config.ts or kill existing process
+
+
+═══════════════════════════════════════════════════════════════════
+
+                    🎮 READY TO PLAY! 🎮
+
+    Visit: http://localhost:4173
+    Look for: Common Thread card
+    Click: Play now →
+
+═══════════════════════════════════════════════════════════════════

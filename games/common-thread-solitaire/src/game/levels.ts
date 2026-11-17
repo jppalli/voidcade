@@ -1,0 +1,111 @@
+import type { Level } from './types';
+
+export const LEVELS: Level[] = [
+  {
+    id: 1,
+    name: 'Level 1',
+    cards: [
+      { id: 'c1', content: 'Apple', type: 'word', category: 'Fruits' },
+      { id: 'c2', content: 'Banana', type: 'word', category: 'Fruits' },
+      { id: 'c3', content: 'Orange', type: 'word', category: 'Fruits' },
+      { id: 'c4', content: 'Grape', type: 'word', category: 'Fruits' },
+      { id: 'c5', content: 'Red', type: 'word', category: 'Colors' },
+      { id: 'c6', content: 'Blue', type: 'word', category: 'Colors' },
+      { id: 'c7', content: 'Green', type: 'word', category: 'Colors' },
+      { id: 'c8', content: 'Yellow', type: 'word', category: 'Colors' },
+      { id: 'c9', content: 'Dog', type: 'word', category: 'Animals' },
+      { id: 'c10', content: 'Cat', type: 'word', category: 'Animals' },
+      { id: 'c11', content: 'Bird', type: 'word', category: 'Animals' },
+      { id: 'c12', content: 'Fish', type: 'word', category: 'Animals' },
+    ],
+    slots: [
+      { id: 's1', x: 50, y: 100, category: 'Fruits' },
+      { id: 's2', x: 180, y: 100, category: 'Fruits' },
+      { id: 's3', x: 310, y: 100, category: 'Fruits' },
+      { id: 's4', x: 440, y: 100, category: 'Fruits' },
+      { id: 's5', x: 50, y: 270, category: 'Colors' },
+      { id: 's6', x: 180, y: 270, category: 'Colors' },
+      { id: 's7', x: 310, y: 270, category: 'Colors' },
+      { id: 's8', x: 440, y: 270, category: 'Colors' },
+      { id: 's9', x: 50, y: 440, category: 'Animals' },
+      { id: 's10', x: 180, y: 440, category: 'Animals' },
+      { id: 's11', x: 310, y: 440, category: 'Animals' },
+      { id: 's12', x: 440, y: 440, category: 'Animals' },
+    ],
+    minMoves: 8,
+  },
+  {
+    id: 2,
+    name: 'Level 2',
+    cards: [
+      { id: 'c13', content: 'Rose', type: 'word', category: 'Flowers' },
+      { id: 'c14', content: 'Tulip', type: 'word', category: 'Flowers' },
+      { id: 'c15', content: 'Daisy', type: 'word', category: 'Flowers' },
+      { id: 'c16', content: 'Lily', type: 'word', category: 'Flowers' },
+      { id: 'c17', content: 'Guitar', type: 'word', category: 'Instruments' },
+      { id: 'c18', content: 'Piano', type: 'word', category: 'Instruments' },
+      { id: 'c19', content: 'Drum', type: 'word', category: 'Instruments' },
+      { id: 'c20', content: 'Violin', type: 'word', category: 'Instruments' },
+      { id: 'c21', content: 'Car', type: 'word', category: 'Vehicles' },
+      { id: 'c22', content: 'Bike', type: 'word', category: 'Vehicles' },
+      { id: 'c23', content: 'Boat', type: 'word', category: 'Vehicles' },
+      { id: 'c24', content: 'Plane', type: 'word', category: 'Vehicles' },
+    ],
+    slots: [
+      { id: 's13', x: 50, y: 100, category: 'Flowers' },
+      { id: 's14', x: 180, y: 100, category: 'Flowers' },
+      { id: 's15', x: 310, y: 100, category: 'Flowers' },
+      { id: 's16', x: 440, y: 100, category: 'Flowers' },
+      { id: 's17', x: 50, y: 270, category: 'Instruments' },
+      { id: 's18', x: 180, y: 270, category: 'Instruments' },
+      { id: 's19', x: 310, y: 270, category: 'Instruments' },
+      { id: 's20', x: 440, y: 270, category: 'Instruments' },
+      { id: 's21', x: 50, y: 440, category: 'Vehicles' },
+      { id: 's22', x: 180, y: 440, category: 'Vehicles' },
+      { id: 's23', x: 310, y: 440, category: 'Vehicles' },
+      { id: 's24', x: 440, y: 440, category: 'Vehicles' },
+    ],
+    minMoves: 10,
+  },
+  {
+    id: 3,
+    name: 'Level 3',
+    cards: [
+      { id: 'c25', content: 'Summer', type: 'word', category: 'Seasons' },
+      { id: 'c26', content: 'Winter', type: 'word', category: 'Seasons' },
+      { id: 'c27', content: 'Spring', type: 'word', category: 'Seasons' },
+      { id: 'c28', content: 'Autumn', type: 'word', category: 'Seasons' },
+      { id: 'c29', content: 'Square', type: 'word', category: 'Shapes' },
+      { id: 'c30', content: 'Circle', type: 'word', category: 'Shapes' },
+      { id: 'c31', content: 'Triangle', type: 'word', category: 'Shapes' },
+      { id: 'c32', content: 'Star', type: 'word', category: 'Shapes' },
+      { id: 'c33', content: 'Pizza', type: 'word', category: 'Food' },
+      { id: 'c34', content: 'Burger', type: 'word', category: 'Food' },
+      { id: 'c35', content: 'Pasta', type: 'word', category: 'Food' },
+      { id: 'c36', content: 'Sushi', type: 'word', category: 'Food' },
+    ],
+    slots: [
+      { id: 's25', x: 50, y: 100, category: 'Seasons' },
+      { id: 's26', x: 180, y: 100, category: 'Seasons' },
+      { id: 's27', x: 310, y: 100, category: 'Seasons' },
+      { id: 's28', x: 440, y: 100, category: 'Seasons' },
+      { id: 's29', x: 50, y: 270, category: 'Shapes' },
+      { id: 's30', x: 180, y: 270, category: 'Shapes' },
+      { id: 's31', x: 310, y: 270, category: 'Shapes' },
+      { id: 's32', x: 440, y: 270, category: 'Shapes' },
+      { id: 's33', x: 50, y: 440, category: 'Food' },
+      { id: 's34', x: 180, y: 440, category: 'Food' },
+      { id: 's35', x: 310, y: 440, category: 'Food' },
+      { id: 's36', x: 440, y: 440, category: 'Food' },
+    ],
+    minMoves: 12,
+  },
+];
+
+export function getLevel(id: number): Level | undefined {
+  return LEVELS.find(l => l.id === id);
+}
+
+export function getTotalLevels(): number {
+  return LEVELS.length;
+}

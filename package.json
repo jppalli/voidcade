@@ -24,7 +24,8 @@
     "dev:wordbloom": "npx --yes http-server games/wordbloom -p 5188 -c-1",
     "dev:panes": "npx --yes http-server games/panes -p 5175 -c-1",
     "dev:hangman": "npm run dev --workspace=hangman",
-    "dev:needle": "npm run dev --workspace=needle"
+    "dev:needle": "npm run dev --workspace=needle",
+    "dev:common-thread": "npm run dev --workspace=common-thread-solitaire"
   },
   "dependencies": {
     "@arcade/ads": "*"
