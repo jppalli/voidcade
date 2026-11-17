@@ -1,0 +1,137 @@
+﻿1: :root {
+81: .linen {
+92: .btn {
+112: .btn:hover {
+115: .btn:active {
+119: .btn:disabled {
+123: .btn.blue {
+129: .btn.gold {
+136: .btn.ghost {
+143: .btn.light {
+150: .btn .ico {
+155: .btn small {
+178: .game {
+183: .game.land {
+188: .game.port {
+193: .hud {
+203: .hud .lvl {
+210: .hud .lvl small {
+216: .hud .spacer {
+219: .moves {
+233: .moves b {
+237: .moves span {
+243: .moves.warn {
+248: .moves.crit {
+253: @keyframes pulse {
+287: .game.port .hud .lvl small {
+290: .game.port .moves {
+293: .game.port .moves b {
+303: .game.land .rail {
+307: .game.port .rail {
+314: .booster {
+331: .booster .ico {
+336: .booster .tag {
+350: .booster .tag.price {
+357: .booster .tag.price i {
+361: .booster.locked {
+364: .booster.active {
+371: .game.port .booster {
+392: .game.port .setsleft {
+395: .table {
+401: .slot {
+407: .slot.found {
+415: .slot.found .wm {
+418: .slot.found .lbl {
+426: .slot.col {
+429: .slot.stock {
+435: .slot.stock .ico {
+438: .slot.target-ok {
+444: .slot.hint,
+445: .card.hint {
+448: @keyframes hintGlow {
+455: .stockcount {
+495: .card {
+510: .card.dragging {
+514: .card.dragging .face,
+515: .card.lifted .face {
+518: .card .inner {
+524: .card.down .inner {
+527: .card .face,
+528: .card .back {
+536: .card .face {
+543: .card .back {
+564: .card .back:after {
+571: .card .hdr {
+588: .card .ctr {
+602: .card.covered .hdr {
+605: .card.covered .ctr {
+608: .card .dots:before,
+609: .card .dots:after {
+617: .card .dots:before {
+621: .card .dots:after {
+625: .card.covered .dots {
+628: .card.side .hdr,
+629: .card.side .ctr {
+632: .card.k-pic .ctr {
+635: .card.k-pic .hdr i {
+640: .card.k-cat .face {
+650: .card.k-cat .face:before {
+658: .card.k-cat .hole {
+669: .card.k-cat .ctr {
+674: .card.k-cat .title {
+681: .card.k-cat .spool {
+685: .card.k-cat .cnt {
+695: .card.k-cat .hdr {
+702: .card.k-cat .hdr i {
+709: .card.k-cat.seated .cnt {
+713: .card.k-cat .bar {
+724: .card.k-cat .bar > b {
+731: .card.k-cat.seated .bar {
+734: .card.k-cat.seated .spool {
+737: .card.k-wild .face {
+751: .card.k-wild .ctr {
+756: .card.k-wild .ctr i {
+761: .card.k-wild .hdr {
+765: .card.shake {
+768: @keyframes shake {
+778: .card.gone {
+785: .card.tieoff .face {
+788: @keyframes tieoff {
+800: .card.selected .face {
+805: .card.nomove {
+811: .spark {
+820: @keyframes spark {
+835: .toast {
+854: .toast.on {
+858: .coach {
+874: .game.port .banner {
+879: .game.port .coach {
+884: .game.port .coach:before {
+890: .game.port .coach .ci {
+909: .coach:before {
+920: .coach .ci {
+929: .banner {
+948: .banner button {
+956: .scrim {
+967: @keyframes fadein {
+972: .modal {
+983: @keyframes popin {
+989: .modal .mh {
+998: .modal .mh:after {
+1006: .modal .mb {
+1011: .modal .mf {
+1017: .modal .close {
+1180: .screen {
+1207: .logo {
+1254: .fan {
+1261: .fan .mini {
+1307: .node {
+1325: .node.done {
+1332: .node.current {
+1341: @keyframes beacon {
+1349: .node.locked {
+1354: .node .lk {
+1358: .node .chest {
+1365: .node .best {
+1434: @keyframes wiggle {
+1485: @keyframes beaconSq {

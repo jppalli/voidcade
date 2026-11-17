@@ -610,7 +610,7 @@ const LOGO_SVG = `<svg viewBox="0 0 560 170" xmlns="http://www.w3.org/2000/svg">
     <g stroke="#9A6614" stroke-width="2.5" opacity=".8"><path d="M16 30l54 6M16 46l54 6M16 62l54 6M16 78l54 6M16 94l54 6"/></g>
   </g>
   <path d="M88 108 C 140 150, 200 120, 250 140 S 420 160, 540 132" fill="none" stroke="#E8A33D" stroke-width="5" stroke-linecap="round" stroke-dasharray="14 9"/>
-  <text x="112" y="74" font-family="Fraunces, Georgia, serif" font-weight="800" font-size="62" fill="#FFF8EC">Common Thread</text>
+  <text x="112" y="74" font-family="'Fraunces Variable', Fraunces, Georgia, serif" font-weight="800" font-size="62" textLength="436" lengthAdjust="spacingAndGlyphs" fill="#FFF8EC">Common Thread</text>
   <text x="116" y="116" font-family="'Atkinson Hyperlegible', Arial, sans-serif" font-weight="700" font-size="25" letter-spacing="13" fill="#FCE7B8">SOLITAIRE</text>
 </svg>`;
 const appRoot = document.getElementById("app");

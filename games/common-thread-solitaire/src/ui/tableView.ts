@@ -6,6 +6,7 @@ import { PIC_ART } from '../data/picArt';
 import { dropError, isPlayable, movableCards, movableStart } from '../engine/rules';
 import { CONFIG, streakTier } from '../config';
 import { coinLine, openModal } from './modal';
+import { confetti, countUp, floatLabel, replay, ring, threadTie } from './effects';
 import type { Game } from '../engine/game';
 import type { Action, ActionResult, RejectReason, Source, Target } from '../engine/types';
 import type { Profile } from '../platform/storage';
@@ -114,9 +115,23 @@ export class TableView {
   drag: DragState | null = null;
   focus = { stop: 0, depth: 0 };
   ro!: ResizeObserver;
+  /** True while the opening deal animation runs. */
+  dealing = false;
+  relayoutAfterDeal = false;
+  flightTimers = new Map<number, number>();
   keyH = (t: KeyboardEvent) => this.onKey(t);
   constructor(t: HTMLElement, e: Game, s: TableHost) {
-    if (this.root = t, this.s = e, this.host = s, this.build(), this.ro = new ResizeObserver(() => this.relayout()), this.ro.observe(this.root), document.addEventListener("keydown", this.keyH), this.relayout(), platform.gameplayStart(), s.tutorial) setTimeout(() => this.updateCoach(), 400);
+    this.root = t;
+    this.s = e;
+    this.host = s;
+    this.build();
+    this.ro = new ResizeObserver(() => this.relayout());
+    this.ro.observe(this.root);
+    document.addEventListener("keydown", this.keyH);
+    this.relayout();
+    platform.gameplayStart();
+    if (e.history.length === 0 && e.state.movesUsed === 0) this.dealIn();
+    if (s.tutorial) setTimeout(() => this.updateCoach(), 400);
   }
   destroy() {
     this.ro.disconnect();
@@ -256,6 +271,10 @@ export class TableView {
     this.table.addEventListener("pointercancel", () => this.cancelDrag());
   }
   relayout() {
+    if (this.dealing) {
+      this.relayoutAfterDeal = true;
+      return;
+    }
     let t = this.table.clientWidth,
       e = this.table.clientHeight;
     if (!t || !e) return;
@@ -281,7 +300,7 @@ export class TableView {
       this.place(p, d.x, d.y);
     });
     this.place(this.slotEls.stock, this.L.stock.x, this.L.stock.y);
-    this.render();
+    this.render(undefined, false);
   }
   computeLayout(t, e, s) {
     let o = this.s.state.cols.length,
@@ -537,11 +556,13 @@ export class TableView {
     if (t.kind === "wild") return "Wild Thread";
     return t.kind === "pic" ? `Picture: ${t.label}` : t.label;
   }
-  render(t?: ActionResult) {
+  render(t?: ActionResult, animate = true) {
     if (!this.L) return;
     let e = this.s.state,
       s = this.computePositions();
+    const prevPos = this.pos;
     this.pos = s;
+    if (animate && prevPos.size) this.liftMoved(prevPos, s);
     let o = new Set(s.keys()),
       a = e.waste.length;
     for (let [i, r] of s) {
@@ -622,10 +643,10 @@ export class TableView {
     let t = this.host.profile,
       e = this.s.state,
       s = this.hud.moves;
-    s.firstChild!.textContent = String(e.moves);
+    this.setNumber(s.firstChild as HTMLElement, e.moves);
     s.classList.toggle("warn", e.moves <= 10 && e.moves > 5);
     s.classList.toggle("crit", e.moves <= 5);
-    this.hud.coins.lastChild!.textContent = String(t.coins);
+    this.setNumber(this.hud.coins.lastChild as HTMLElement, t.coins);
     this.hud.streak.innerHTML = t.streak >= 2 ? `${(ICONS.flame ?? "").replace("<svg", '<svg style="width:18px;height:18px"')}${t.streak}` : "";
     this.hud.sets.lastChild!.textContent = `${this.s.setsLeft}/${this.s.totalSets}`;
     let o = (a: HTMLElement, i: number, r: number) => {
@@ -680,7 +701,7 @@ export class TableView {
       this.host.profile.stats.setsCleared++;
       announce(`Set complete: ${this.s.cards.find(a => a.kind === "cat" && a.cat === o.clearedCat)!.label}!`);
     }
-    if (this.render(o), o.clearedFound !== undefined) this.sparkle(o.clearedFound);
+    if (this.render(o), o.clearedFound !== undefined) this.celebrateSet(o.clearedFound, this.s.cards.find(a => a.kind === "cat" && a.cat === o.clearedCat)!.label);
     if (platform.track("move", {
       type: t.t === "move" ? `${t.from.z}->${t.to.z}` : t.t,
       batch: o.scored?.ids.length ?? o.moved?.length ?? 0,
@@ -729,30 +750,139 @@ export class TableView {
     clearTimeout(this.toastTimer);
     this.toastTimer = window.setTimeout(() => this.toastEl.classList.remove("on"), 2400);
   }
-  sparkle(t: number) {
-    if (this.host.profile.settings.reducedMotion) return;
-    let e = this.L.found[t],
-      s = e.x + this.L.cw / 2,
-      o = e.y + this.L.ch / 2,
-      a = ["#E8A33D", "#FCE7B8", "#5E9C76", "#D9503F", "#3F7FC1"];
-    for (let i = 0; i < 18; i++) {
-      let r = i / 18 * Math.PI * 2,
-        l = this.L.cw * (0.7 + Math.random() * 0.6),
-        c = el("div", {
-          class: "spark",
-          style: {
-            left: `${s}px`,
-            top: `${o}px`,
-            background: a[i % a.length],
-            ["--dx"]: `${Math.cos(r) * l}px`,
-            ["--dy"]: `${Math.sin(r) * l}px`
-          }
-        });
-      c.style.setProperty("--dx", `${Math.cos(r) * l}px`);
-      c.style.setProperty("--dy", `${Math.sin(r) * l}px`);
-      this.table.append(c);
-      setTimeout(() => c.remove(), 900);
+  /** True when the player asked for reduced motion: skip flights, confetti and bounces. */
+  get calm(): boolean {
+    return this.host.profile.settings.reducedMotion;
+  }
+
+  /** Updates a HUD number and gives it a small pop when it changed. */
+  setNumber(node: HTMLElement, value: number) {
+    const next = String(value);
+    const changed = node.textContent !== next && node.textContent !== '' && node.textContent !== null;
+    node.textContent = next;
+    if (changed && !this.calm) replay(node, 'bump');
+  }
+
+  /**
+   * Called from render() just before cards are moved to their new places. Cards that are about to
+   * travel are lifted (bigger, tilted, shadowed) and staggered, then settle with a small squash.
+   */
+  liftMoved(prev: Map<number, { x: number; y: number; z: number }>, next: Map<number, { x: number; y: number; z: number }>) {
+    if (this.calm || this.dealing) return;
+    const moving: number[] = [];
+    for (const [id, now] of next) {
+      const before = prev.get(id);
+      if (before && (Math.abs(before.x - now.x) > 2 || Math.abs(before.y - now.y) > 2)) moving.push(id);
     }
+    for (const id of prev.keys()) if (!next.has(id)) moving.push(id);
+    moving.forEach((id, i) => this.flight(id, Math.min(i * 32, 360)));
+  }
+
+  /** Lifts one card for the length of its trip, then lets it land. */
+  flight(id: number, delay: number) {
+    const node = this.els.get(id);
+    if (!node) return;
+    window.clearTimeout(this.flightTimers.get(id));
+    node.style.transitionDelay = `${delay}ms`;
+    node.style.setProperty('--tilt', `${((Math.random() - 0.5) * 5).toFixed(2)}deg`);
+    node.classList.remove('landed');
+    node.classList.add('flying');
+    this.flightTimers.set(
+      id,
+      window.setTimeout(() => {
+        node.style.transitionDelay = '';
+        node.classList.remove('flying');
+        replay(node, 'landed');
+        this.flightTimers.delete(id);
+      }, 340 + delay),
+    );
+  }
+
+  /** The opening deal: every card starts on the deck, then flies to its place, flipping face-up on arrival. */
+  dealIn() {
+    if (this.calm || !this.L) return;
+    const ids = [...this.pos.keys()].sort((a, b) => this.pos.get(a)!.z - this.pos.get(b)!.z);
+    if (!ids.length) return;
+    const stock = this.L.stock;
+    const faceUp = new Map<number, boolean>();
+    for (const id of ids) {
+      const node = this.els.get(id)!;
+      faceUp.set(id, !node.classList.contains('down'));
+      node.style.transition = 'none';
+      this.place(node, stock.x, stock.y);
+      node.classList.add('down');
+    }
+    void this.table.offsetWidth; // commit the starting state before animating
+    this.dealing = true;
+    this.busy = true;
+    audio.recycle();
+    const step = Math.min(38, 900 / ids.length);
+    ids.forEach((id, i) => {
+      const node = this.els.get(id)!;
+      const delay = i * step;
+      const target = this.pos.get(id)!;
+      node.style.transition = '';
+      node.style.transitionDelay = `${delay}ms`;
+      node.style.setProperty('--tilt', `${((Math.random() - 0.5) * 4).toFixed(2)}deg`);
+      node.classList.add('flying');
+      this.place(node, target.x, target.y);
+      if (faceUp.get(id)) window.setTimeout(() => node.classList.remove('down'), delay + 220);
+    });
+    window.setTimeout(() => {
+      for (const id of ids) {
+        const node = this.els.get(id);
+        if (!node) continue;
+        node.style.transitionDelay = '';
+        node.classList.remove('flying');
+        replay(node, 'landed');
+      }
+      this.dealing = false;
+      this.busy = false;
+      if (this.relayoutAfterDeal) {
+        this.relayoutAfterDeal = false;
+        this.relayout();
+      }
+    }, ids.length * step + 700);
+  }
+
+  /** A completed set: a gold ring, a thread that ties off around the slot with a bow, and confetti. */
+  celebrateSet(index: number, label: string) {
+    if (this.calm) return;
+    const slot = this.L.found[index];
+    const cx = slot.x + this.L.cw / 2;
+    const cy = slot.y + this.L.ch / 2;
+    ring(this.table, cx, cy, this.L.cw * 1.2);
+    threadTie(this.table, slot.x, slot.y, this.L.cw, this.L.ch);
+    window.setTimeout(() => {
+      confetti(this.table, cx, cy, {
+        count: 26,
+        power: this.L.cw * 1.15,
+        gravity: this.L.ch * 0.9,
+        duration: 1300,
+        size: Math.max(7, this.L.cw * 0.08),
+      });
+      floatLabel(this.table, Math.min(Math.max(cx, 110), this.L.W - 110), Math.max(28, slot.y - 4), `${label} complete`);
+    }, 380);
+  }
+
+  /** Level won: confetti from both corners and the middle, over the dialog's backdrop. */
+  winCelebration() {
+    const layer = el('div', { class: 'fx-layer' });
+    document.body.append(layer);
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const bursts: [number, number, number][] = [
+      [w * 0.12, h * 0.9, -62],
+      [w * 0.88, h * 0.9, -118],
+      [w * 0.5, h * 0.7, -90],
+    ];
+    bursts.forEach(([x, y, angle], i) =>
+      window.setTimeout(
+        () => confetti(layer, x, y, { angle, spread: 70, count: 38, power: Math.min(w, h) * 0.8, gravity: h * 0.55, duration: 2300, size: 11 }),
+        i * 220,
+      ),
+    );
+    window.setTimeout(() => layer.remove(), 4600);
   }
   smartMove(t: Source) {
     let e = this.s.state,
@@ -1568,6 +1698,10 @@ export class TableView {
           }
         }]
       });
+    if (!this.calm) {
+      this.winCelebration();
+      countUp(a, 0, s, 900, n => `+${n}`);
+    }
     this.updateHud();
   }
   nextStreakText(t) {
