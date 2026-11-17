@@ -76,3 +76,15 @@ header .icon-button, header .help-button { width: var(--hud-h); height: var(--hu
   .hdr-left { gap: 6px }
   .hdr-right { gap: 6px }
 }
+
+/*
+ * Side layout (board on the left, helper column on the right): centre the tool tray beside the board.
+ * casual.css sets `bottom: auto` here so `top` + translateY(-50%) centres the tray. The bottom rules
+ * in content.css (and the short-screen rules in casual.css) load later and set `bottom` again, which
+ * stretches the tray down to the screen edge and leaves the tool cards stuck to the top of that
+ * oversized box: too high on tall screens, too low on short ones. Restate `bottom: auto` last.
+ * The "Unlocks at Level N" pills hang 17px below each card, so reserve that space at the bottom.
+ */
+@media (min-width: 601px) and (min-aspect-ratio: 12/7) and (min-height: 551px) {
+  .tool-tray { bottom: auto; padding-bottom: 17px }
+}
