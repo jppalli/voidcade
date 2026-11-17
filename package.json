@@ -25,7 +25,7 @@
     "dev:panes": "npx --yes http-server games/panes -p 5175 -c-1",
     "dev:hangman": "npm run dev --workspace=hangman",
     "dev:needle": "npm run dev --workspace=needle",
-    "dev:common-thread": "npm run dev --workspace=common-thread-solitaire"
+    "dev:common-thread": "npx --yes http-server games/common-thread-solitaire -p 5180 -c-1"
   },
   "dependencies": {
     "@arcade/ads": "*"

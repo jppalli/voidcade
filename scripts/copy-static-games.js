@@ -8,7 +8,7 @@ import path from 'node:path';
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 
-const STATIC_GAMES = ['panes', 'riftpop', 'wordbloom'];
+const STATIC_GAMES = ['panes', 'riftpop', 'wordbloom', 'common-thread-solitaire'];
 
 // Ensure GitHub Pages never runs Jekyll processing on the generated artifact.
 writeFileSync(path.join(ROOT, 'dist', '.nojekyll'), '');
