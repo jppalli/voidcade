@@ -32,7 +32,6 @@ export interface TableHost {
   levelNumber: number;
   title: string;
   subtitle: string;
-  tutorial: boolean;
   nextLabel: string;
   onExit(): void;
   onWin(payout?: number, doubled?: boolean): void;
@@ -101,7 +100,6 @@ export class TableView {
   pos = new Map<number, { x: number; y: number; z: number }>();
   hud!: Hud;
   toastEl!: HTMLElement;
-  coachEl: HTMLElement | null = null;
   bannerEl: HTMLElement | null = null;
   stockCount!: HTMLElement;
   portLabel!: HTMLElement;
@@ -131,7 +129,6 @@ export class TableView {
     this.relayout();
     platform.gameplayStart();
     if (e.history.length === 0 && e.state.movesUsed === 0) this.dealIn();
-    if (s.tutorial) setTimeout(() => this.updateCoach(), 400);
   }
   destroy() {
     this.ro.disconnect();
@@ -713,10 +710,7 @@ export class TableView {
   }
   afterMove(t: number) {
     let e = this.s.status();
-    if (e === "play") {
-      if (this.host.tutorial) this.updateCoach();
-      return;
-    }
+    if (e === "play") return;
     this.busy = true;
     setTimeout(() => {
       if (this.busy = false, e === "won") this.win();else if (e === "out") this.outOfMoves();else if (e === "deadlock") this.deadlock();
@@ -1194,9 +1188,13 @@ export class TableView {
         this.host.profile.wilds++;
         this.host.save();
       }
-      if (audio.place(), this.render(), this.host.saveSession(), announce("Move undone."), platform.track("booster_use", {
+      audio.place();
+      this.render();
+      this.host.saveSession();
+      announce("Move undone.");
+      platform.track("booster_use", {
         kind: "undo"
-      }), this.host.tutorial) this.updateCoach();
+      });
     };
     if (this.s.freeUndos > 0) {
       this.s.freeUndos--;
@@ -1438,28 +1436,6 @@ export class TableView {
       height: `${r + 10}px`
     }), t) announce(l);
   }
-  updateCoach() {
-    if (!this.host.tutorial || this.ended) return;
-    let t = this.s.hint(),
-      e = "Tap the glowing card.";
-    if (!t) e = "Use Undo to step back.";else if (t.t === "draw") e = "Need more cards? Tap the deck to draw one. Every action costs 1 move.";else if (t.t === "recycle") e = "The deck is empty. Tap it to turn the drawn pile back over.";else if (t.to.z === "found" && !this.s.state.found[t.to.i]) e = "This kraft tag is a category card. It starts a set. Tap it to place it in the top row.";else if (t.to.z === "found") e = "This card shares the thread. Tap it to add it to its set. Fill a set to clear it.";else if (t.to.z === "col") e = "Cards from the same set can stack. A whole stack moves for just 1 move.";
-    if (this.s.state.cleared.length && t?.t === "move" && t.to.z === "found" && this.s.state.found[t.to.i]) e = "Set complete frees the slot. Keep going — add the next card.";
-    if (!this.coachEl) {
-      this.coachEl = el("div", {
-        class: "coach",
-        role: "note"
-      }, el("i", {
-        class: "ci",
-        html: ICONS.spool
-      }), el("span", {}));
-      this.table.append(this.coachEl);
-    }
-    if (this.coachEl.lastChild!.textContent = e, t) this.showHint(t, true);
-    platform.track("tutorial_step", {
-      step: this.s.state.movesUsed,
-      hint: t?.t ?? "none"
-    });
-  }
   toggleSound() {
     let t = this.host.profile;
     t.settings.sfx = !t.settings.sfx;
@@ -1623,7 +1599,10 @@ export class TableView {
     t.stats.wins++;
     let e = streakTier(t.streak),
       s = this.s.payout(e?.coinBonus ?? 0);
-    if (t.coins += s, this.host.save(), this.host.clearSession(), platform.track("level_win", {
+    t.coins += s;
+    this.host.save();
+    this.host.clearSession();
+    platform.track("level_win", {
       key: this.s.def.key,
       movesLeft: this.s.state.moves,
       movesUsed: this.s.state.movesUsed,
@@ -1631,10 +1610,7 @@ export class TableView {
       rescues: this.s.rescues,
       hints: this.s.hints,
       payout: s
-    }), this.coachEl) {
-      this.coachEl.remove();
-      this.coachEl = null;
-    }
+    });
     this.clearHint();
     let o = false,
       a = el("b", {}, `+${s}`),
@@ -1661,7 +1637,7 @@ export class TableView {
         }
       }, this.nextStreakText(t.streak))),
       r = openModal({
-        title: this.host.tutorial ? "You've got it!" : "Nicely done!",
+        title: "Nicely done!",
         body: i,
         dismissible: false,
         buttons: [{

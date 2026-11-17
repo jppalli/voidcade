@@ -22,7 +22,6 @@ export interface Profile {
   bestStreak: number;
   daily: Record<string, { done: boolean; movesLeft?: number }>;
   dailyChests: Record<string, number[]>;
-  tutorialDone: boolean;
   stats: { wins: number; setsCleared: number; biggestBatch: number; gamesStarted: number };
   settings: Settings;
 }
@@ -42,7 +41,6 @@ function defaultProfile(): Profile {
     bestStreak: 0,
     daily: {},
     dailyChests: {},
-    tutorialDone: false,
     stats: {
       wins: 0,
       setsCleared: 0,

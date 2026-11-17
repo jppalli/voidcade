@@ -31,7 +31,6 @@ const ROOM_CHESTS = {
 export interface PlayOptions {
   levelNumber: number;
   subtitle: string;
-  tutorial: boolean;
   nextLabel: string;
   onWin: () => void;
   onNext: () => void;
@@ -213,14 +212,12 @@ export class App {
     this.play(e, {
       levelNumber: t,
       subtitle: `${ROOM.name} · ${JOURNEY_LEVELS[t - 1].teaches}`,
-      tutorial: t === 1 && !this.profile.tutorialDone,
       nextLabel: t < JOURNEY_LEVELS.length ? `Next · Level ${t + 1}` : "Back to the Journey",
       onWin: () => {
         let s = this.profile,
           o = s.journeyStars[e.key],
           a = o === undefined;
         if (s.journeyStars[e.key] = Math.max(o ?? 0, this.board!.s.state.moves), t >= s.journeyLevel) s.journeyLevel = Math.min(t + 1, JOURNEY_LEVELS.length + 1);
-        if (t === 1) s.tutorialDone = true;
         this.save();
         let i = ROOM_CHESTS[t];
         if (i && a) {
@@ -407,7 +404,6 @@ export class App {
     this.play(e, {
       levelNumber: 0,
       subtitle: t === dateKey() ? "Today's puzzle" : `Puzzle for ${t}`,
-      tutorial: false,
       nextLabel: "See my quilt",
       onWin: () => {
         this.profile.daily[t] = {
@@ -461,7 +457,6 @@ export class App {
     this.play(e, {
       levelNumber: 0,
       subtitle: `${e.sets.length} sets`,
-      tutorial: false,
       nextLabel: "New deal",
       onWin: () => {},
       onNext: () => this.startQuick(t),
@@ -493,7 +488,6 @@ export class App {
       levelNumber: e.levelNumber,
       title: t.title,
       subtitle: e.subtitle,
-      tutorial: e.tutorial,
       nextLabel: e.nextLabel,
       onExit: () => e.onExit(),
       onWin: () => e.onWin(),
@@ -507,7 +501,6 @@ export class App {
       }
     };
     if (this.board = new TableView(this.root, o, a), o.bonusMoves && o.history.length === 0) this.board!.toast(`Win streak bonus: +${o.bonusMoves} moves`);
-    if (e.tutorial && o.history.length === 0) this.howTo();
   }
   howTo() {
     let t = (e, s) => el("div", {
