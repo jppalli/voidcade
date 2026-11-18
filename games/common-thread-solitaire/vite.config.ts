@@ -1,5 +1,4 @@
 ﻿import { defineConfig } from 'vite';
-
 export default defineConfig({
   base: './', // relative asset paths, so the game works from any subpath
   server: { port: 5180, open: false },
@@ -9,4 +8,3 @@ export default defineConfig({
     emptyOutDir: true,
   },
 });
-

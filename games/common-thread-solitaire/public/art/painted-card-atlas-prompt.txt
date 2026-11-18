@@ -1,0 +1,11 @@
+Generated with the built-in Imagegen tool. Reference: cozy-garden.png (style reference only).
+Asset: painted-card-atlas.png. True transparent background. Layout: 6 columns, 6 rows.
+
+Create a production-ready single square sprite atlas texture for the cozy solitaire game shown in the reference image. Reference image is STYLE ONLY, do not reproduce its scenery. Exactly 6 columns by 6 rows of equal square cells across the full square image. No grid lines, no text, no labels, no borders. Transparent background. Each subject centered precisely in its own cell and contained inside its middle 72% width and height, generous transparent gutters, no overlaps. 31 distinct painted objects plus 5 empty cells. All painted with the same premium storybook gouache style as the reference: subtle brush texture, warm afternoon highlights from upper left, soft dimensional shading, natural rounded shapes, muted sage, terracotta, golden cream, dusty blue. No black outlines, no flat vector icons, no emoji, no glossy 3D rendering. Recognizable at small card size; one simple bold silhouette per cell. Objects must follow this EXACT row-major order:
+ROW 1: red apple with leaf; golden green pear; pair of red cherries; bunch of three yellow bananas; yellow lemon with leaf; bunch of purple grapes.
+ROW 2: golden sun with short rays; soft white fluffy cloud with blue shadows; small cloud releasing blue raindrops; pale blue six-point snowflake; golden lightning bolt; pastel rainbow with tiny clouds at its ends.
+ROW 3: orange fish; blue whale; coral red crab; peach starfish; pink scallop seashell; lavender octopus.
+ROW 4: vintage sage green car; sage bicycle with brown basket; little wooden sailboat with cream sail; cream and terracotta propeller airplane; vintage green locomotive; peach and sage hot-air balloon with basket.
+ROW 5: pink tulip with stem and leaves; sage metal watering can; single green leaf; red capped mushroom; orange carrot with leafy top; snail with warm brown spiral shell.
+ROW 6: cream ceramic teapot with painted little pink roses and green leaves (matching the garden tea set); EMPTY; EMPTY; EMPTY; EMPTY; EMPTY.
+Keep every entire object inside its exact cell, fully visible, aligned to a mathematically regular 6x6 grid. Deliver large square atlas with true alpha transparency around the separate objects.

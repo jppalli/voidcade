@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Common Thread · Painted card collection</title>
+<style>
+*{box-sizing:border-box}body{margin:0;padding:32px;font:15px 'Trebuchet MS',sans-serif;color:#40533a;background:#eae3cc}h1{font-family:Georgia,serif;margin:0 0 8px}p{margin:0 0 28px}main{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:20px;max-width:1100px;margin:auto}.sample{background:linear-gradient(135deg,#fffdf3,#f4ead3);border:3px solid #fffdf3;border-radius:14px;box-shadow:0 3px 0 #bcac8a,0 6px 12px #233c3226;padding:10px;text-align:center;position:relative}.sample svg{display:block;width:100%;aspect-ratio:1}.sample span{display:block;font-weight:700;margin:6px 0}.sample small{position:absolute;top:7px;left:7px;width:25px;height:25px}.sample small svg{width:100%;height:100%}header{max-width:1100px;margin:auto}.note{margin-top:24px;font-size:12px}
+</style></head><body><header><h1>A little collection of lovely things</h1><p>All 31 painted illustrations · full card and corner sizes</p></header><main></main>
+<script type="module">
+import { paintedIllustrations } from '/src/art/painted.ts';
+import labels from '/src/content/pictureLabels.json';
+document.querySelector('main').innerHTML=Object.entries(paintedIllustrations).map(([name,art])=>`<article class="sample" aria-label="${labels[name]||'Teapot'}"><small aria-hidden="true">${art}</small>${art}<span>${labels[name]||'Teapot'}</span></article>`).join('');
+</script></body></html>

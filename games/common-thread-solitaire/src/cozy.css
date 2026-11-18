@@ -1,0 +1,991 @@
+/* Painted garden materials and clear, generously sized controls. */
+:root {
+  --font-display: "Cooper Black", "Bookman Old Style", Georgia, serif;
+  --font-ui: "Trebuchet MS", "Segoe UI", sans-serif;
+  --sage: #58764b;
+  --sage-dark: #354f32;
+  --thread: #efbf70;
+  --table-1: #668567;
+  --table-2: #3c614e;
+  --table-3: #294b3d;
+  --cream: #fff6df;
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 3px solid #b65e28;
+  outline-offset: 4px;
+}
+.cozy-home {
+  display: flex;
+  align-items: center;
+  padding: 20px 30px;
+  color: #35462e;
+  isolation: isolate;
+  background: #e8e9c9 url("/art/cozy-garden.png") center/cover fixed;
+  gap: 12px;
+}
+.cozy-home::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 43%, #fff7e477, transparent 66%);
+}
+.garden-hud {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  flex-shrink: 0;
+  z-index: 2;
+}
+.pocket-coins {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff8e8;
+  border: 2px solid #bba174;
+  border-radius: 24px;
+  padding: 9px 18px 9px 10px;
+  box-shadow: 0 3px 0 #9a795d40;
+  color: #654521;
+  font-size: 21px;
+}
+.pocket-coins i {
+  width: 30px;
+  height: 30px;
+}
+.garden-tools {
+  display: flex;
+  gap: 12px;
+}
+.round-tool {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 52px;
+  border: 2px solid #bba174;
+  border-radius: 17px;
+  background: linear-gradient(#fffbee, #f4e4c2);
+  color: #344b32;
+  padding: 10px 17px;
+  box-shadow: 0 3px 0 #a18a6255;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.round-tool i {
+  width: 25px;
+  height: 25px;
+}
+.round-tool b {
+  font-size: 25px;
+}
+.round-tool:hover {
+  background: #fffdf4;
+  transform: translateY(-2px);
+}
+.garden-menu {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: min(100%, 700px);
+  margin: auto;
+  z-index: 1;
+  padding: 0 0 10px;
+  flex-shrink: 0;
+}
+.title-flourish {
+  display: none;
+}
+.game-title {
+  font-family: var(--font-display);
+  font-size: clamp(43px, 5vw, 62px);
+  font-weight: 900;
+  line-height: 0.93;
+  letter-spacing: -2px;
+  color: #3e603b;
+  margin: 2px 0 13px;
+  text-shadow:
+    0 3px #fff3d4,
+    0 5px #324c3828;
+}
+.game-title span {
+  display: block;
+  font-size: 1.15em;
+  margin-top: 2px;
+}
+.title-ribbon {
+  background: #965635;
+  color: #fff9ed;
+  padding: 7px 26px;
+  border-radius: 8px 8px 16px 16px;
+  font-size: 15px;
+  font-weight: 800;
+  box-shadow: 0 3px 0 #714026;
+  border: 1px solid #e1ac78;
+}
+.garden-tagline {
+  font-size: 18px;
+  line-height: 1.4;
+  margin: 17px 0 0;
+  color: #35492f;
+  font-weight: 600;
+  padding: 5px 15px;
+  border-radius: 15px;
+  background: #fff7e2d9;
+}
+.garden-fan {
+  position: relative;
+  width: 300px;
+  height: 177px;
+  margin: 13px 0 18px;
+  flex-shrink: 0;
+}
+.garden-card {
+  position: absolute;
+  width: 108px;
+  height: 143px;
+  border: 3px solid #fffbed;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fffdf2, #f3e7c8);
+  box-shadow:
+    0 3px 0 #bfab81,
+    0 8px 14px #4c55363b;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 6px;
+  color: #425238;
+  outline: 1px solid #cbb88e;
+}
+.garden-card::after {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  border: 1px dashed #c8b88f;
+  border-radius: 7px;
+  pointer-events: none;
+}
+.garden-card > span {
+  display: none;
+}
+.garden-card i {
+  height: 90px;
+  width: 90px;
+  display: block;
+  margin: 0;
+  flex-shrink: 0;
+}
+.garden-card b {
+  font-size: 13px;
+  font-family: var(--font-ui);
+  margin-top: 3px;
+}
+.card-flower {
+  left: 24px;
+  top: 19px;
+  transform: rotate(-14deg);
+}
+.card-fruit {
+  right: 24px;
+  top: 19px;
+  transform: rotate(14deg);
+}
+.card-tea {
+  left: 96px;
+  top: 1px;
+  z-index: 1;
+  transform: rotate(-2deg);
+}
+.fan-spark {
+  position: absolute;
+  color: #9e7330;
+  font-size: 27px;
+}
+.spark-one {
+  left: 0;
+  top: 8px;
+}
+.spark-two {
+  right: 0;
+  bottom: 8px;
+}
+.garden-play {
+  border: 3px solid #fff0bf;
+  background: linear-gradient(#f4c878, #e5ad50);
+  border-radius: 22px;
+  color: #4e341c;
+  box-shadow:
+    inset 0 2px #fff0be,
+    0 5px #94612e,
+    0 10px 20px #62603c38;
+  min-height: 91px;
+  min-width: 340px;
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 28px;
+  flex-shrink: 0;
+}
+.garden-play > i {
+  width: 30px;
+  height: 30px;
+}
+.garden-play > span {
+  font-family: var(--font-ui);
+  font-weight: 800;
+  font-size: 32px;
+  line-height: 1.1;
+}
+.garden-play small {
+  display: block;
+  font-size: 18px;
+  font-weight: 600;
+  margin-top: 7px;
+}
+.garden-play:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.04);
+}
+.garden-play:active {
+  transform: translateY(3px);
+  box-shadow: 0 2px #94612e;
+}
+.garden-activities {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  width: 100%;
+  margin-top: 24px;
+}
+.activity {
+  border: 2px solid #baa377;
+  background: linear-gradient(#fffbed, #f5e8ce);
+  border-radius: 19px;
+  padding: 13px 10px;
+  box-shadow: 0 4px #9f895f66;
+  color: #354c31;
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  align-items: center;
+  column-gap: 8px;
+  min-height: 93px;
+  text-align: left;
+  transition:
+    background 0.2s,
+    transform 0.2s;
+}
+.activity > i {
+  width: 32px;
+  height: 32px;
+  grid-row: span 2;
+  color: #896036;
+}
+.activity.journey-activity > i {
+  width: 36px;
+  height: 36px;
+}
+.activity > span {
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+.activity small {
+  font-size: 16px;
+  line-height: 1.3;
+  margin-top: 5px;
+  color: #536049;
+}
+.activity:hover {
+  background: #fffdf4;
+  transform: translateY(-2px);
+}
+.garden-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  z-index: 1;
+  margin-top: 4px;
+  flex-shrink: 0;
+  font-size: 16px;
+}
+.garden-footer > span {
+  background: #fff8e3ec;
+  color: #354b30;
+  padding: 10px 14px;
+  border-radius: 15px;
+}
+.garden-footer button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff8e3;
+  color: #354b30;
+  border: 2px solid #bba174;
+  min-height: 48px;
+  padding: 10px 15px;
+  border-radius: 15px;
+  font-size: 17px;
+  font-weight: 700;
+}
+.garden-footer svg {
+  width: 22px;
+  height: 22px;
+}
+.garden-motes {
+  display: none;
+}
+/* The play surface is quiet so cards and labels remain the clearest elements. */
+.linen {
+  background:
+    radial-gradient(ellipse at 50% 40%, #718970f2, #385741fa),
+    url("/art/cozy-garden.png") center/cover fixed;
+}
+.game.linen {
+  background: radial-gradient(
+    ellipse at 50% 35%,
+    #69856a,
+    #45674f 75%,
+    #36573f
+  );
+}
+.game.land {
+  grid-template-columns: 156px 1fr;
+  grid-template-rows: 82px 1fr;
+}
+.game.port {
+  grid-template-rows: 78px 1fr calc(94px + env(safe-area-inset-bottom));
+}
+.hud {
+  background: #304e3a;
+  border-bottom: 2px solid #a4b488;
+  gap: 16px;
+  padding: 9px 16px;
+}
+.hud .lvl {
+  font-size: 21px;
+  flex: 1;
+  min-width: 0;
+}
+.hud .lvl small {
+  font-size: 15px;
+  color: #f3f3de;
+  opacity: 1;
+  white-space: normal;
+  line-height: 1.3;
+  margin-top: 4px;
+}
+.hud .spacer {
+  display: none;
+}
+.hud .iconbtn {
+  flex-shrink: 0;
+  min-width: 48px;
+  min-height: 48px;
+  border-radius: 13px;
+  background: #526f53;
+}
+.hud .iconbtn[aria-label="Menu"] {
+  width: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 13px;
+  font-size: 17px;
+  font-weight: 700;
+}
+.hud .iconbtn[aria-label="Menu"] svg {
+  width: 25px;
+  height: 25px;
+}
+.hud .iconbtn[aria-label="Sound on/off"] {
+  width: 48px;
+  height: 48px;
+  padding: 11px;
+}
+.moves {
+  position: static;
+  transform: none;
+  background: #fff3cf;
+  color: #30472e;
+  border: 2px solid #c4cf9c;
+  border-radius: 16px;
+  box-shadow: 0 3px #1e3e3030;
+  padding: 9px 16px;
+  flex-shrink: 0;
+}
+.moves b {
+  font-family: var(--font-ui);
+  font-size: 30px;
+}
+.moves span {
+  font-size: 15px;
+  text-transform: none;
+  letter-spacing: 0;
+  opacity: 1;
+}
+.moves.warn,
+.moves.crit {
+  color: #fff;
+  animation: none;
+}
+.coins {
+  font-size: 19px;
+}
+.game.land .rail {
+  background: #304e3a70;
+  border-right: 1px solid #c9d6ab33;
+  padding: 23px 12px;
+  gap: 16px;
+}
+.booster {
+  background: linear-gradient(#7a956c, #526f47);
+  border: 2px solid #c1cea5;
+  border-radius: 16px;
+  box-shadow: 0 4px #29482f;
+  color: #fff;
+  font-size: 18px;
+  min-height: 58px;
+}
+.booster:hover {
+  background: #79966a;
+}
+.booster .tag {
+  font-size: 15px;
+}
+.setsleft {
+  background: #24412f;
+  border: 1px solid #adc19860;
+  border-radius: 14px;
+  font-size: 16px;
+  color: #fff4dd;
+}
+.setsleft b {
+  font-size: 26px;
+}
+.game.port .rail {
+  background: #304e3a;
+  gap: 10px;
+}
+.game.port .booster {
+  font-size: 16px;
+  min-height: 56px;
+}
+.portlabel {
+  font-size: 15px;
+  color: #fff8e5;
+}
+.portlabel b {
+  font-size: 24px;
+}
+.card .face {
+  background: linear-gradient(135deg, #fffdf3, #f4ead3);
+  border-radius: 12px;
+  box-shadow:
+    inset 0 0 0 3px #fffdf3,
+    0 3px #bcac8a,
+    0 5px 10px #233c3226;
+}
+.card .ctr {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  color: #253b2d;
+}
+.card .back {
+  border-radius: 12px;
+  background: #6a815e url("/art/painted-card-back.png") center/100% 100%
+    no-repeat;
+  border: 3px solid #fff1d4;
+  box-shadow:
+    inset 0 0 0 1px #ac956b,
+    0 3px #9f8e6e;
+}
+.card .back::after {
+  display: none;
+}
+.card.k-cat .face {
+  background: #f5e5bf url("/art/painted-category-card.png") center/100% 100%
+    no-repeat;
+  border: 2px solid #b99855;
+  border-radius: 12px;
+  clip-path: none;
+  color: #3f321f;
+}
+.card.k-cat .face::before {
+  display: none;
+}
+.card.k-cat .ctr {
+  inset: 12% 10% 16%;
+  gap: 6%;
+  color: #3f321f;
+}
+.card.k-cat .title {
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.card.k-cat .spool {
+  display: block;
+  width: 32%;
+  height: 24%;
+  flex-shrink: 0;
+}
+.card.k-cat.seated .spool {
+  width: 26%;
+  height: 20%;
+}
+.card.k-cat .cnt {
+  background: #fff9e9;
+  border: 1px solid #b79c69;
+  color: #493820;
+  padding: 3px 8px;
+  font-size: var(--fs-hdr);
+}
+.card.k-cat.seated .cnt {
+  font-size: var(--fs-hdr);
+  padding: 3px 8px;
+}
+.card.k-cat .hdr {
+  text-transform: none;
+  letter-spacing: 0;
+  background: #fff4dfe8;
+  top: 0;
+  border-radius: 10px 10px 0 0;
+}
+.card.k-cat .bar {
+  bottom: 9%;
+  height: 7px;
+  background: #dbcba4;
+}
+.card.k-cat .bar > b {
+  background: #567348;
+}
+.card.k-pic .ctr {
+  inset: 10% 8% 23%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.card.k-pic .ctr > .painted-art {
+  width: 100%;
+  height: 100%;
+  filter: none;
+}
+.picture-label {
+  position: absolute;
+  bottom: 7%;
+  left: 5%;
+  right: 5%;
+  text-align: center;
+  color: #30432d;
+  font-size: var(--fs-hdr);
+  font-weight: 700;
+  line-height: 1.2;
+}
+.card.covered .picture-label,
+.card.side .picture-label {
+  visibility: hidden;
+}
+.card.k-pic .hdr i {
+  height: 92%;
+  min-width: 26px;
+}
+.painted-art {
+  display: block;
+  flex-shrink: 0;
+}
+.slot.found {
+  border: 2px dashed #d8e0ba;
+  background: #28452e55;
+  border-radius: 14px;
+  color: #e8edd7;
+}
+.slot.found .wm {
+  width: 30%;
+  opacity: 0.65;
+}
+.slot.found .lbl {
+  font-size: clamp(12px, calc(var(--cw) * 0.105), 18px);
+  letter-spacing: 0;
+  text-transform: none;
+  bottom: 16%;
+  color: #fffbe9;
+}
+.slot.col {
+  border: 1px solid #b6c6a433;
+  border-radius: 12px;
+  background: #294c3420;
+}
+.board-zone-label {
+  position: absolute;
+  height: 24px;
+  line-height: 22px;
+  color: #fffbe9;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  pointer-events: none;
+  text-align: center;
+  white-space: nowrap;
+  z-index: 1;
+}
+.game.port .board-zone-label {
+  font-size: 14px;
+}
+.stockcount {
+  font-size: 17px;
+  background: #fff2cc;
+  color: #34452d;
+  border-color: #c8b27a;
+}
+.btn {
+  border-radius: 17px;
+  border: 1px solid #ffefc640;
+  box-shadow:
+    inset 0 2px #ffffff30,
+    0 4px #233c323b;
+  font-size: 18px;
+  font-weight: 700;
+  min-height: 50px;
+}
+.btn.gold {
+  background: linear-gradient(#f0ca7d, #dfa94f);
+  color: #4b331e;
+}
+.iconbtn {
+  border-radius: 13px;
+}
+.modal {
+  border: 4px solid #ead7ad;
+  border-radius: 23px;
+  background: #fff8e6;
+}
+.modal .mh {
+  background: #557546;
+  color: #fff8df;
+  font-weight: 800;
+}
+.modal .mb {
+  font-size: 18px;
+  line-height: 1.5;
+}
+.modal .close {
+  min-width: 44px;
+  min-height: 44px;
+}
+.scrim {
+  backdrop-filter: blur(4px);
+}
+.node {
+  border-radius: 28px;
+  box-shadow:
+    0 5px #29472f55,
+    0 10px 20px #27462e35;
+}
+.node.current {
+  background: linear-gradient(#f4cf83, #e3ab50);
+  color: #5e422a;
+}
+.node.done {
+  background: #85a06c;
+}
+.tier {
+  border-radius: 20px;
+  background: linear-gradient(135deg, #fff8e8, #ecdfbd);
+  border: 2px solid #dfcd9c;
+}
+.room {
+  background: #fff6dcf0;
+  color: #405738;
+  padding: 14px 30px;
+  border-radius: 22px;
+  margin: 20px 0;
+}
+.room h3 {
+  margin-top: 0;
+}
+.room p {
+  margin-bottom: 0;
+  font-size: 17px;
+}
+@media (max-width: 800px) {
+  .cozy-home {
+    padding: 16px;
+  }
+  .garden-menu {
+    width: min(100%, 620px);
+  }
+  .activity {
+    grid-template-columns: 1fr;
+    text-align: center;
+    padding: 12px 6px;
+    gap: 3px;
+  }
+  .activity > i {
+    grid-row: auto;
+    margin: auto;
+  }
+  .activity > span {
+    font-size: 18px;
+  }
+  .activity small {
+    font-size: 16px;
+  }
+  .game.land {
+    grid-template-columns: 132px 1fr;
+  }
+  .hud {
+    gap: 9px;
+  }
+  .hud .lvl {
+    font-size: 18px;
+  }
+  .hud .coins {
+    display: none;
+  }
+}
+@media (max-width: 600px) {
+  .cozy-home {
+    padding: 14px 12px;
+    gap: 18px;
+    background-position: center;
+  }
+  .garden-hud {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .garden-tools {
+    gap: 8px;
+    margin-left: auto;
+  }
+  .round-tool {
+    font-size: 16px;
+    padding: 10px;
+    min-height: 48px;
+    gap: 6px;
+  }
+  .round-tool i {
+    width: 21px;
+    height: 21px;
+  }
+  .pocket-coins {
+    padding: 8px;
+    font-size: 18px;
+    gap: 5px;
+  }
+  .pocket-coins i {
+    width: 24px;
+    height: 24px;
+  }
+  .garden-menu {
+    margin: 0 auto;
+  }
+  .game-title {
+    font-size: 47px;
+  }
+  .garden-tagline {
+    font-size: 18px;
+    max-width: 330px;
+    margin-top: 15px;
+  }
+  .garden-fan {
+    height: 177px;
+    margin: 12px 0 14px;
+  }
+  .garden-play {
+    width: 100%;
+    min-width: 0;
+    max-width: 350px;
+    font-size: 30px;
+    min-height: 92px;
+  }
+  .garden-play small {
+    font-size: 18px;
+  }
+  .garden-activities {
+    grid-template-columns: 1fr;
+    gap: 13px;
+    margin-top: 24px;
+    max-width: 350px;
+  }
+  .activity {
+    grid-template-columns: 42px 1fr;
+    text-align: left;
+    min-height: 78px;
+    padding: 12px 18px;
+    column-gap: 14px;
+  }
+  .activity > i {
+    grid-row: span 2;
+    width: 34px;
+    height: 34px;
+  }
+  .activity > span {
+    font-size: 21px;
+  }
+  .activity small {
+    font-size: 17px;
+  }
+  .garden-footer {
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    font-size: 16px;
+    margin-top: 0;
+    padding-bottom: 8px;
+  }
+  .garden-footer button {
+    font-size: 18px;
+  }
+  .game.port .hud {
+    gap: 8px;
+    padding: 8px;
+  }
+  .game.port .hud .lvl {
+    font-size: 17px;
+  }
+  .game.port .moves {
+    padding: 8px;
+    gap: 5px;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1;
+  }
+  .game.port .moves b {
+    font-size: 25px;
+  }
+  .game.port .moves span {
+    font-size: 13px;
+  }
+  .game.port .hud .iconbtn[aria-label="Menu"] {
+    padding: 10px 8px;
+    gap: 5px;
+    font-size: 15px;
+  }
+  .game.port .hud .iconbtn[aria-label="Menu"] svg {
+    width: 20px;
+    height: 20px;
+  }
+  .game.port .hud .iconbtn[aria-label="Sound on/off"] {
+    width: 44px;
+    min-width: 44px;
+  }
+  .game.port .rail {
+    padding: 10px 9px;
+    gap: 9px;
+  }
+  .game.port .booster {
+    font-size: 16px;
+    gap: 6px;
+    padding: 10px;
+  }
+  .game.port .booster .ico {
+    width: 22px;
+    height: 22px;
+  }
+}
+@media (max-height: 760px) and (min-width: 801px) {
+  .cozy-home {
+    padding: 14px 24px;
+    gap: 9px;
+  }
+  .garden-menu {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    column-gap: 28px;
+    width: min(850px, 100%);
+    align-items: center;
+    padding: 12px 24px;
+    background: #fff4dcdf;
+    border: 1px solid #dbc69b;
+    border-radius: 26px;
+  }
+  .game-title {
+    grid-column: 1;
+    grid-row: 1;
+    font-size: 48px;
+    margin: 14px 0;
+  }
+  .title-ribbon {
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: center;
+  }
+  .garden-tagline {
+    grid-column: 2;
+    grid-row: 1/3;
+    background: none;
+    font-size: 20px;
+    margin: 0;
+  }
+  .garden-fan {
+    grid-column: 1;
+    grid-row: 3/5;
+    transform: scale(0.8);
+    transform-origin: center;
+    width: 300px;
+    margin: 0 -30px;
+    height: 190px;
+  }
+  .garden-play {
+    grid-column: 2;
+    grid-row: 3;
+    min-width: 0;
+    margin-top: 16px;
+  }
+  .garden-activities {
+    grid-column: 1/3;
+    grid-row: 5;
+    margin: 8px 0 10px;
+  }
+  .activity {
+    min-height: 88px;
+  }
+  .garden-footer {
+    margin-top: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  button {
+    transition: none;
+  }
+}
+/* Keep the level visible and distribute the compact header across the screen. */
+@media (max-width: 600px) {
+  .game.port .hud {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+  }
+  .game.port .hud .lvl {
+    display: block;
+    line-height: 1.2;
+  }
+  .game.port .hud .lvl small {
+    font-size: 13px;
+  }
+  .game.port .hud .iconbtn[aria-label="Menu"] {
+    width: auto;
+    min-width: 84px;
+  }
+  .game.port .hud .iconbtn[aria-label="Menu"] svg {
+    flex-shrink: 0;
+  }
+}
+/* Keep category counts on one line even when the table scales down. */
+.card.k-cat .cnt,
+.card.k-cat.seated .cnt {
+  white-space: nowrap;
+  padding: 3px 4px;
+}

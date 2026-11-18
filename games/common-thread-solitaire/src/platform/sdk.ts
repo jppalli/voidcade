@@ -1,109 +1,130 @@
-import { CONFIG } from '../config';
+import { economy } from "../content/economy.js";
 
-/**
- * Platform layer: the Arkadium game SDK when the host page provides it, otherwise a mock.
- * It also records telemetry events and decides when an interstitial ad may show.
- */
-
-interface ArkadiumSdk {
-  analytics?: { track?: (name: string, props: Record<string, unknown>) => void };
-  lifecycle?: { onTestReady?: () => void; onGameStart?: () => void; onGameEnd?: () => void };
-  ads?: {
-    showRewardAd?: () => Promise<{ value: boolean }>;
-    showMidrollAd?: () => Promise<unknown>;
-  };
+/** Implement this interface for a publisher SDK. No vendor calls belong in game rules. */
+export interface PlatformAdapter {
+  ready?(): void;
+  gameplayStart?(): void;
+  gameplayStop?(): void;
+  track?(event: string, properties: Record<string, unknown>): void;
+  rewarded?(placement: string): Promise<boolean>;
+  interstitial?(placement: string): Promise<void>;
+  isSubscriber?(): boolean;
 }
-
 export interface TelemetryEvent {
   t: number;
   name: string;
   props: Record<string, unknown>;
 }
-
-export type AdKind = 'rewarded' | 'interstitial';
-
-const sdk = (globalThis as { ArkadiumGameSdk?: ArkadiumSdk }).ArkadiumGameSdk;
-
-let lastInterstitialAt = 0;
-let lastRewardedAt = -1_000_000_000_000;
-/** Accumulated gameplay time, so a brand-new session is not interrupted by an ad straight away. */
-let playTimeMs = 0;
-let playStartedAt = 0;
-
-export const telemetryLog: TelemetryEvent[] = [];
-const telemetryListeners = new Set<(event: TelemetryEvent) => void>();
-let adPresenter: ((kind: AdKind) => Promise<boolean>) | null = null;
-let muteHook: ((muted: boolean) => void) | null = null;
-
-/** ?plus=1 simulates an Arkadium Plus member: no interstitials. */
-const isPlusMember = () => /[?&]plus=1/.test(location.search);
-const isMockSdk = !sdk;
-
-export const platform = {
-  setAdPresenter(presenter: (kind: AdKind) => Promise<boolean>) {
-    adPresenter = presenter;
+export const telemetry: TelemetryEvent[] = [];
+const listeners = new Set<(event: TelemetryEvent) => void>();
+let adapter: PlatformAdapter = {};
+let presenter: ((kind: string) => Promise<boolean>) | undefined;
+let mute: ((value: boolean) => void) | undefined;
+let lastReward = -Infinity,
+  lastInterstitial = 0,
+  started = 0,
+  elapsed = 0;
+let adPending = false;
+function safe(callback: (() => void) | undefined) {
+  try {
+    callback?.();
+  } catch (error) {
+    console.warn("Platform callback failed", error);
+  }
+}
+export function installPlatform(next: PlatformAdapter) {
+  adapter = next;
+}
+export const sdk = {
+  setAdPresenter(next: typeof presenter) {
+    presenter = next;
   },
-  setMuteHook(hook: (muted: boolean) => void) {
-    muteHook = hook;
+  setMuteHook(next: typeof mute) {
+    mute = next;
   },
-  onTelemetry(listener: (event: TelemetryEvent) => void) {
-    telemetryListeners.add(listener);
-    return () => telemetryListeners.delete(listener);
+  onTelemetry(callback: (event: TelemetryEvent) => void) {
+    listeners.add(callback);
+    return () => listeners.delete(callback);
   },
   track(name: string, props: Record<string, unknown> = {}) {
-    const event: TelemetryEvent = { t: Date.now(), name, props };
-    telemetryLog.push(event);
-    if (telemetryLog.length > 300) telemetryLog.shift();
-    telemetryListeners.forEach((listener) => listener(event));
-    sdk?.analytics?.track?.(name, props);
-    if (/[?&]debug=1/.test(location.search)) console.info('[telemetry]', name, props);
+    const event = { t: Date.now(), name, props };
+    telemetry.push(event);
+    if (telemetry.length > 300) telemetry.shift();
+    listeners.forEach((listener) => safe(() => listener(event)));
+    safe(() => adapter.track?.(name, props));
+    if (
+      typeof location !== "undefined" &&
+      new URLSearchParams(location.search).has("debug")
+    )
+      console.info("[game]", name, props);
   },
   gameReady() {
-    sdk?.lifecycle?.onTestReady?.();
-    this.track('game_ready', { mock: isMockSdk });
+    safe(() => adapter.ready?.());
+    this.track("game_ready");
   },
   gameplayStart() {
-    playStartedAt = performance.now();
-    sdk?.lifecycle?.onGameStart?.();
+    if (!started) started = performance.now();
+    safe(() => adapter.gameplayStart?.());
   },
   gameplayStop() {
-    if (playStartedAt) playTimeMs += performance.now() - playStartedAt;
-    playStartedAt = 0;
-    sdk?.lifecycle?.onGameEnd?.();
+    if (started) elapsed += performance.now() - started;
+    started = 0;
+    safe(() => adapter.gameplayStop?.());
   },
-  /** Plays a rewarded video. Resolves true if the player earned the reward. */
-  async rewarded(placement: string): Promise<boolean> {
-    this.track('ad_rewarded_request', { placement });
-    muteHook?.(true);
-    let earned = false;
+  async rewarded(placement: string) {
+    if (adPending) return false;
+    adPending = true;
+    safe(() => mute?.(true));
+    this.track("ad_rewarded_request", { placement });
+    let completed = false;
     try {
-      if (sdk?.ads?.showRewardAd) earned = (await sdk.ads.showRewardAd()).value;
-      else if (adPresenter) earned = await adPresenter('rewarded');
+      completed = adapter.rewarded
+        ? await adapter.rewarded(placement)
+        : ((await presenter?.("rewarded")) ?? false);
     } catch {
-      earned = false;
-    }
-    muteHook?.(false);
-    if (earned) lastRewardedAt = Date.now();
-    this.track(earned ? 'ad_rewarded_complete' : 'ad_rewarded_fail', { placement });
-    return earned;
-  },
-  /** Shows a between-levels ad if the rules allow it (cooldown, grace after a rewarded ad, early levels, Plus members). */
-  async interstitial(placement: string, levelNumber: number): Promise<void> {
-    const now = Date.now();
-    const playSeconds = (playTimeMs + (playStartedAt ? performance.now() - playStartedAt : 0)) / 1000;
-    if (isPlusMember()) return;
-    if (levelNumber > 0 && levelNumber < CONFIG.noInterstitialBeforeLevel) return;
-    if (now - lastRewardedAt < CONFIG.rewardedGraceSec * 1000) return;
-    if (lastInterstitialAt && (now - lastInterstitialAt) / 1000 < CONFIG.interstitialCooldownSec) return;
-    if (!lastInterstitialAt && playSeconds < CONFIG.interstitialCooldownSec) return;
-    lastInterstitialAt = now;
-    this.track('ad_interstitial', { placement });
-    muteHook?.(true);
-    try {
-      if (sdk?.ads?.showMidrollAd) await sdk.ads.showMidrollAd();
-      else if (adPresenter) await adPresenter('interstitial');
+      completed = false;
     } finally {
-      muteHook?.(false);
+      adPending = false;
+      safe(() => mute?.(false));
+    }
+    if (completed) lastReward = Date.now();
+    this.track(completed ? "ad_rewarded_complete" : "ad_rewarded_fail", {
+      placement,
+    });
+    return completed;
+  },
+  async interstitial(placement: string, level: number) {
+    const now = Date.now();
+    const played =
+      (elapsed + (started ? performance.now() - started : 0)) / 1000;
+    let subscriber = false;
+    safe(() => {
+      subscriber = adapter.isSubscriber?.() ?? false;
+    });
+    if (
+      adPending ||
+      subscriber ||
+      (level > 0 && level < economy.noInterstitialBeforeLevel)
+    )
+      return;
+    if (now - lastReward < economy.rewardedGraceSec * 1000) return;
+    if (
+      lastInterstitial
+        ? now - lastInterstitial < economy.interstitialCooldownSec * 1000
+        : played < economy.interstitialCooldownSec
+    )
+      return;
+    adPending = true;
+    lastInterstitial = now;
+    safe(() => mute?.(true));
+    try {
+      if (adapter.interstitial) await adapter.interstitial(placement);
+      else await presenter?.("interstitial");
+    } catch {
+      this.track("ad_interstitial_fail", { placement });
+    } finally {
+      adPending = false;
+      safe(() => mute?.(false));
     }
   },
 };
