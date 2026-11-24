@@ -1,0 +1,20 @@
+{
+  "name": "dominoku",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "generate-puzzles": "vite-node tools/generate-puzzles.ts",
+    "verify-puzzles": "vite-node tools/verify-puzzles.ts"
+  },
+  "devDependencies": {
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0",
+    "vite-node": "^3.2.4",
+    "vitest": "^2.1.9"
+  }
+}

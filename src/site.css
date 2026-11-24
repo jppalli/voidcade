@@ -1079,6 +1079,11 @@ body {
   background: radial-gradient(circle at 50% 20%, rgba(255,248,239,0.22), transparent 62%), #f3e6d8;
 }
 
+.dominoku-art {
+  display: grid; place-items: center;
+  background: radial-gradient(circle at 50% 20%, rgba(255,255,255,0.6), transparent 62%), #f1efe9;
+}
+.dk-draw { width: 56%; height: 56%; }
 .kd-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
